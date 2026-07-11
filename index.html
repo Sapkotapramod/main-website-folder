@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Pramod Sapkota, Creative Developer Portfolio site</title>
+
+<meta name="description" content="Modern developer portfolio website">
+<meta name="author" content="Pramod Sapkota">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:'Poppins',sans-serif;
+    scroll-behavior:smooth;
+}
+
+:root{
+    --bg:#050816;
+    --card:#111827;
+    --text:#ffffff;
+    --muted:#a5b4fc;
+    --primary:#6366f1;
+    --secondary:#22d3ee;
+}
+
+.light{
+    --bg:#f8fafc;
+    --card:#ffffff;
+    --text:#111827;
+    --muted:#475569;
+}
+
+body{
+    background:var(--bg);
+    color:var(--text);
+    overflow-x:hidden;
+}
+
+/* Background */
+
+.background{
+    position:fixed;
+    width:100%;
+    height:100%;
+    z-index:-1;
+    overflow:hidden;
+}
+
+.circle{
+    position:absolute;
+    border-radius:50%;
+    filter:blur(80px);
+    opacity:.5;
+}
+
+.c1{
+    width:350px;
+    height:350px;
+    background:#6366f1;
+    top:-100px;
+    left:-100px;
+}
+
+.c2{
+    width:300px;
+    height:300px;
+    background:#06b6d4;
+    bottom:-100px;
+    right:-100px;
+}
+
+/* Navbar */
+
+nav{
+    width:90%;
+    margin:auto;
+    padding:25px 0;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.logo{
+    font-size:28px;
+    font-weight:800;
+    color:var(--secondary);
+}
+
+nav ul{
+    display:flex;
+    gap:25px;
+    list-style:none;
+}
+
+nav a{
+    color:var(--text);
+    text-decoration:none;
+    font-size:15px;
+    transition:.3s;
+}
+
+nav a:hover{
+    color:var(--secondary);
+}
+
+.toggle{
+    cursor:pointer;
+    border:none;
+    padding:10px 15px;
+    border-radius:30px;
+    background:var(--primary);
+    color:white;
+}
+
+/* Hero */
+
+.hero{
+    min-height:90vh;
+    width:90%;
+    margin:auto;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+}
+
+.hero-text{
+    max-width:600px;
+}
+
+.hero h1{
+    font-size:60px;
+    line-height:1.2;
+}
+
+.hero h1 span{
+    color:var(--secondary);
+}
+
+.hero p{
+    margin:20px 0;
+    color:var(--muted);
+    font-size:18px;
+}
+
+.btn{
+    display:inline-block;
+    padding:14px 30px;
+    border-radius:30px;
+    background:linear-gradient(45deg,var(--primary),var(--secondary));
+    color:white;
+    text-decoration:none;
+    margin-top:15px;
+}
+
+.profile{
+    width:300px;
+    height:300px;
+    border-radius:50%;
+    background:linear-gradient(45deg,var(--primary),var(--secondary));
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    animation:float 4s infinite ease-in-out;
+}
+
+.profile div{
+    width:260px;
+    height:260px;
+    border-radius:50%;
+    background:#0f172a;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:80px;
+}
+
+@keyframes float{
+    50%{
+        transform:translateY(-20px);
+    }
+}
+
+/* Sections */
+
+section{
+    width:90%;
+    margin:100px auto;
+}
+
+.title{
+    text-align:center;
+    font-size:40px;
+    margin-bottom:50px;
+}
+
+.title span{
+    color:var(--secondary);
+}
+
+/* About */
+
+.about{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:30px;
+}
+
+.box{
+    background:var(--card);
+    padding:30px;
+    border-radius:20px;
+    box-shadow:0 10px 30px #0004;
+}
+
+/* Skills */
+
+.skills{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+    gap:20px;
+}
+
+.skill{
+    background:var(--card);
+    padding:25px;
+    border-radius:20px;
+}
+
+.bar{
+    height:8px;
+    background:#334155;
+    margin-top:15px;
+    border-radius:20px;
+    overflow:hidden;
+}
+
+.bar span{
+    display:block;
+    height:100%;
+    background:linear-gradient(90deg,var(--primary),var(--secondary));
+}
+
+/* Projects */
+
+.projects{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+    gap:25px;
+}
+
+.project{
+    background:var(--card);
+    padding:25px;
+    border-radius:20px;
+    transition:.3s;
+}
+
+.project:hover{
+    transform:translateY(-10px);
+}
+
+.project h3{
+    margin-bottom:10px;
+}
+
+.project p{
+    color:var(--muted);
+}
+
+
+/* Contact */
+
+.contact{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:30px;
+}
+
+input,textarea{
+    width:100%;
+    padding:15px;
+    margin:10px 0;
+    border:none;
+    outline:none;
+    border-radius:10px;
+    background:var(--card);
+    color:var(--text);
+}
+
+textarea{
+    height:130px;
+}
+
+button{
+    cursor:pointer;
+}
+
+/* Footer */
+
+footer{
+    text-align:center;
+    padding:30px;
+    background:var(--card);
+}
+
+
+/* Responsive */
+
+@media(max-width:900px){
+
+.hero{
+    flex-direction:column;
+    text-align:center;
+    gap:50px;
+}
+
+.hero h1{
+    font-size:42px;
+}
+
+.about,
+.contact{
+    grid-template-columns:1fr;
+}
+
+nav ul{
+    display:none;
+}
+
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="background">
+<div class="circle c1"></div>
+<div class="circle c2"></div>
+</div>
+
+
+<nav>
+
+<div class="logo">Pramod</div>
+
+<ul>
+<li><a href="#about">About</a></li>
+<li><a href="#skills">Skills</a></li>
+<li><a href="#projects">Projects</a></li>
+<li><a href="#contact">Contact</a></li>
+</ul>
+
+<button class="toggle" onclick="theme()">☀ / ☾</button>
+
+</nav>
+
+
+<div class="hero">
+
+<div class="hero-text">
+
+<h1>
+Hi, I'm <span>Pramod Sapkota</span><br>
+Creative Developer
+</h1>
+
+<p>
+I build modern websites, applications and digital experiences
+with clean design and powerful technology.
+</p>
+
+<a class="btn" href="#projects">
+View My Work
+</a>
+
+</div>
+
+
+<div class="profile">
+<div>
+👨‍💻
+</div>
+</div>
+
+</div>
+
+
+<section id="about">
+
+<h2 class="title">
+About <span>Me</span>
+</h2>
+
+<div class="about">
+
+<div class="box">
+<h3>Who I am</h3>
+<p>
+I'm a passionate developer focused on creating beautiful,
+fast and user-friendly digital products.
+</p>
+</div>
+
+
+<div class="box">
+<h3>My Goal</h3>
+<p>
+Turning ideas into powerful websites and experiences
+that people love to use.
+</p>
+</div>
+
+</div>
+
+</section>
+<section id="skills">
+
+<h2 class="title">
+My <span>Skills</span>
+</h2>
+
+<div class="skills">
+
+<div class="skill">
+<h3>HTML</h3>
+<p>Frontend Structure</p>
+<div class="bar"><span style="width:95%"></span></div>
+</div>
+
+<div class="skill">
+<h3>CSS</h3>
+<p>Design & Animation</p>
+<div class="bar"><span style="width:90%"></span></div>
+</div>
+
+<div class="skill">
+<h3>JavaScript</h3>
+<p>Interactive Apps</p>
+<div class="bar"><span style="width:85%"></span></div>
+</div>
+
+<div class="skill">
+<h3>UI/UX</h3>
+<p>Modern Interfaces</p>
+<div class="bar"><span style="width:80%"></span></div>
+</div>
+
+</div>
+
+</section>
+
+
+
+<section id="projects">
+
+<h2 class="title">
+My <span>Projects</span>
+</h2>
+
+
+<div class="projects">
+
+
+<div class="project">
+
+<h3>Portfolio Website</h3>
+
+<p>
+A modern responsive portfolio website with animations,
+dark mode and clean UI.
+</p>
+
+<br>
+
+<a class="btn" href="#">
+Demo
+</a>
+
+</div>
+
+
+
+<div class="project">
+
+<h3>E-Commerce App</h3>
+
+<p>
+A shopping platform with product pages,
+cart system and smooth user experience.
+</p>
+
+<br>
+
+<a class="btn" href="#">
+Demo
+</a>
+
+</div>
+
+
+
+<div class="project">
+
+<h3>Dashboard UI</h3>
+
+<p>
+A professional analytics dashboard design
+with charts and responsive layout.
+</p>
+
+<br>
+
+<a class="btn" href="#">
+Demo 
+</a>
+
+</div>
+
+
+</div>
+
+
+</section>
+
+
+
+
+<section id="contact">
+
+<h2 class="title">
+Contact <span>Me</span>
+</h2>
+
+
+<div class="contact">
+
+
+<div class="box">
+
+<h3>Let's Work Together</h3>
+
+<p>
+Have a project idea? Send me a message.
+</p>
+
+<br>
+
+<p>
+📧 origincircle5@gmail.com</p>
+
+<p>
+📍 Kathmandu, Nepal
+</p>
+
+
+</div>
+
+
+
+<div class="box">
+
+
+<form onsubmit="sendMessage(event)">
+
+<input 
+type="text" 
+id="name"
+placeholder="Your Name"
+required>
+
+
+<input 
+type="email"
+id="email"
+placeholder="Your Email"
+required>
+
+
+<textarea 
+id="message"
+placeholder="Your Message"
+required></textarea>
+
+
+<button class="btn">
+Send Message
+</button>
+
+<br>
+<a class="btn" href="page0001.html">
+view another site in progress
+</a>
+
+</form>
+
+
+</div>
+
+
+</div>
+
+
+</section>
+
+
+
+<footer>
+
+<p>
+© 2026 Alex. All Rights Reserved.
+</p>
+
+</footer>
+
+
+
+<script>
+
+
+// Dark / Light Mode
+
+function theme(){
+
+document.body.classList.toggle("light");
+
+}
+
+
+// Contact Form
+
+function sendMessage(e){
+
+e.preventDefault();
+
+
+let name=document.getElementById("name").value;
+
+alert(
+"Thanks "+name+"! Your message has been received."
+);
+
+
+document.querySelector("form").reset();
+
+}
+
+
+
+// Scroll Animation
+
+const boxes=document.querySelectorAll(
+".box,.skill,.project"
+);
+
+
+function reveal(){
+
+boxes.forEach(box=>{
+
+let top=
+box.getBoundingClientRect().top;
+
+
+if(top < window.innerHeight-80){
+
+box.style.opacity="1";
+
+box.style.transform="translateY(0)";
+
+}
+
+});
+
+}
+
+
+boxes.forEach(box=>{
+
+box.style.opacity="0";
+
+box.style.transform="translateY(40px)";
+
+box.style.transition="0.7s";
+
+});
+
+
+window.addEventListener(
+"scroll",
+reveal
+);
+
+
+reveal();
+
+
+
+</script>
+
+
+</body>
+
+</html>
