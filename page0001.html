@@ -1,28 +1,456 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>second page </title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign In / Register — Pramod Sapkota</title>
+<meta name="description" content="Login and registration for sapkotap.com.np">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0b0f14;
+    --surface:#121821;
+    --surface-2:#161d27;
+    --border:#20293480;
+    --border-solid:#232d3a;
+    --text:#e8edf2;
+    --muted:#8a97a6;
+    --cyan:#22d3ee;
+    --violet:#8b5cf6;
+    --danger:#f87171;
+    --good:#34d399;
+    --radius:14px;
+    --shadow: 0 20px 60px -20px rgba(0,0,0,0.6);
+  }
+  [data-theme="light"]{
+    --bg:#f3f5f8;
+    --surface:#ffffff;
+    --surface-2:#eef1f5;
+    --border:#dbe1e8c0;
+    --border-solid:#dde3ea;
+    --text:#131a22;
+    --muted:#5b6572;
+    --shadow: 0 20px 60px -20px rgba(20,30,45,0.18);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    transition:background .35s ease, color .35s ease;
+    overflow-x:hidden;
+  }
+  a{color:inherit;}
+
+  .top{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:20px clamp(16px,5vw,48px);
+  }
+  .brand{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700; font-size:1.05rem; letter-spacing:.01em;
+    text-decoration:none; color:var(--text);
+    display:flex; align-items:center; gap:8px;
+  }
+  .brand .dot{width:8px;height:8px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px var(--cyan);}
+  .backlink{
+    font-size:.85rem; color:var(--muted); text-decoration:none;
+    font-family:'JetBrains Mono',monospace;
+    border:1px solid var(--border-solid); padding:8px 14px; border-radius:999px;
+    transition:border-color .2s, color .2s;
+  }
+  .backlink:hover{color:var(--text); border-color:var(--cyan);}
+  .themeToggle{
+    background:var(--surface-2); border:1px solid var(--border-solid);
+    width:38px;height:38px;border-radius:50%; cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    font-size:1rem; margin-left:10px; color:var(--text);
+  }
+  .topRight{display:flex; align-items:center;}
+
+  .wrap{
+    display:grid;
+    grid-template-columns: 1.1fr 1fr;
+    min-height:calc(100vh - 78px);
+  }
+  @media (max-width: 900px){
+    .wrap{grid-template-columns:1fr;}
+    .panel-left{display:none;}
+  }
+
+  /* LEFT: terminal panel */
+  .panel-left{
+    position:relative;
+    padding:clamp(28px,5vw,64px);
+    display:flex; flex-direction:column; justify-content:center;
+    background:
+      radial-gradient(circle at 20% 20%, rgba(139,92,246,0.12), transparent 45%),
+      radial-gradient(circle at 80% 70%, rgba(34,211,238,0.10), transparent 45%);
+    border-right:1px solid var(--border-solid);
+  }
+  .term{
+    background:var(--surface);
+    border:1px solid var(--border-solid);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    max-width:520px;
+    overflow:hidden;
+  }
+  .term-bar{
+    display:flex; gap:6px; padding:12px 14px;
+    border-bottom:1px solid var(--border-solid);
+    background:var(--surface-2);
+  }
+  .term-dot{width:10px;height:10px;border-radius:50%;}
+  .term-dot.r{background:#ff5f57;} .term-dot.y{background:#febc2e;} .term-dot.g{background:#28c840;}
+  .term-body{
+    font-family:'JetBrains Mono',monospace;
+    font-size:.88rem; line-height:1.9;
+    padding:22px 24px 26px;
+    min-height:210px;
+    color:var(--muted);
+  }
+  .term-body .prompt{color:var(--cyan);}
+  .term-body .out{color:var(--text);}
+  .term-body .accent{color:var(--violet);}
+  .cursor{
+    display:inline-block; width:8px; height:1.1em; background:var(--cyan);
+    vertical-align:text-bottom; margin-left:2px;
+    animation:blink 1s steps(1) infinite;
+  }
+  @keyframes blink{50%{opacity:0;}}
+  .type-line{opacity:0; animation:reveal .4s forwards;}
+  .headline{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:clamp(1.4rem,2.4vw,1.9rem);
+    font-weight:600; margin:26px 0 8px; max-width:480px;
+  }
+  .sub{color:var(--muted); max-width:440px; font-size:.95rem; line-height:1.6;}
+
+  @keyframes reveal{to{opacity:1;}}
+
+  /* RIGHT: auth card */
+  .panel-right{
+    display:flex; align-items:center; justify-content:center;
+    padding:clamp(20px,5vw,48px);
+  }
+  .card{
+    width:100%; max-width:420px;
+    background:var(--surface);
+    border:1px solid var(--border-solid);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:clamp(24px,4vw,34px);
+  }
+  .tabs{
+    display:flex; background:var(--surface-2); border-radius:999px;
+    padding:4px; margin-bottom:26px; border:1px solid var(--border-solid);
+  }
+  .tab{
+    flex:1; text-align:center; padding:9px 0; border-radius:999px;
+    font-size:.88rem; font-weight:600; cursor:pointer; color:var(--muted);
+    font-family:'Space Grotesk',sans-serif;
+    transition:background .2s, color .2s;
+    user-select:none;
+  }
+  .tab.active{ background:var(--bg); color:var(--text); }
+  [data-theme="light"] .tab.active{ background:#fff; box-shadow:0 1px 4px rgba(0,0,0,.08);}
+
+  .form-title{font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:1.3rem; margin:0 0 4px;}
+  .form-hint{color:var(--muted); font-size:.85rem; margin:0 0 22px;}
+
+  .field{margin-bottom:16px;}
+  .field label{
+    display:block; font-family:'JetBrains Mono',monospace; font-size:.72rem;
+    letter-spacing:.04em; text-transform:uppercase; color:var(--muted); margin-bottom:7px;
+  }
+  .field input{
+    width:100%; padding:11px 13px; border-radius:9px;
+    background:var(--surface-2); border:1px solid var(--border-solid);
+    color:var(--text); font-family:'Inter',sans-serif; font-size:.94rem;
+    outline:none; transition:border-color .18s, box-shadow .18s;
+  }
+  .field input:focus{
+    border-color:var(--cyan);
+    box-shadow:0 0 0 3px rgba(34,211,238,0.18);
+  }
+  .field .err{color:var(--danger); font-size:.78rem; margin-top:6px; display:none; font-family:'JetBrains Mono',monospace;}
+  .field.invalid input{border-color:var(--danger);}
+  .field.invalid .err{display:block;}
+
+  .row-between{display:flex; align-items:center; justify-content:space-between; margin:2px 0 20px; font-size:.85rem; color:var(--muted);}
+  .row-between label{display:flex; align-items:center; gap:7px; cursor:pointer;}
+  .row-between a{color:var(--cyan); text-decoration:none; font-weight:500;}
+  .row-between a:hover{text-decoration:underline;}
+
+  .btn{
+    width:100%; padding:12px 0; border:none; border-radius:9px; cursor:pointer;
+    font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:.95rem;
+    background:linear-gradient(90deg,var(--cyan),var(--violet)); color:#0b0f14;
+    transition:transform .12s ease, box-shadow .2s ease;
+  }
+  .btn:hover{transform:translateY(-1px); box-shadow:0 8px 24px -8px rgba(34,211,238,0.5);}
+  .btn:active{transform:translateY(0);}
+
+  .switch-line{text-align:center; font-size:.87rem; color:var(--muted); margin-top:20px;}
+  .switch-line button{
+    background:none; border:none; color:var(--cyan); font-weight:600; cursor:pointer;
+    font-family:'Inter',sans-serif; font-size:.87rem; padding:0;
+  }
+
+  .status{
+    display:none; align-items:center; gap:8px; font-size:.85rem;
+    font-family:'JetBrains Mono',monospace; padding:11px 13px; border-radius:9px;
+    margin-bottom:18px; border:1px solid var(--border-solid);
+  }
+  .status.show{display:flex;}
+  .status.good{color:var(--good); background:rgba(52,211,153,0.08); border-color:rgba(52,211,153,0.3);}
+  .status.bad{color:var(--danger); background:rgba(248,113,113,0.08); border-color:rgba(248,113,113,0.3);}
+
+  .form{display:none;}
+  .form.active{display:block;}
+
+  footer.note{
+    text-align:center; color:var(--muted); font-size:.75rem;
+    padding:18px; font-family:'JetBrains Mono',monospace;
+  }
+</style>
 </head>
-<body>
- <p> cheking this site oly for demo page0001</p>     
- <form>
-    <label> login </label>
-    <input type="email" placeholder="gmail" required>
-    <br>
-    <input type="text" placeholder="password" required>
-    <br>
+<body data-theme="dark">
 
- </form>
- <form action="/submit-form" method="POST">
-    <label for="email">Email:</label>
-    <input type="email" id="email" name="email">
-    <button type="submit">
-        <span>Submit</span>
-    </button>
-</form>
+  <div class="top">
+    <a class="brand" href="index.html"><span class="dot"></span>Pramod</a>
+    <div class="topRight">
+      <a class="backlink" href="index.html">&larr; back to portfolio</a>
+      <button class="themeToggle" id="themeToggle" aria-label="Toggle theme">☀</button>
+    </div>
+  </div>
 
+  <div class="wrap">
+    <div class="panel-left">
+      <div class="term">
+        <div class="term-bar">
+          <span class="term-dot r"></span><span class="term-dot y"></span><span class="term-dot g"></span>
+        </div>
+        <div class="term-body" id="termBody">
+          <div class="type-line" style="animation-delay:.1s"><span class="prompt">$</span> whoami</div>
+          <div class="type-line out" style="animation-delay:.5s">Pramod Sapkota — Creative Developer</div>
+          <div class="type-line" style="animation-delay:.9s"><span class="prompt">$</span> cat status.txt</div>
+          <div class="type-line out" style="animation-delay:1.3s">Building sapkotap.com.np, one commit at a time.</div>
+          <div class="type-line" style="animation-delay:1.7s"><span class="prompt">$</span> auth --new-session</div>
+          <div class="type-line accent" style="animation-delay:2.1s">Ready for sign in<span class="cursor"></span></div>
+        </div>
+      </div>
+      <div class="headline">One account, full access to the work.</div>
+      <div class="sub">Sign in to pick up where you left off, or register to save projects, leave feedback, and follow along as new builds ship.</div>
+    </div>
+
+    <div class="panel-right">
+      <div class="card">
+        <div class="tabs">
+          <div class="tab active" id="tabLogin">Sign In</div>
+          <div class="tab" id="tabRegister">Register</div>
+        </div>
+
+        <div class="status" id="statusBox"></div>
+
+        <!-- LOGIN -->
+        <form class="form active" id="loginForm" novalidate>
+          <div class="form-title">Welcome back</div>
+          <p class="form-hint">Sign in with the email you registered with.</p>
+
+          <div class="field" id="loginEmailField">
+            <label for="loginEmail">Email</label>
+            <input type="email" id="loginEmail" autocomplete="email" placeholder="you@example.com">
+            <div class="err">Enter a valid email address.</div>
+          </div>
+          <div class="field" id="loginPassField">
+            <label for="loginPass">Password</label>
+            <input type="password" id="loginPass" autocomplete="current-password" placeholder="••••••••">
+            <div class="err">Password is required.</div>
+          </div>
+
+          <div class="row-between">
+            <label><input type="checkbox" id="rememberMe"> Remember me</label>
+            <a href="#" id="forgotLink">Forgot password?</a>
+          </div>
+
+          <button type="submit" class="btn">Sign In</button>
+          <div class="switch-line">No account yet? <button type="button" id="goRegister">Register</button></div>
+        </form>
+
+        <!-- REGISTER -->
+        <form class="form" id="registerForm" novalidate>
+          <div class="form-title">Create your account</div>
+          <p class="form-hint">Takes less than a minute.</p>
+
+          <div class="field" id="regNameField">
+            <label for="regName">Full name</label>
+            <input type="text" id="regName" autocomplete="name" placeholder="Your name">
+            <div class="err">Please enter your name.</div>
+          </div>
+          <div class="field" id="regEmailField">
+            <label for="regEmail">Email</label>
+            <input type="email" id="regEmail" autocomplete="email" placeholder="you@example.com">
+            <div class="err">Enter a valid email address.</div>
+          </div>
+          <div class="field" id="regPassField">
+            <label for="regPass">Password</label>
+            <input type="password" id="regPass" autocomplete="new-password" placeholder="At least 8 characters">
+            <div class="err">Password must be at least 8 characters.</div>
+          </div>
+          <div class="field" id="regConfirmField">
+            <label for="regConfirm">Confirm password</label>
+            <input type="password" id="regConfirm" autocomplete="new-password" placeholder="••••••••">
+            <div class="err">Passwords do not match.</div>
+          </div>
+
+          <button type="submit" class="btn">Create Account</button>
+          <div class="switch-line">Already have an account? <button type="button" id="goLogin">Sign in</button></div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <footer class="note">sapkotap.com.np — demo authentication, stored locally in this browser only</footer>
+
+<script>
+(function(){
+  // ---------- Theme ----------
+  const root = document.body;
+  const themeToggle = document.getElementById('themeToggle');
+  const saved = localStorage.getItem('sapkotap_theme');
+  if(saved){ root.setAttribute('data-theme', saved); themeToggle.textContent = saved === 'dark' ? '☀' : '☾'; }
+  themeToggle.addEventListener('click', function(){
+    const cur = root.getAttribute('data-theme');
+    const next = cur === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    themeToggle.textContent = next === 'dark' ? '☀' : '☾';
+    localStorage.setItem('sapkotap_theme', next);
+  });
+
+  // ---------- Tabs ----------
+  const tabLogin = document.getElementById('tabLogin');
+  const tabRegister = document.getElementById('tabRegister');
+  const loginForm = document.getElementById('loginForm');
+  const registerForm = document.getElementById('registerForm');
+  const statusBox = document.getElementById('statusBox');
+
+  function showLogin(){
+    tabLogin.classList.add('active'); tabRegister.classList.remove('active');
+    loginForm.classList.add('active'); registerForm.classList.remove('active');
+    hideStatus();
+  }
+  function showRegister(){
+    tabRegister.classList.add('active'); tabLogin.classList.remove('active');
+    registerForm.classList.add('active'); loginForm.classList.remove('active');
+    hideStatus();
+  }
+  tabLogin.addEventListener('click', showLogin);
+  tabRegister.addEventListener('click', showRegister);
+  document.getElementById('goRegister').addEventListener('click', showRegister);
+  document.getElementById('goLogin').addEventListener('click', showLogin);
+
+  function showStatus(msg, kind){
+    statusBox.textContent = msg;
+    statusBox.className = 'status show ' + kind;
+  }
+  function hideStatus(){ statusBox.className = 'status'; }
+
+  // ---------- Helpers ----------
+  function isEmail(v){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
+  function setInvalid(fieldEl, invalid){
+    fieldEl.classList.toggle('invalid', invalid);
+  }
+  function getUsers(){
+    try{ return JSON.parse(localStorage.getItem('sapkotap_users') || '{}'); }
+    catch(e){ return {}; }
+  }
+  function saveUsers(u){ localStorage.setItem('sapkotap_users', JSON.stringify(u)); }
+
+  // simple non-cryptographic hash, fine for a client-only demo
+  function hash(str){
+    let h = 0;
+    for(let i=0;i<str.length;i++){ h = (Math.imul(31,h) + str.charCodeAt(i))|0; }
+    return h.toString(36);
+  }
+
+  // ---------- Register ----------
+  registerForm.addEventListener('submit', function(e){
+    e.preventDefault();
+    hideStatus();
+    const name = document.getElementById('regName');
+    const email = document.getElementById('regEmail');
+    const pass = document.getElementById('regPass');
+    const confirm = document.getElementById('regConfirm');
+
+    let ok = true;
+    setInvalid(document.getElementById('regNameField'), !name.value.trim());
+    if(!name.value.trim()) ok = false;
+
+    const emailValid = isEmail(email.value.trim());
+    setInvalid(document.getElementById('regEmailField'), !emailValid);
+    if(!emailValid) ok = false;
+
+    const passValid = pass.value.length >= 8;
+    setInvalid(document.getElementById('regPassField'), !passValid);
+    if(!passValid) ok = false;
+
+    const matchValid = confirm.value === pass.value && passValid;
+    setInvalid(document.getElementById('regConfirmField'), !matchValid);
+    if(!matchValid) ok = false;
+
+    if(!ok) return;
+
+    const users = getUsers();
+    if(users[email.value.trim().toLowerCase()]){
+      showStatus('An account with this email already exists.', 'bad');
+      return;
+    }
+    users[email.value.trim().toLowerCase()] = { name: name.value.trim(), pass: hash(pass.value), joined: Date.now() };
+    saveUsers(users);
+    showStatus('Account created. You can sign in now.', 'good');
+    registerForm.reset();
+    setTimeout(showLogin, 900);
+  });
+
+  // ---------- Login ----------
+  loginForm.addEventListener('submit', function(e){
+    e.preventDefault();
+    hideStatus();
+    const email = document.getElementById('loginEmail');
+    const pass = document.getElementById('loginPass');
+
+    let ok = true;
+    const emailValid = isEmail(email.value.trim());
+    setInvalid(document.getElementById('loginEmailField'), !emailValid);
+    if(!emailValid) ok = false;
+
+    setInvalid(document.getElementById('loginPassField'), !pass.value);
+    if(!pass.value) ok = false;
+
+    if(!ok) return;
+
+    const users = getUsers();
+    const record = users[email.value.trim().toLowerCase()];
+    if(!record || record.pass !== hash(pass.value)){
+      showStatus('Email or password is incorrect.', 'bad');
+      return;
+    }
+    if(document.getElementById('rememberMe').checked){
+      localStorage.setItem('sapkotap_session', email.value.trim().toLowerCase());
+    }
+    showStatus('Signed in as ' + record.name + '.', 'good');
+  });
+
+  document.getElementById('forgotLink').addEventListener('click', function(e){
+    e.preventDefault();
+    showStatus('Password reset is a demo placeholder — wire this up to your backend.', 'bad');
+  });
+})();
+</script>
 </body>
 </html>
-
