@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Pramod Sapkota</title>
+<meta name="description" content="Admin panel for sapkotap.com.np user accounts">
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0b0f14; --surface:#121821; --surface-2:#161d27;
+    --border-solid:#232d3a; --text:#e8edf2; --muted:#8a97a6;
+    --cyan:#22d3ee; --violet:#8b5cf6; --danger:#f87171; --good:#34d399;
+    --radius:14px; --shadow:0 20px 60px -20px rgba(0,0,0,0.6);
+  }
+  [data-theme="light"]{
+    --bg:#f3f5f8; --surface:#ffffff; --surface-2:#eef1f5;
+    --border-solid:#dde3ea; --text:#131a22; --muted:#5b6572;
+    --shadow:0 20px 60px -20px rgba(20,30,45,0.18);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg); color:var(--text); font-family:'Inter',sans-serif;
+    min-height:100vh; transition:background .35s ease, color .35s ease;
+  }
+  a{color:inherit;}
+  .top{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:20px clamp(16px,5vw,48px); border-bottom:1px solid var(--border-solid);
+  }
+  .brand{
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:1.05rem;
+    text-decoration:none; color:var(--text); display:flex; align-items:center; gap:8px;
+  }
+  .brand .dot{width:8px;height:8px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px var(--cyan);}
+  .brand .tag{
+    font-family:'JetBrains Mono',monospace; font-size:.68rem; color:var(--muted);
+    border:1px solid var(--border-solid); padding:3px 8px; border-radius:999px; margin-left:6px;
+  }
+  .topRight{display:flex; align-items:center; gap:10px;}
+  .backlink{
+    font-size:.85rem; color:var(--muted); text-decoration:none;
+    font-family:'JetBrains Mono',monospace;
+    border:1px solid var(--border-solid); padding:8px 14px; border-radius:999px;
+  }
+  .backlink:hover{color:var(--text); border-color:var(--cyan);}
+  .themeToggle{
+    background:var(--surface-2); border:1px solid var(--border-solid);
+    width:38px;height:38px;border-radius:50%; cursor:pointer; color:var(--text); font-size:1rem;
+  }
+
+  /* ---------- Gate screen ---------- */
+  .gateWrap{
+    min-height:calc(100vh - 79px); display:flex; align-items:center; justify-content:center; padding:24px;
+  }
+  .gateCard{
+    width:100%; max-width:380px; background:var(--surface); border:1px solid var(--border-solid);
+    border-radius:var(--radius); box-shadow:var(--shadow); padding:30px;
+  }
+  .gateCard h1{font-family:'Space Grotesk',sans-serif; font-size:1.25rem; margin:0 0 6px;}
+  .gateCard p{color:var(--muted); font-size:.87rem; margin:0 0 20px; line-height:1.5;}
+  .field{margin-bottom:16px;}
+  .field label{
+    display:block; font-family:'JetBrains Mono',monospace; font-size:.72rem;
+    letter-spacing:.04em; text-transform:uppercase; color:var(--muted); margin-bottom:7px;
+  }
+  .field input{
+    width:100%; padding:11px 13px; border-radius:9px;
+    background:var(--surface-2); border:1px solid var(--border-solid);
+    color:var(--text); font-size:.94rem; outline:none;
+  }
+  .field input:focus{border-color:var(--cyan); box-shadow:0 0 0 3px rgba(34,211,238,0.18);}
+  .btn{
+    width:100%; padding:12px 0; border:none; border-radius:9px; cursor:pointer;
+    font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:.95rem;
+    background:linear-gradient(90deg,var(--cyan),var(--violet)); color:#0b0f14;
+  }
+  .btn:hover{filter:brightness(1.05);}
+  .btn.secondary{background:var(--surface-2); color:var(--text); border:1px solid var(--border-solid);}
+  .btn.danger{background:var(--danger); color:#1a0d0d;}
+  .gateErr{color:var(--danger); font-size:.82rem; font-family:'JetBrains Mono',monospace; margin-top:10px; display:none;}
+
+  /* ---------- Dashboard ---------- */
+  .dash{display:none; padding:clamp(18px,4vw,40px);}
+  .dashHead{
+    display:flex; align-items:flex-end; justify-content:space-between; gap:16px;
+    margin-bottom:22px; flex-wrap:wrap;
+  }
+  .dashHead h1{font-family:'Space Grotesk',sans-serif; font-size:1.5rem; margin:0 0 4px;}
+  .dashHead .sub{color:var(--muted); font-size:.87rem;}
+  .stats{display:flex; gap:12px; flex-wrap:wrap;}
+  .stat{
+    background:var(--surface); border:1px solid var(--border-solid); border-radius:12px;
+    padding:12px 18px; min-width:110px;
+  }
+  .stat .n{font-family:'Space Grotesk',sans-serif; font-size:1.4rem; font-weight:700;}
+  .stat .l{font-family:'JetBrains Mono',monospace; font-size:.7rem; color:var(--muted); text-transform:uppercase;}
+
+  .toolbar{display:flex; gap:10px; margin:20px 0; flex-wrap:wrap; align-items:center;}
+  .toolbar input[type="search"]{
+    flex:1; min-width:200px; padding:10px 14px; border-radius:9px;
+    background:var(--surface); border:1px solid var(--border-solid); color:var(--text); font-size:.9rem; outline:none;
+  }
+  .toolbar input[type="search"]:focus{border-color:var(--cyan);}
+
+  .tableWrap{
+    background:var(--surface); border:1px solid var(--border-solid); border-radius:var(--radius);
+    overflow:hidden; box-shadow:var(--shadow);
+  }
+  table{width:100%; border-collapse:collapse;}
+  th, td{padding:13px 16px; text-align:left; font-size:.88rem; border-bottom:1px solid var(--border-solid);}
+  th{
+    font-family:'JetBrains Mono',monospace; font-size:.7rem; text-transform:uppercase;
+    color:var(--muted); background:var(--surface-2); font-weight:500;
+  }
+  tr:last-child td{border-bottom:none;}
+  tr:hover td{background:var(--surface-2);}
+  .avatar{
+    width:28px; height:28px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center;
+    background:linear-gradient(135deg,var(--cyan),var(--violet)); color:#0b0f14; font-weight:700; font-size:.75rem;
+    margin-right:9px; vertical-align:middle;
+  }
+  .rowActions{display:flex; gap:8px;}
+  .iconBtn{
+    background:var(--surface-2); border:1px solid var(--border-solid); color:var(--text);
+    padding:6px 12px; border-radius:7px; cursor:pointer; font-size:.78rem; font-family:'Inter',sans-serif;
+  }
+  .iconBtn:hover{border-color:var(--cyan);}
+  .iconBtn.del:hover{border-color:var(--danger); color:var(--danger);}
+  .empty{padding:40px 20px; text-align:center; color:var(--muted); font-family:'JetBrains Mono',monospace; font-size:.85rem;}
+
+  /* ---------- Edit modal ---------- */
+  .overlay{
+    display:none; position:fixed; inset:0; background:rgba(5,8,12,0.6);
+    align-items:center; justify-content:center; padding:20px; z-index:50;
+  }
+  .overlay.show{display:flex;}
+  .modal{
+    width:100%; max-width:420px; background:var(--surface); border:1px solid var(--border-solid);
+    border-radius:var(--radius); box-shadow:var(--shadow); padding:26px;
+  }
+  .modal h2{font-family:'Space Grotesk',sans-serif; font-size:1.15rem; margin:0 0 18px;}
+  .modalActions{display:flex; gap:10px; margin-top:6px;}
+
+  .toast{
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+    background:var(--surface); border:1px solid var(--border-solid); color:var(--text);
+    padding:12px 20px; border-radius:9px; font-size:.85rem; box-shadow:var(--shadow);
+    font-family:'JetBrains Mono',monospace; opacity:0; pointer-events:none; transition:opacity .25s ease, transform .25s ease;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(-6px);}
+  .toast.good{border-color:var(--good); color:var(--good);}
+  .toast.bad{border-color:var(--danger); color:var(--danger);}
+
+  footer.note{
+    text-align:center; color:var(--muted); font-size:.75rem; padding:24px;
+    font-family:'JetBrains Mono',monospace;
+  }
+</style>
+</head>
+<body data-theme="dark">
+
+  <div class="top">
+    <a class="brand" href="index.html"><span class="dot"></span>Pramod<span class="tag">admin</span></a>
+    <div class="topRight">
+      <a class="backlink" href="index.html">&larr; portfolio</a>
+      <button class="themeToggle" id="themeToggle" aria-label="Toggle theme">☀</button>
+    </div>
+  </div>
+
+  <!-- GATE -->
+  <div class="gateWrap" id="gateWrap">
+    <div class="gateCard">
+      <h1>Admin access</h1>
+      <p>Enter the admin passphrase to manage registered accounts. This checks locally in your browser only — set your own passphrase in the script before publishing.</p>
+      <div class="field">
+        <label for="gatePass">Passphrase</label>
+        <input type="password" id="gatePass" placeholder="••••••••" autocomplete="off">
+      </div>
+      <button class="btn" id="gateBtn">Enter</button>
+      <div class="gateErr" id="gateErr">Incorrect passphrase.</div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="dash" id="dash">
+    <div class="dashHead">
+      <div>
+        <h1>Registered users</h1>
+        <div class="sub">Accounts created through page001.html, stored in this browser's localStorage.</div>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="n" id="statTotal">0</div><div class="l">Total</div></div>
+        <div class="stat"><div class="n" id="statToday">0</div><div class="l">Added Today</div></div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <input type="search" id="search" placeholder="Search by name or email…">
+      <button class="iconBtn" id="exportBtn">Export JSON</button>
+      <button class="iconBtn del" id="wipeBtn">Delete All</button>
+    </div>
+
+    <div class="tableWrap">
+      <table>
+        <thead>
+          <tr><th>User</th><th>Email</th><th>Joined</th><th style="text-align:right;">Actions</th></tr>
+        </thead>
+        <tbody id="userRows"></tbody>
+      </table>
+      <div class="empty" id="emptyState" style="display:none;">No users yet — register one from page001.html to see it here.</div>
+    </div>
+  </div>
+
+  <footer class="note">sapkotap.com.np — local admin demo, no server involved</footer>
+
+  <!-- EDIT MODAL -->
+  <div class="overlay" id="editOverlay">
+    <div class="modal">
+      <h2>Edit user</h2>
+      <div class="field">
+        <label for="editName">Full name</label>
+        <input type="text" id="editName">
+      </div>
+      <div class="field">
+        <label for="editEmail">Email</label>
+        <input type="email" id="editEmail">
+      </div>
+      <div class="field">
+        <label for="editPass">New password <span style="text-transform:none;opacity:.7;">(leave blank to keep current)</span></label>
+        <input type="password" id="editPass" placeholder="At least 8 characters">
+      </div>
+      <div class="modalActions">
+        <button class="btn secondary" id="cancelEdit">Cancel</button>
+        <button class="btn" id="saveEdit">Save changes</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  // ====== CHANGE THIS BEFORE PUBLISHING ======
+  const ADMIN_PASS = "testpass123";
+  // ============================================
+
+  const body = document.body;
+  const themeToggle = document.getElementById('themeToggle');
+  const saved = localStorage.getItem('sapkotap_theme');
+  if(saved){ body.setAttribute('data-theme', saved); themeToggle.textContent = saved === 'dark' ? '☀' : '☾'; }
+  themeToggle.addEventListener('click', function(){
+    const cur = body.getAttribute('data-theme');
+    const next = cur === 'dark' ? 'light' : 'dark';
+    body.setAttribute('data-theme', next);
+    themeToggle.textContent = next === 'dark' ? '☀' : '☾';
+    localStorage.setItem('sapkotap_theme', next);
+  });
+
+  function hash(str){
+    let h = 0;
+    for(let i=0;i<str.length;i++){ h = (Math.imul(31,h) + str.charCodeAt(i))|0; }
+    return h.toString(36);
+  }
+  function getUsers(){
+    try{ return JSON.parse(localStorage.getItem('sapkotap_users') || '{}'); }
+    catch(e){ return {}; }
+  }
+  function saveUsers(u){ localStorage.setItem('sapkotap_users', JSON.stringify(u)); }
+
+  function toast(msg, kind){
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show ' + (kind || '');
+    setTimeout(function(){ t.className = 'toast'; }, 2200);
+  }
+
+  // ---------- Gate ----------
+  const gateWrap = document.getElementById('gateWrap');
+  const dash = document.getElementById('dash');
+  const gatePass = document.getElementById('gatePass');
+  const gateErr = document.getElementById('gateErr');
+
+  function unlock(){
+    gateWrap.style.display = 'none';
+    dash.style.display = 'block';
+    sessionStorage.setItem('sapkotap_admin_ok', '1');
+    render();
+  }
+  if(sessionStorage.getItem('sapkotap_admin_ok') === '1'){ unlock(); }
+
+  document.getElementById('gateBtn').addEventListener('click', function(){
+    if(gatePass.value === ADMIN_PASS){ unlock(); }
+    else{ gateErr.style.display = 'block'; }
+  });
+  gatePass.addEventListener('keydown', function(e){
+    if(e.key === 'Enter') document.getElementById('gateBtn').click();
+  });
+
+  // ---------- Render table ----------
+  let editingKey = null;
+
+  function initials(name){
+    return (name || '?').trim().split(/\s+/).slice(0,2).map(function(w){return w[0]||'';}).join('').toUpperCase();
+  }
+
+  function render(){
+    const users = getUsers();
+    const q = (document.getElementById('search').value || '').toLowerCase();
+    const rows = document.getElementById('userRows');
+    const emptyState = document.getElementById('emptyState');
+    rows.innerHTML = '';
+
+    const entries = Object.keys(users).map(function(email){
+      return Object.assign({ email: email }, users[email]);
+    }).filter(function(u){
+      return !q || u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
+    }).sort(function(a,b){ return (b.joined||0) - (a.joined||0); });
+
+    document.getElementById('statTotal').textContent = Object.keys(users).length;
+    const todayStr = new Date().toDateString();
+    const todayCount = Object.values(users).filter(function(u){
+      return u.joined && new Date(u.joined).toDateString() === todayStr;
+    }).length;
+    document.getElementById('statToday').textContent = todayCount;
+
+    if(entries.length === 0){
+      emptyState.style.display = 'block';
+      return;
+    }
+    emptyState.style.display = 'none';
+
+    entries.forEach(function(u){
+      const tr = document.createElement('tr');
+      const joined = u.joined ? new Date(u.joined).toLocaleDateString(undefined, {year:'numeric', month:'short', day:'numeric'}) : '—';
+      tr.innerHTML =
+        '<td><span class="avatar">' + initials(u.name) + '</span>' + escapeHtml(u.name || '(no name)') + '</td>' +
+        '<td>' + escapeHtml(u.email) + '</td>' +
+        '<td>' + joined + '</td>' +
+        '<td><div class="rowActions" style="justify-content:flex-end;">' +
+          '<button class="iconBtn" data-edit="' + encodeURIComponent(u.email) + '">Edit</button>' +
+          '<button class="iconBtn del" data-del="' + encodeURIComponent(u.email) + '">Delete</button>' +
+        '</div></td>';
+      rows.appendChild(tr);
+    });
+
+    rows.querySelectorAll('[data-edit]').forEach(function(btn){
+      btn.addEventListener('click', function(){ openEdit(decodeURIComponent(btn.getAttribute('data-edit'))); });
+    });
+    rows.querySelectorAll('[data-del]').forEach(function(btn){
+      btn.addEventListener('click', function(){ deleteUser(decodeURIComponent(btn.getAttribute('data-del'))); });
+    });
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+    });
+  }
+
+  document.getElementById('search').addEventListener('input', render);
+
+  // ---------- Edit ----------
+  const editOverlay = document.getElementById('editOverlay');
+
+  function openEdit(email){
+    const users = getUsers();
+    const u = users[email];
+    if(!u) return;
+    editingKey = email;
+    document.getElementById('editName').value = u.name || '';
+    document.getElementById('editEmail').value = email;
+    document.getElementById('editPass').value = '';
+    editOverlay.classList.add('show');
+  }
+  document.getElementById('cancelEdit').addEventListener('click', function(){
+    editOverlay.classList.remove('show'); editingKey = null;
+  });
+  editOverlay.addEventListener('click', function(e){
+    if(e.target === editOverlay){ editOverlay.classList.remove('show'); editingKey = null; }
+  });
+
+  document.getElementById('saveEdit').addEventListener('click', function(){
+    if(!editingKey) return;
+    const users = getUsers();
+    const existing = users[editingKey];
+    if(!existing) return;
+
+    const newName = document.getElementById('editName').value.trim();
+    const newEmail = document.getElementById('editEmail').value.trim().toLowerCase();
+    const newPass = document.getElementById('editPass').value;
+
+    if(!newName || !newEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)){
+      toast('Enter a valid name and email.', 'bad');
+      return;
+    }
+    if(newPass && newPass.length < 8){
+      toast('New password must be at least 8 characters.', 'bad');
+      return;
+    }
+    if(newEmail !== editingKey && users[newEmail]){
+      toast('Another account already uses that email.', 'bad');
+      return;
+    }
+
+    const updated = {
+      name: newName,
+      pass: newPass ? hash(newPass) : existing.pass,
+      joined: existing.joined
+    };
+
+    delete users[editingKey];
+    users[newEmail] = updated;
+    saveUsers(users);
+
+    editOverlay.classList.remove('show');
+    editingKey = null;
+    toast('User updated.', 'good');
+    render();
+  });
+
+  // ---------- Delete ----------
+  function deleteUser(email){
+    if(!confirm('Delete the account for ' + email + '? This cannot be undone.')) return;
+    const users = getUsers();
+    delete users[email];
+    saveUsers(users);
+    toast('User deleted.', 'good');
+    render();
+  }
+
+  document.getElementById('wipeBtn').addEventListener('click', function(){
+    if(!confirm('Delete ALL registered users from this browser? This cannot be undone.')) return;
+    saveUsers({});
+    toast('All users deleted.', 'good');
+    render();
+  });
+
+  document.getElementById('exportBtn').addEventListener('click', function(){
+    const users = getUsers();
+    const blob = new Blob([JSON.stringify(users, null, 2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'sapkotap-users.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+})();
+</script>
+</body>
+</html>
