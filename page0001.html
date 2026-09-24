@@ -439,10 +439,93 @@
       <button class="backlink" style="cursor:pointer;" id="btnLogout">Sign Out</button>
     </div>
 
-    <!-- MEMBER FILES -->
-    <div style="margin-top:24px;">
+    <!-- DASHBOARD NAVIGATION TABS -->
+    <div style="display:flex; gap:10px; margin-top:20px; border-bottom:1px solid var(--border-solid); padding-bottom:12px; overflow-x:auto;">
+      <button type="button" class="btn-subtle active" id="tabBtnFiles" style="padding:6px 14px; font-size:0.85rem; cursor:pointer; background:var(--surface-2); border:1px solid var(--border-solid); color:var(--text); border-radius:6px;">My Files</button>
+      <button type="button" class="btn-subtle" id="tabBtnChat" style="padding:6px 14px; font-size:0.85rem; cursor:pointer; background:transparent; border:1px solid var(--border-solid); color:var(--muted); border-radius:6px;">Direct Chat</button>
+      <button type="button" class="btn-subtle" id="tabBtnSupport" style="padding:6px 14px; font-size:0.85rem; cursor:pointer; background:transparent; border:1px solid var(--border-solid); color:var(--muted); border-radius:6px;">Message Admin</button>
+      <button type="button" class="btn-subtle" id="tabBtnAdmin" style="display:none; padding:6px 14px; font-size:0.85rem; cursor:pointer; background:transparent; border:1px solid var(--violet); color:var(--violet); border-radius:6px;">Admin Console</button>
+    </div>
+
+    <!-- TAB 1: MEMBER FILES -->
+    <div id="tabContentFiles" style="margin-top:20px;">
       <h3 style="font-family:'Space Grotesk',sans-serif; color:var(--cyan); margin-bottom:8px;">Your Private Files</h3>
       <div id="memberFileList" style="font-size:0.85rem; color:var(--muted);">No files assigned to your account.</div>
+    </div>
+
+    <!-- TAB 2: USER-TO-USER CHAT (WITH INVITATION APPROVAL) -->
+    <div id="tabContentChat" style="display:none; margin-top:20px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3 style="font-family:'Space Grotesk',sans-serif; color:var(--cyan); margin:0;">User-to-User Chat</h3>
+        <span style="font-size:0.75rem; color:var(--muted);">Requires mutual invitation acceptance</span>
+      </div>
+
+      <!-- Send Invite -->
+      <div style="background:var(--surface-2); border:1px solid var(--border-solid); border-radius:8px; padding:12px; margin-bottom:16px;">
+        <div style="font-size:0.85rem; font-weight:600; margin-bottom:8px; color:var(--text);">Send Chat Invitation to Site User</div>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="chatInviteUsername" class="field" style="margin:0;" placeholder="Enter target username (e.g. john)">
+          <button type="button" class="btn" id="btnSendChatInvite" style="width:auto; padding:0 18px; white-space:nowrap;">Invite</button>
+        </div>
+        <div id="chatInviteNotice" style="font-size:0.8rem; margin-top:6px;"></div>
+      </div>
+
+      <!-- Pending Invitations -->
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px;">
+        <div style="background:var(--surface-2); border:1px solid var(--border-solid); border-radius:8px; padding:12px;">
+          <div style="font-size:0.8rem; font-weight:600; color:var(--cyan); margin-bottom:8px;">Incoming Requests</div>
+          <div id="incomingInvitesList" style="font-size:0.8rem; color:var(--muted);">No pending incoming requests.</div>
+        </div>
+        <div style="background:var(--surface-2); border:1px solid var(--border-solid); border-radius:8px; padding:12px;">
+          <div style="font-size:0.8rem; font-weight:600; color:var(--muted); margin-bottom:8px;">Sent Requests (Waiting)</div>
+          <div id="outgoingInvitesList" style="font-size:0.8rem; color:var(--muted);">No outgoing requests.</div>
+        </div>
+      </div>
+
+      <!-- Chat Workspace: Left contacts, Right active chat -->
+      <div style="display:grid; grid-template-columns:200px 1fr; gap:12px; background:var(--surface-2); border:1px solid var(--border-solid); border-radius:8px; min-height:340px; overflow:hidden;">
+        <!-- Accepted Contacts -->
+        <div style="border-right:1px solid var(--border-solid); padding:10px; display:flex; flex-direction:column;">
+          <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--muted); margin-bottom:8px;">Accepted Friends</div>
+          <div id="acceptedContactsList" style="flex:1; overflow-y:auto; font-size:0.85rem;">
+            <div style="color:var(--muted); font-size:0.8rem;">No accepted contacts yet.</div>
+          </div>
+        </div>
+
+        <!-- Chat Area -->
+        <div id="chatActiveArea" style="display:flex; flex-direction:column; padding:10px;">
+          <div id="chatHeader" style="border-bottom:1px solid var(--border-solid); padding-bottom:6px; margin-bottom:8px; font-weight:600; font-size:0.85rem; color:var(--cyan);">
+            Select an accepted user to chat
+          </div>
+          <div id="chatMessagesBox" style="flex:1; overflow-y:auto; max-height:220px; display:flex; flex-direction:column; gap:6px; padding:6px 0; font-size:0.85rem;">
+            <div style="color:var(--muted); font-size:0.8rem; text-align:center; margin-top:40px;">No conversation selected.</div>
+          </div>
+          <div id="chatInputBar" style="display:none; gap:8px; margin-top:8px;">
+            <input type="text" id="chatMessageInput" class="field" style="margin:0;" placeholder="Type your message...">
+            <button type="button" class="btn" id="btnSendChatMessage" style="width:auto; padding:0 16px;">Send</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: MESSAGE ADMIN / SUPPORT -->
+    <div id="tabContentSupport" style="display:none; margin-top:20px;">
+      <h3 style="font-family:'Space Grotesk',sans-serif; color:var(--cyan); margin-bottom:6px;">Contact Admin & Support</h3>
+      <p style="font-size:0.8rem; color:var(--muted); margin-bottom:14px;">Have an issue, account question, or bug to report? Send a direct private message to the administration team.</p>
+
+      <form id="supportForm" style="background:var(--surface-2); border:1px solid var(--border-solid); border-radius:8px; padding:14px; margin-bottom:16px;">
+        <label style="font-size:0.75rem; color:var(--muted); text-transform:uppercase;">Subject</label>
+        <input type="text" id="supportSubject" class="field" style="margin-top:4px; margin-bottom:10px;" placeholder="Brief summary of your problem" required>
+
+        <label style="font-size:0.75rem; color:var(--muted); text-transform:uppercase;">Message</label>
+        <textarea id="supportMessage" class="field" style="margin-top:4px; margin-bottom:12px; min-height:80px; resize:vertical;" placeholder="Describe what went wrong or what you need help with..." required></textarea>
+
+        <button type="submit" class="btn" id="btnSendSupport" style="width:auto; padding:8px 24px;">Send to Admin</button>
+        <span id="supportNotice" style="font-size:0.8rem; margin-left:12px;"></span>
+      </form>
+
+      <h4 style="font-size:0.85rem; margin-bottom:8px;">Your Past Inquiries</h4>
+      <div id="userSupportTicketsList" style="font-size:0.8rem; color:var(--muted);">No messages submitted yet.</div>
     </div>
 
     <!-- ADMIN PANEL -->
@@ -468,6 +551,21 @@
           </thead>
           <tbody id="adminUsersTbody"></tbody>
         </table>
+      </div>
+
+      <!-- User Support Inquiries -->
+      <div id="adminSupportSection" style="margin-top:24px;">
+        <h4 style="margin-bottom:8px;">User Support Inquiries & Messages</h4>
+        <div style="width:100%; overflow-x:auto;">
+          <table>
+            <thead>
+              <tr><th>Date</th><th>User Email</th><th>Subject</th><th>Message</th><th>Status</th><th>Action</th></tr>
+            </thead>
+            <tbody id="adminSupportTbody">
+              <tr><td colspan="6" style="text-align:center; color:var(--muted);">No support inquiries found.</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <!-- Security Threat & Activity Log (now with IP + location) -->
@@ -725,7 +823,7 @@
     }
 
     await logAudit("REGISTRATION_SUCCESS", { username: uname }, email);
-    showStatus("Account created! A confirmation email was sent. You MUST click the link in your email (check spam folder too) before you can sign in.", "good");
+    showStatus("Account created! Please check your email inbox (and spam/junk folder) for an activation email from noreply@sapkotap.com.np before signing in.", "good");
     registerForm.reset();
     setTimeout(showLogin, 2500);
   });
@@ -990,7 +1088,12 @@
 
     loadUserFiles(user.id);
 
+    
     if(isAdmin){
+      const tabAdm = document.getElementById('tabBtnAdmin');
+      if(tabAdm) tabAdm.style.display = 'block';
+      loadAdminSupportInquiries();
+
       document.getElementById('adminArea').style.display = 'block';
       loadAdminDashboard(isMainAdmin);
     }
@@ -1212,6 +1315,425 @@
       resetIdleTimer();
     }
   });
+
+  /* =========================================================
+     DASHBOARD TABS & FEATURES (CHAT, SUPPORT, USER FILES)
+     ========================================================= */
+  let activeChatContactId = null;
+  let activeChatContactName = "";
+  let chatPollInterval = null;
+
+  function switchDashboardTab(tabName){
+    const tabs = ['Files', 'Chat', 'Support', 'Admin'];
+    tabs.forEach(t => {
+      const btn = document.getElementById('tabBtn' + t);
+      const content = document.getElementById(t === 'Admin' ? 'adminArea' : 'tabContent' + t);
+      if(btn && content){
+        if(t.toLowerCase() === tabName.toLowerCase()){
+          btn.style.background = 'var(--surface-2)';
+          btn.style.color = (t === 'Admin') ? 'var(--violet)' : 'var(--text)';
+          content.style.display = 'block';
+        } else {
+          btn.style.background = 'transparent';
+          btn.style.color = (t === 'Admin') ? 'var(--violet)' : 'var(--muted)';
+          content.style.display = 'none';
+        }
+      }
+    });
+
+    if(tabName.toLowerCase() === 'chat'){
+      loadChatSystem();
+      if(!chatPollInterval){
+        chatPollInterval = setInterval(() => {
+          if(activeChatContactId) loadActiveConversation(activeChatContactId, activeChatContactName, true);
+          loadChatInvitations();
+        }, 4000);
+      }
+    } else {
+      if(chatPollInterval){
+        clearInterval(chatPollInterval);
+        chatPollInterval = null;
+      }
+    }
+
+    if(tabName.toLowerCase() === 'support'){
+      loadUserSupportTickets();
+    }
+  }
+
+  document.getElementById('tabBtnFiles')?.addEventListener('click', () => switchDashboardTab('Files'));
+  document.getElementById('tabBtnChat')?.addEventListener('click', () => switchDashboardTab('Chat'));
+  document.getElementById('tabBtnSupport')?.addEventListener('click', () => switchDashboardTab('Support'));
+  document.getElementById('tabBtnAdmin')?.addEventListener('click', () => switchDashboardTab('Admin'));
+
+  /* --- SUPPORT INQUIRIES (USER & ADMIN) --- */
+  const supportForm = document.getElementById('supportForm');
+  if(supportForm){
+    supportForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if(!supabase || !sessionUser) return;
+      const subj = document.getElementById('supportSubject').value.trim();
+      const msg = document.getElementById('supportMessage').value.trim();
+      const notice = document.getElementById('supportNotice');
+      if(!subj || !msg) return;
+
+      notice.textContent = "Sending...";
+      notice.style.color = "var(--muted)";
+
+      try {
+        const { error } = await supabase.from('support_messages').insert({
+          user_id: sessionUser.id,
+          user_email: sessionUser.email,
+          subject: subj,
+          message: msg,
+          status: 'open'
+        });
+
+        if(error) throw error;
+        notice.textContent = "Message sent to admin successfully!";
+        notice.style.color = "var(--good)";
+        supportForm.reset();
+        loadUserSupportTickets();
+      } catch(err){
+        notice.textContent = "Could not send: " + (err.message || "Ensure support_messages table exists in Supabase");
+        notice.style.color = "var(--bad)";
+      }
+    });
+  }
+
+  async function loadUserSupportTickets(){
+    const container = document.getElementById('userSupportTicketsList');
+    if(!container || !supabase || !sessionUser) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('support_messages')
+        .select('*')
+        .eq('user_id', sessionUser.id)
+        .order('created_at', { ascending: false });
+
+      if(error) throw error;
+      if(!data || data.length === 0){
+        container.innerHTML = '<div>No messages submitted yet.</div>';
+        return;
+      }
+
+      container.innerHTML = data.map(m => `
+        <div style="background:var(--surface); border:1px solid var(--border-solid); border-radius:6px; padding:10px; margin-bottom:8px;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+            <strong style="color:var(--text);">${escapeHtml(m.subject)}</strong>
+            <span style="padding:2px 8px; border-radius:4px; font-size:0.7rem; background:${m.status==='resolved'?'rgba(34,197,94,0.15)':'rgba(234,179,8,0.15)'}; color:${m.status==='resolved'?'var(--good)':'#eab308'};">${m.status.toUpperCase()}</span>
+          </div>
+          <div style="color:var(--muted); font-size:0.8rem; white-space:pre-wrap;">${escapeHtml(m.message)}</div>
+          <div style="font-size:0.7rem; color:var(--muted); margin-top:6px;">${new Date(m.created_at).toLocaleString()}</div>
+        </div>
+      `).join('');
+    } catch(err){
+      container.innerHTML = '<div style="color:var(--muted); font-size:0.75rem;">Support table not yet created in Supabase SQL editor.</div>';
+    }
+  }
+
+  async function loadAdminSupportInquiries(){
+    const tbody = document.getElementById('adminSupportTbody');
+    if(!tbody || !supabase) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('support_messages')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if(error) throw error;
+      if(!data || data.length === 0){
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--muted);">No support inquiries found.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = data.map(m => `
+        <tr>
+          <td style="white-space:nowrap;">${new Date(m.created_at).toLocaleString()}</td>
+          <td>${escapeHtml(m.user_email || 'Anonymous')}</td>
+          <td><strong>${escapeHtml(m.subject)}</strong></td>
+          <td style="max-width:260px; word-break:break-word;">${escapeHtml(m.message)}</td>
+          <td><span style="padding:2px 6px; border-radius:4px; font-size:0.7rem; color:${m.status==='resolved'?'var(--good)':'#eab308'};">${m.status}</span></td>
+          <td>
+            ${m.status !== 'resolved' ? `<button type="button" class="btn" style="padding:4px 8px; font-size:0.75rem;" onclick="window.resolveSupportMessage('${m.id}')">Resolve</button>` : `<span style="color:var(--muted); font-size:0.75rem;">Done</span>`}
+          </td>
+        </tr>
+      `).join('');
+    } catch(err){
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--muted); font-size:0.75rem;">Requires support_messages table & RLS policies in Supabase.</td></tr>';
+    }
+  }
+
+  window.resolveSupportMessage = async function(id){
+    if(!supabase) return;
+    try {
+      await supabase.from('support_messages').update({ status: 'resolved' }).eq('id', id);
+      loadAdminSupportInquiries();
+    } catch(err){
+      alert("Failed to update status: " + err.message);
+    }
+  };
+
+  /* --- CHAT SYSTEM (WITH INVITATION APPROVAL) --- */
+  function loadChatSystem(){
+    loadChatInvitations();
+    loadAcceptedContacts();
+  }
+
+  // Send invitation
+  document.getElementById('btnSendChatInvite')?.addEventListener('click', async () => {
+    const input = document.getElementById('chatInviteUsername');
+    const notice = document.getElementById('chatInviteNotice');
+    if(!input || !notice || !supabase || !sessionUser) return;
+
+    const targetUsername = input.value.trim().toLowerCase();
+    if(!targetUsername){
+      notice.textContent = "Please enter a username.";
+      notice.style.color = "var(--bad)";
+      return;
+    }
+
+    notice.textContent = "Searching for user...";
+    notice.style.color = "var(--muted)";
+
+    try {
+      // Find user profile by username
+      const { data: targetProfile, error: profErr } = await supabase
+        .from('profiles')
+        .select('id, username, full_name')
+        .ilike('username', targetUsername)
+        .maybeSingle();
+
+      if(profErr || !targetProfile){
+        notice.textContent = "No user found with username @" + targetUsername;
+        notice.style.color = "var(--bad)";
+        return;
+      }
+
+      if(targetProfile.id === sessionUser.id){
+        notice.textContent = "You cannot send a chat invitation to yourself.";
+        notice.style.color = "var(--bad)";
+        return;
+      }
+
+      // Check existing invitation
+      const { data: existing } = await supabase
+        .from('chat_invitations')
+        .select('id, status')
+        .or(`and(sender_id.eq.${sessionUser.id},receiver_id.eq.${targetProfile.id}),and(sender_id.eq.${targetProfile.id},receiver_id.eq.${sessionUser.id})`)
+        .maybeSingle();
+
+      if(existing){
+        if(existing.status === 'accepted'){
+          notice.textContent = "You are already connected with @" + targetUsername + "! Click their name under Accepted Friends.";
+          notice.style.color = "var(--good)";
+          loadAcceptedContacts();
+          return;
+        } else if(existing.status === 'pending'){
+          notice.textContent = "An invitation is already pending with @" + targetUsername;
+          notice.style.color = "#eab308";
+          return;
+        }
+      }
+
+      const { error: insErr } = await supabase.from('chat_invitations').insert({
+        sender_id: sessionUser.id,
+        receiver_id: targetProfile.id,
+        status: 'pending'
+      });
+
+      if(insErr) throw insErr;
+
+      notice.textContent = "Invitation sent to @" + targetUsername + "! They must accept before you can chat.";
+      notice.style.color = "var(--good)";
+      input.value = "";
+      loadChatInvitations();
+    } catch(err){
+      notice.textContent = "Failed to send invitation: " + (err.message || "Table check needed");
+      notice.style.color = "var(--bad)";
+    }
+  });
+
+  async function loadChatInvitations(){
+    if(!supabase || !sessionUser) return;
+    const incomingCont = document.getElementById('incomingInvitesList');
+    const outgoingCont = document.getElementById('outgoingInvitesList');
+
+    try {
+      // Incoming pending
+      const { data: incoming } = await supabase
+        .from('chat_invitations')
+        .select('id, sender_id, created_at, sender:profiles!chat_invitations_sender_id_fkey(username, full_name)')
+        .eq('receiver_id', sessionUser.id)
+        .eq('status', 'pending');
+
+      if(incomingCont){
+        if(!incoming || incoming.length === 0){
+          incomingCont.innerHTML = '<div>No pending incoming requests.</div>';
+        } else {
+          incomingCont.innerHTML = incoming.map(inv => {
+            const senderName = inv.sender?.username || 'Unknown User';
+            return `
+              <div style="display:flex; justify-content:space-between; align-items:center; background:var(--surface); padding:6px 8px; border-radius:4px; margin-bottom:6px;">
+                <span><strong>@${escapeHtml(senderName)}</strong></span>
+                <div style="display:flex; gap:6px;">
+                  <button type="button" class="btn" style="padding:2px 8px; font-size:0.75rem;" onclick="window.respondChatInvite('${inv.id}', 'accepted')">Accept</button>
+                  <button type="button" class="btn-subtle" style="padding:2px 8px; font-size:0.75rem; border:1px solid var(--border-solid);" onclick="window.respondChatInvite('${inv.id}', 'declined')">Decline</button>
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+      }
+
+      // Outgoing pending
+      const { data: outgoing } = await supabase
+        .from('chat_invitations')
+        .select('id, receiver_id, created_at, receiver:profiles!chat_invitations_receiver_id_fkey(username, full_name)')
+        .eq('sender_id', sessionUser.id)
+        .eq('status', 'pending');
+
+      if(outgoingCont){
+        if(!outgoing || outgoing.length === 0){
+          outgoingCont.innerHTML = '<div>No outgoing requests.</div>';
+        } else {
+          outgoingCont.innerHTML = outgoing.map(inv => {
+            const recName = inv.receiver?.username || 'user';
+            return `<div style="background:var(--surface); padding:6px 8px; border-radius:4px; margin-bottom:6px;">Invited <strong>@${escapeHtml(recName)}</strong> (Pending)</div>`;
+          }).join('');
+        }
+      }
+    } catch(err){
+      // Foreign key fallback or table missing
+      console.warn("Notice loading invitations:", err);
+    }
+  }
+
+  window.respondChatInvite = async function(inviteId, newStatus){
+    if(!supabase) return;
+    try {
+      await supabase.from('chat_invitations').update({ status: newStatus, updated_at: new Date().toISOString() }).eq('id', inviteId);
+      loadChatInvitations();
+      loadAcceptedContacts();
+    } catch(err){
+      alert("Failed to update invitation: " + err.message);
+    }
+  };
+
+  async function loadAcceptedContacts(){
+    const cont = document.getElementById('acceptedContactsList');
+    if(!cont || !supabase || !sessionUser) return;
+
+    try {
+      const { data: accepted } = await supabase
+        .from('chat_invitations')
+        .select('id, sender_id, receiver_id')
+        .eq('status', 'accepted')
+        .or(`sender_id.eq.${sessionUser.id},receiver_id.eq.${sessionUser.id}`);
+
+      if(!accepted || accepted.length === 0){
+        cont.innerHTML = '<div style="color:var(--muted); font-size:0.8rem;">No accepted contacts yet.</div>';
+        return;
+      }
+
+      const otherUserIds = accepted.map(a => a.sender_id === sessionUser.id ? a.receiver_id : a.sender_id);
+      const { data: profiles } = await supabase.from('profiles').select('id, username, full_name').in('id', otherUserIds);
+      const profMap = {};
+      (profiles || []).forEach(p => profMap[p.id] = p);
+
+      cont.innerHTML = otherUserIds.map(uid => {
+        const p = profMap[uid] || { username: 'user', full_name: 'Contact' };
+        const isSel = (uid === activeChatContactId);
+        return `
+          <div onclick="window.selectChatContact('${uid}', '${escapeHtml(p.username)}')" style="cursor:pointer; padding:6px 8px; border-radius:6px; margin-bottom:4px; background:${isSel?'rgba(34,211,238,0.15)':'transparent'}; border:${isSel?'1px solid var(--cyan)':'1px solid transparent'};">
+            <div style="font-weight:600; font-size:0.85rem; color:${isSel?'var(--cyan)':'var(--text)'};">@${escapeHtml(p.username)}</div>
+            <div style="font-size:0.75rem; color:var(--muted);">${escapeHtml(p.full_name || '')}</div>
+          </div>
+        `;
+      }).join('');
+    } catch(err){
+      cont.innerHTML = '<div style="color:var(--muted); font-size:0.75rem;">Requires chat_invitations table.</div>';
+    }
+  }
+
+  window.selectChatContact = function(userId, username){
+    activeChatContactId = userId;
+    activeChatContactName = username;
+    document.getElementById('chatHeader').textContent = "Chatting with @" + username;
+    document.getElementById('chatInputBar').style.display = 'flex';
+    loadAcceptedContacts();
+    loadActiveConversation(userId, username, false);
+  };
+
+  async function loadActiveConversation(contactId, username, isPoll){
+    const box = document.getElementById('chatMessagesBox');
+    if(!box || !supabase || !sessionUser) return;
+
+    try {
+      const { data: msgs, error } = await supabase
+        .from('chat_messages')
+        .select('*')
+        .or(`and(sender_id.eq.${sessionUser.id},receiver_id.eq.${contactId}),and(sender_id.eq.${contactId},receiver_id.eq.${sessionUser.id})`)
+        .order('created_at', { ascending: true });
+
+      if(error) throw error;
+      if(!msgs || msgs.length === 0){
+        box.innerHTML = `<div style="color:var(--muted); font-size:0.8rem; text-align:center; margin-top:40px;">No messages yet. Say hi to @${escapeHtml(username)}!</div>`;
+        return;
+      }
+
+      const shouldScroll = (!isPoll || box.scrollTop + box.clientHeight >= box.scrollHeight - 50);
+
+      box.innerHTML = msgs.map(m => {
+        const isMe = (m.sender_id === sessionUser.id);
+        return `
+          <div style="display:flex; flex-direction:column; align-items:${isMe?'flex-end':'flex-start'};">
+            <div style="max-width:75%; padding:6px 12px; border-radius:12px; font-size:0.85rem; background:${isMe?'var(--cyan)':'var(--surface)'}; color:${isMe?'#0f172a':'var(--text)'}; border:${isMe?'none':'1px solid var(--border-solid)'};">
+              ${escapeHtml(m.message)}
+            </div>
+            <span style="font-size:0.65rem; color:var(--muted); margin-top:2px;">${new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+          </div>
+        `;
+      }).join('');
+
+      if(shouldScroll){
+        box.scrollTop = box.scrollHeight;
+      }
+    } catch(err){
+      if(!isPoll){
+        box.innerHTML = `<div style="color:var(--bad); font-size:0.8rem; text-align:center; margin-top:40px;">Failed to load messages: ${escapeHtml(err.message)}</div>`;
+      }
+    }
+  }
+
+  // Send message
+  document.getElementById('btnSendChatMessage')?.addEventListener('click', sendActiveMessage);
+  document.getElementById('chatMessageInput')?.addEventListener('keydown', (e) => {
+    if(e.key === 'Enter') sendActiveMessage();
+  });
+
+  async function sendActiveMessage(){
+    const input = document.getElementById('chatMessageInput');
+    if(!input || !supabase || !sessionUser || !activeChatContactId) return;
+    const txt = input.value.trim();
+    if(!txt) return;
+
+    input.value = "";
+    try {
+      const { error } = await supabase.from('chat_messages').insert({
+        sender_id: sessionUser.id,
+        receiver_id: activeChatContactId,
+        message: txt
+      });
+      if(error) throw error;
+      loadActiveConversation(activeChatContactId, activeChatContactName, false);
+    } catch(err){
+      alert("Message could not be sent: " + err.message);
+    }
+  }
+
 })();
 </script>
 </body>
