@@ -1,874 +1,639 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sign In / Register — Pramod Sapkota</title>
-<meta name="description" content="Login and registration for sapkotap.com.np">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In / Register — Pramod Sapkota</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- hCaptcha API -->
+  <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
 
-<!-- Supabase SDK -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --bg: #07090e;
+      --card-bg: rgba(13, 17, 26, 0.75);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --card-hover: rgba(255, 255, 255, 0.12);
+      --text-main: #f0f4fc;
+      --text-muted: #7e8c9f;
+      --accent-cyan: #00f2fe;
+      --accent-purple: #9b51e0;
+      --accent-gradient: linear-gradient(135deg, #00f2fe 0%, #4facfe 50%, #9b51e0 100%);
+      --error-color: #ff5252;
+      --success-color: #00e676;
+      --input-bg: rgba(255, 255, 255, 0.04);
+      --font-sans: 'Plus Jakarta Sans', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
 
-<style>
-  :root{
-    --bg:#0b0f14;
-    --surface:#121821;
-    --surface-2:#161d27;
-    --border:#20293480;
-    --border-solid:#232d3a;
-    --text:#e8edf2;
-    --muted:#8a97a6;
-    --cyan:#22d3ee;
-    --violet:#8b5cf6;
-    --danger:#f87171;
-    --good:#34d399;
-    --radius:14px;
-    --shadow: 0 20px 60px -20px rgba(0,0,0,0.6);
-  }
-  [data-theme="light"]{
-    --bg:#f3f5f8;
-    --surface:#ffffff;
-    --surface-2:#eef1f5;
-    --border:#dbe1e8c0;
-    --border-solid:#dde3ea;
-    --text:#131a22;
-    --muted:#5b6572;
-    --shadow: 0 20px 60px -20px rgba(20,30,45,0.18);
-  }
-  *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;}
-  body{
-    background:var(--bg);
-    color:var(--text);
-    font-family:'Inter',sans-serif;
-    min-height:100vh;
-    transition:background .35s ease, color .35s ease;
-    overflow-x:hidden;
-  }
-  a{color:inherit;}
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font-sans); }
 
-  .top{
-    display:flex; align-items:center; justify-content:space-between;
-    padding:20px clamp(16px,5vw,48px);
-  }
-  .brand{
-    font-family:'Space Grotesk',sans-serif;
-    font-weight:700; font-size:1.05rem; letter-spacing:.01em;
-    text-decoration:none; color:var(--text);
-    display:flex; align-items:center; gap:8px;
-  }
-  .brand .dot{width:8px;height:8px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px var(--cyan);}
-  .backlink{
-    font-size:.85rem; color:var(--muted); text-decoration:none;
-    font-family:'JetBrains Mono',monospace;
-    border:1px solid var(--border-solid); padding:8px 14px; border-radius:999px;
-    transition:border-color .2s, color .2s;
-  }
-  .backlink:hover{color:var(--text); border-color:var(--cyan);}
-  .themeToggle{
-    background:var(--surface-2); border:1px solid var(--border-solid);
-    width:38px;height:38px;border-radius:50%; cursor:pointer;
-    display:flex;align-items:center;justify-content:center;
-    font-size:1rem; margin-left:10px; color:var(--text);
-  }
-  .topRight{display:flex; align-items:center;}
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow-x: hidden;
+    }
 
-  .wrap{
-    display:grid;
-    grid-template-columns: 1.1fr 1fr;
-    min-height:calc(100vh - 78px);
-  }
-  @media (max-width: 900px){
-    .wrap{grid-template-columns:1fr;}
-    .panel-left{display:none;}
-  }
+    .bg-blobs {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
 
-  /* LEFT: terminal panel */
-  .panel-left{
-    position:relative;
-    padding:clamp(28px,5vw,64px);
-    display:flex; flex-direction:column; justify-content:center;
-    background:
-      radial-gradient(circle at 20% 20%, rgba(139,92,246,0.12), transparent 45%),
-      radial-gradient(circle at 80% 70%, rgba(34,211,238,0.10), transparent 45%);
-    border-right:1px solid var(--border-solid);
-  }
-  .term{
-    background:var(--surface);
-    border:1px solid var(--border-solid);
-    border-radius:var(--radius);
-    box-shadow:var(--shadow);
-    max-width:520px;
-    overflow:hidden;
-  }
-  .term-bar{
-    display:flex; gap:6px; padding:12px 14px;
-    border-bottom:1px solid var(--border-solid);
-    background:var(--surface-2);
-  }
-  .term-dot{width:10px;height:10px;border-radius:50%;}
-  .term-dot.r{background:#ff5f57;} .term-dot.y{background:#febc2e;} .term-dot.g{background:#28c840;}
-  .term-body{
-    font-family:'JetBrains Mono',monospace;
-    font-size:.88rem; line-height:1.9;
-    padding:22px 24px 26px;
-    min-height:210px;
-    color:var(--muted);
-  }
-  .term-body .prompt{color:var(--cyan);}
-  .term-body .out{color:var(--text);}
-  .term-body .accent{color:var(--violet);}
-  .cursor{
-    display:inline-block; width:8px; height:1.1em; background:var(--cyan);
-    vertical-align:text-bottom; margin-left:2px;
-    animation:blink 1s steps(1) infinite;
-  }
-  @keyframes blink{50%{opacity:0;}}
-  .type-line{opacity:0; animation:reveal .4s forwards;}
-  .headline{
-    font-family:'Space Grotesk',sans-serif;
-    font-size:clamp(1.4rem,2.4vw,1.9rem);
-    font-weight:600; margin:26px 0 8px; max-width:480px;
-  }
-  .sub{color:var(--muted); max-width:440px; font-size:.95rem; line-height:1.6;}
+    .blob {
+      position: absolute;
+      filter: blur(120px);
+      opacity: 0.18;
+      border-radius: 50%;
+    }
 
-  @keyframes reveal{to{opacity:1;}}
+    .blob-1 { top: -10%; left: -10%; width: 50vw; height: 50vw; background: #00f2fe; }
+    .blob-2 { bottom: -10%; right: -10%; width: 50vw; height: 50vw; background: #9b51e0; }
 
-  /* RIGHT: auth card */
-  .panel-right{
-    display:flex; align-items:center; justify-content:center;
-    padding:clamp(20px,5vw,48px);
-  }
-  .card{
-    width:100%; max-width:440px;
-    background:var(--surface);
-    border:1px solid var(--border-solid);
-    border-radius:var(--radius);
-    box-shadow:var(--shadow);
-    padding:clamp(24px,4vw,34px);
-  }
-  .tabs{
-    display:flex; background:var(--surface-2); border-radius:999px;
-    padding:4px; margin-bottom:26px; border:1px solid var(--border-solid);
-  }
-  .tab{
-    flex:1; text-align:center; padding:9px 0; border-radius:999px;
-    font-size:.88rem; font-weight:600; cursor:pointer; color:var(--muted);
-    font-family:'Space Grotesk',sans-serif;
-    transition:background .2s, color .2s;
-    user-select:none;
-  }
-  .tab.active{ background:var(--bg); color:var(--text); }
-  [data-theme="light"] .tab.active{ background:#fff; box-shadow:0 1px 4px rgba(0,0,0,.08);}
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 24px 48px;
+      position: relative;
+      z-index: 10;
+    }
 
-  .form-title{font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:1.3rem; margin:0 0 4px;}
-  .form-hint{color:var(--muted); font-size:.85rem; margin:0 0 22px;}
+    .logo-container a {
+      color: var(--text-main);
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 1.1rem;
+      letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
 
-  .field{margin-bottom:16px;}
-  .field label{
-    display:block; font-family:'JetBrains Mono',monospace; font-size:.72rem;
-    letter-spacing:.04em; text-transform:uppercase; color:var(--muted); margin-bottom:7px;
-  }
-  .field input, .field select{
-    width:100%; padding:11px 13px; border-radius:9px;
-    background:var(--surface-2); border:1px solid var(--border-solid);
-    color:var(--text); font-family:'Inter',sans-serif; font-size:.94rem;
-    outline:none; transition:border-color .18s, box-shadow .18s;
-  }
-  .field input:focus, .field select:focus{
-    border-color:var(--cyan);
-    box-shadow:0 0 0 3px rgba(34,211,238,0.18);
-  }
-  .field .err{color:var(--danger); font-size:.78rem; margin-top:6px; display:none; font-family:'JetBrains Mono',monospace;}
-  .field.invalid input{border-color:var(--danger);}
-  .field.invalid .err{display:block;}
+    .logo-badge {
+      width: 10px;
+      height: 10px;
+      background: var(--accent-cyan);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--accent-cyan);
+    }
 
-  .row-between{display:flex; align-items:center; justify-content:space-between; margin:2px 0 20px; font-size:.85rem; color:var(--muted);}
-  .row-between label{display:flex; align-items:center; gap:7px; cursor:pointer;}
-  .row-between a{color:var(--cyan); text-decoration:none; font-weight:500;}
-  .row-between a:hover{text-decoration:underline;}
+    .back-btn {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: color 0.2s ease;
+    }
 
-  .btn{
-    width:100%; padding:12px 0; border:none; border-radius:9px; cursor:pointer;
-    font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:.95rem;
-    background:linear-gradient(90deg,var(--cyan),var(--violet)); color:#0b0f14;
-    transition:transform .12s ease, box-shadow .2s ease;
-  }
-  .btn:hover{transform:translateY(-1px); box-shadow:0 8px 24px -8px rgba(34,211,238,0.5);}
-  .btn:active{transform:translateY(0);}
+    .back-btn:hover { color: var(--text-main); }
 
-  .btn-outline{
-    background:var(--surface-2); color:var(--text); border:1px solid var(--border-solid);
-    margin-top:10px;
-  }
-  .btn-outline:hover{box-shadow:none; border-color:var(--cyan);}
+    main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      position: relative;
+      z-index: 10;
+    }
 
-  .switch-line{text-align:center; font-size:.87rem; color:var(--muted); margin-top:20px;}
-  .switch-line button{
-    background:none; border:none; color:var(--cyan); font-weight:600; cursor:pointer;
-    font-family:'Inter',sans-serif; font-size:.87rem; padding:0;
-  }
+    .split-container {
+      display: flex;
+      width: 100%;
+      max-width: 1100px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      overflow: hidden;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    }
 
-  .status{
-    display:none; align-items:center; gap:8px; font-size:.85rem;
-    font-family:'JetBrains Mono',monospace; padding:11px 13px; border-radius:9px;
-    margin-bottom:18px; border:1px solid var(--border-solid);
-  }
-  .status.show{display:flex;}
-  .status.good{color:var(--good); background:rgba(52,211,153,0.08); border-color:rgba(52,211,153,0.3);}
-  .status.bad{color:var(--danger); background:rgba(248,113,113,0.08); border-color:rgba(248,113,113,0.3);}
+    .left-panel {
+      flex: 1;
+      padding: 48px;
+      border-right: 1px solid var(--card-border);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02) 0%, transparent 100%);
+    }
 
-  .form{display:none;}
-  .form.active{display:block;}
+    .terminal-box {
+      background: rgba(5, 7, 10, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 20px;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      color: #94a3b8;
+      line-height: 1.6;
+      margin-top: 24px;
+    }
 
-  /* Dashboard View */
-  .portal-container{
-    display:none; width:100%; max-width:960px; margin:20px auto;
-    padding:clamp(20px,4vw,36px); background:var(--surface);
-    border:1px solid var(--border-solid); border-radius:var(--radius);
-    box-shadow:var(--shadow);
-  }
-  table{width:100%; border-collapse:collapse; margin-top:14px; font-size:.85rem;}
-  th, td{text-align:left; padding:9px 12px; border-bottom:1px solid var(--border-solid);}
-  th{color:var(--muted); font-family:'Space Grotesk',sans-serif; font-weight:600;}
-  code{font-family:'JetBrains Mono',monospace; color:var(--cyan);}
+    .term-cmd { color: var(--accent-cyan); }
+    .term-success { color: var(--success-color); }
 
-  footer.note{
-    text-align:center; color:var(--muted); font-size:.75rem;
-    padding:18px; font-family:'JetBrains Mono',monospace;
-  }
-</style>
+    .right-panel {
+      flex: 1.2;
+      padding: 48px;
+    }
+
+    .tab-nav {
+      display: flex;
+      background: rgba(0,0,0,0.2);
+      border-radius: 12px;
+      padding: 4px;
+      margin-bottom: 28px;
+      border: 1px solid var(--card-border);
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 10px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .tab-btn.active {
+      background: rgba(255,255,255,0.08);
+      color: var(--text-main);
+    }
+
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      font-family: var(--font-mono);
+    }
+
+    input, select {
+      width: 100%;
+      padding: 12px 14px;
+      background: var(--input-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      color: var(--text-main);
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--accent-cyan);
+    }
+
+    .hcaptcha-wrapper {
+      margin: 16px 0;
+      display: flex;
+      justify-content: center;
+    }
+
+    .btn-submit {
+      width: 100%;
+      padding: 12px;
+      background: var(--accent-gradient);
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      margin-top: 10px;
+    }
+
+    .btn-submit:hover { opacity: 0.9; }
+
+    .alert-box {
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      margin-bottom: 16px;
+      font-family: var(--font-mono);
+      display: none;
+    }
+
+    .alert-error {
+      background: rgba(255, 82, 82, 0.1);
+      border: 1px solid rgba(255, 82, 82, 0.3);
+      color: var(--error-color);
+    }
+
+    .alert-success {
+      background: rgba(0, 230, 118, 0.1);
+      border: 1px solid rgba(0, 230, 118, 0.3);
+      color: var(--success-color);
+    }
+
+    /* Admin & User Dashboard Tables */
+    .dashboard-panel { display: none; }
+    .table-container {
+      width: 100%;
+      overflow-x: auto;
+      margin-top: 16px;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+      font-family: var(--font-mono);
+    }
+
+    th, td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    th {
+      background: rgba(255,255,255,0.02);
+      color: var(--text-muted);
+    }
+
+    .badge-ip {
+      color: var(--accent-cyan);
+      background: rgba(0, 242, 254, 0.08);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    @media (max-width: 900px) {
+      .split-container { flex-direction: column; }
+      .left-panel { border-right: none; border-bottom: 1px solid var(--card-border); }
+    }
+  </style>
 </head>
-<body data-theme="dark">
-
-  <div class="top">
-    <a class="brand" href="index.html"><span class="dot"></span>Pramod</a>
-    <div class="topRight">
-      <a class="backlink" href="index.html">&larr; back to portfolio</a>
-      <button class="themeToggle" id="themeToggle" aria-label="Toggle theme">☀</button>
-    </div>
+<body>
+  <div class="bg-blobs">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
   </div>
 
-  <!-- AUTHENTICATION VIEW -->
-  <div class="wrap" id="mainAuthWrap">
-    <div class="panel-left">
-      <div class="term">
-        <div class="term-bar">
-          <span class="term-dot r"></span><span class="term-dot y"></span><span class="term-dot g"></span>
+  <header>
+    <div class="logo-container">
+      <a href="https://sapkotap.com.np"><span class="logo-badge"></span> Pramod Sapkota</a>
+    </div>
+    <a href="https://sapkotap.com.np" class="back-btn">← Back to portfolio</a>
+  </header>
+
+  <main>
+    <div class="split-container">
+      <!-- Left Panel -->
+      <div class="left-panel">
+        <div>
+          <h2 style="font-size: 1.6rem; font-weight: 700; margin-bottom: 8px;">Sapkotap Secure Portal</h2>
+          <p style="color: var(--text-muted); font-size: 0.9rem;">Authenticated access to user downloads, client files, and admin infrastructure.</p>
+          
+          <div class="terminal-box">
+            <div><span class="term-cmd">whoami</span><br>Pramod Sapkota — Creative Developer</div>
+            <div style="margin-top: 10px;"><span class="term-cmd">cat status.txt</span><br>Building sapkotap.com.np, one commit at a time.</div>
+            <div style="margin-top: 10px;"><span class="term-cmd">ip-threat-monitor</span><br><span class="term-success">● Active</span> — Real-time telemetry & bot shield</div>
+          </div>
         </div>
-        <div class="term-body" id="termBody">
-          <div class="type-line" style="animation-delay:.1s"><span class="prompt">$</span> whoami</div>
-          <div class="type-line out" style="animation-delay:.5s">Pramod Sapkota — Creative Developer</div>
-          <div class="type-line" style="animation-delay:.9s"><span class="prompt">$</span> cat status.txt</div>
-          <div class="type-line out" style="animation-delay:1.3s">Building sapkotap.com.np, one commit at a time.</div>
-          <div class="type-line" style="animation-delay:1.7s"><span class="prompt">$</span> auth --new-session</div>
-          <div class="type-line accent" style="animation-delay:2.1s">Ready for sign in<span class="cursor"></span></div>
+        <div style="color: var(--text-muted); font-size: 0.75rem; font-family: var(--font-mono); margin-top: 20px;">
+          SECURE PROTOCOL V2.4 • TLS 1.3
         </div>
       </div>
-      <div class="headline">One account, full access to the work.</div>
-      <div class="sub">Sign in to pick up where you left off, or register to save projects, leave feedback, and follow along as new builds ship.</div>
-    </div>
 
-    <div class="panel-right">
-      <div class="card">
-        <div class="tabs" id="authTabs">
-          <div class="tab active" id="tabLogin">Sign In</div>
-          <div class="tab" id="tabRegister">Register</div>
+      <!-- Right Panel -->
+      <div class="right-panel">
+        
+        <!-- Tab Navigation (Auth mode) -->
+        <div id="authNav" class="tab-nav">
+          <button id="signInTabBtn" class="tab-btn active" onclick="switchTab('signin')">Sign In</button>
+          <button id="registerTabBtn" class="tab-btn" onclick="switchTab('register')">Register</button>
         </div>
 
-        <div class="status" id="statusBox"></div>
+        <div id="alertBox" class="alert-box"></div>
 
-        <!-- 1. LOGIN STEP 1: Email + Password -->
-        <form class="form active" id="loginForm" novalidate>
-          <div class="form-title">Welcome back</div>
-          <p class="form-hint">Sign in with the email you registered with.</p>
-
-          <div class="field" id="loginEmailField">
-            <label for="loginEmail">Email</label>
-            <input type="email" id="loginEmail" autocomplete="email" placeholder="you@example.com" required>
-            <div class="err">Enter a valid email address.</div>
+        <!-- 1. SIGN IN FORM -->
+        <form id="signInForm" onsubmit="handleSignIn(event)">
+          <div class="form-group">
+            <label>Email Address</label>
+            <input type="email" id="loginEmail" required placeholder="name@example.com">
           </div>
-          <div class="field" id="loginPassField">
-            <label for="loginPass">Password</label>
-            <input type="password" id="loginPass" autocomplete="current-password" placeholder="••••••••" required>
-            <div class="err">Password is required.</div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="loginPassword" required placeholder="••••••••">
           </div>
 
-          <div class="row-between">
-            <label><input type="checkbox" id="rememberMe"> Remember me</label>
-            <a href="#" id="forgotLink">Forgot password?</a>
+          <!-- hCaptcha Container for Login -->
+          <div class="hcaptcha-wrapper">
+            <div class="h-captcha" id="login-hcaptcha" data-sitekey="YOUR_HCAPTCHA_SITE_KEY"></div>
           </div>
 
-          <button type="submit" class="btn" id="btnSignIn">Sign In</button>
-          <div class="switch-line">No account yet? <button type="button" id="goRegister">Register</button></div>
+          <button type="submit" class="btn-submit" id="loginBtn">Sign In</button>
         </form>
 
-        <!-- 2. LOGIN STEP 2: One-Time Code (OTP) -->
-        <form class="form" id="otpForm" novalidate>
-          <div class="form-title">Step 2: Verification</div>
-          <p class="form-hint">Enter the 6-digit confirmation code sent to your email.</p>
-
-          <div class="field" id="otpField">
-            <label for="otpCode">6-Digit OTP</label>
-            <input type="text" id="otpCode" maxlength="6" pattern="[0-9]{6}" placeholder="123456" required>
-            <div class="err">Enter the 6-digit verification code.</div>
+        <!-- 2. REGISTER FORM -->
+        <form id="registerForm" style="display: none;" onsubmit="handleRegister(event)">
+          <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" id="regFullName" required placeholder="John Doe">
+          </div>
+          <div class="form-group">
+            <label>Username</label>
+            <input type="text" id="regUsername" required placeholder="johndoe">
+          </div>
+          <div class="form-group">
+            <label>Email Address</label>
+            <input type="email" id="regEmail" required placeholder="name@example.com">
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="regPassword" required placeholder="Min 8 chars, 1 uppercase, 1 special">
+          </div>
+          <div class="form-group">
+            <label>Confirm Password</label>
+            <input type="password" id="regConfirmPassword" required placeholder="Repeat password">
           </div>
 
-          <button type="submit" class="btn">Verify & Continue</button>
-          <button type="button" class="btn btn-outline" id="btnCancelOtp">Cancel</button>
+          <!-- hCaptcha Container for Register -->
+          <div class="hcaptcha-wrapper">
+            <div class="h-captcha" id="reg-hcaptcha" data-sitekey="YOUR_HCAPTCHA_SITE_KEY"></div>
+          </div>
+
+          <button type="submit" class="btn-submit" id="registerBtn">Create Account</button>
         </form>
 
-        <!-- 3. LOGIN STEP 3: New Device Confirmation -->
-        <div class="form" id="deviceForm">
-          <div class="form-title">Step 3: New Device</div>
-          <p class="form-hint">You are logging in from an unrecognized browser. Is this you?</p>
-          <button type="button" class="btn" id="btnTrustDevice">Yes, trust this device</button>
-          <button type="button" class="btn btn-outline" id="btnRejectDevice">Deny & cancel</button>
+        <!-- 3. LOGGED-IN DASHBOARD & ADMIN VIEW -->
+        <div id="dashboardPanel" class="dashboard-panel">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div>
+              <h3 id="userGreeting" style="font-size: 1.2rem;">Welcome</h3>
+              <p id="userRoleBadge" style="color: var(--accent-cyan); font-size: 0.8rem; font-family: var(--font-mono);"></p>
+            </div>
+            <button onclick="handleSignOut()" class="tab-btn" style="border: 1px solid var(--card-border); padding: 6px 14px;">Sign Out</button>
+          </div>
+
+          <!-- Admin Section -->
+          <div id="adminSection" style="display: none; margin-top: 24px;">
+            <h4 style="font-size: 0.95rem; margin-bottom: 10px; color: var(--accent-cyan);">Security Threats & Attack Logs (With IP & Location)</h4>
+            <div class="table-container">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Timestamp</th>
+                    <th>Event</th>
+                    <th>User / Target</th>
+                    <th>IP Address</th>
+                    <th>Location</th>
+                  </tr>
+                </thead>
+                <tbody id="threatLogsBody">
+                  <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Loading threat telemetry...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
 
-        <!-- 4. FORGOT PASSWORD -->
-        <form class="form" id="forgotForm" novalidate>
-          <div class="form-title">Reset Password</div>
-          <p class="form-hint">Enter your registered email to receive a recovery link.</p>
-
-          <div class="field" id="forgotEmailField">
-            <label for="forgotEmail">Email</label>
-            <input type="email" id="forgotEmail" placeholder="you@example.com" required>
-            <div class="err">Enter a valid email address.</div>
-          </div>
-
-          <button type="submit" class="btn">Send Reset Link</button>
-          <button type="button" class="btn btn-outline" id="btnBackToLogin">Back to Sign In</button>
-        </form>
-
-        <!-- 5. REGISTER FORM -->
-        <form class="form" id="registerForm" novalidate>
-          <div class="form-title">Create your account</div>
-          <p class="form-hint">Takes less than a minute.</p>
-
-          <div class="field" id="regNameField">
-            <label for="regName">Full name</label>
-            <input type="text" id="regName" autocomplete="name" placeholder="Pramod Sapkota" required>
-            <div class="err">Please enter your name.</div>
-          </div>
-
-          <div class="field" id="regUserField">
-            <label for="regUser">Username</label>
-            <input type="text" id="regUser" placeholder="pramod" pattern="^[a-zA-Z0-9_-]{3,20}$" required>
-            <div class="err">3-20 characters (letters, numbers, dash, underscore).</div>
-          </div>
-
-          <div class="field" id="regEmailField">
-            <label for="regEmail">Email</label>
-            <input type="email" id="regEmail" autocomplete="email" placeholder="you@example.com" required>
-            <div class="err">Enter a valid email address.</div>
-          </div>
-
-          <div class="field" id="regPassField">
-            <label for="regPass">Password</label>
-            <input type="password" id="regPass" autocomplete="new-password" placeholder="••••••••" required>
-            <div class="err">Min 8 chars, 1 uppercase, 1 number, 1 special character.</div>
-          </div>
-
-          <div class="field" id="regConfirmField">
-            <label for="regConfirm">Confirm password</label>
-            <input type="password" id="regConfirm" autocomplete="new-password" placeholder="••••••••" required>
-            <div class="err">Passwords do not match.</div>
-          </div>
-
-          <button type="submit" class="btn" id="btnCreateAccount">Create Account</button>
-          <div class="switch-line">Already have an account? <button type="button" id="goLogin">Sign in</button></div>
-        </form>
       </div>
     </div>
-  </div>
+  </main>
 
-  <!-- AUTHENTICATED DASHBOARDS VIEW -->
-  <div class="portal-container" id="dashboardWrap">
-    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-solid); padding-bottom:14px;">
-      <div>
-        <h2 style="font-family:'Space Grotesk',sans-serif; margin:0;" id="userWelcome">Welcome</h2>
-        <div style="font-size:0.85rem; color:var(--muted); margin-top:4px;" id="userMeta"></div>
-      </div>
-      <button class="backlink" style="cursor:pointer;" id="btnLogout">Sign Out</button>
-    </div>
+  <script>
+    // -------------------------------------------------------------
+    // REPLACE THESE WITH YOUR SUPABASE & HCAPTCHA CREDENTIALS
+    // -------------------------------------------------------------
+    const SUPABASE_URL = "YOUR_SUPABASE_URL_HERE"; // e.g. https://xyz.supabase.co
+    const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY_HERE";
+    const HCAPTCHA_SITE_KEY = "YOUR_HCAPTCHA_SITE_KEY"; // Replace with your real hCaptcha sitekey
 
-    <!-- MEMBER FILES -->
-    <div style="margin-top:24px;">
-      <h3 style="font-family:'Space Grotesk',sans-serif; color:var(--cyan); margin-bottom:8px;">Your Private Files</h3>
-      <div id="memberFileList" style="font-size:0.85rem; color:var(--muted);">No files assigned to your account.</div>
-    </div>
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    <!-- ADMIN PANEL -->
-    <div id="adminArea" style="display:none; margin-top:36px; border-top:1px solid var(--border-solid); padding-top:24px;">
-      <h3 style="font-family:'Space Grotesk',sans-serif; color:var(--violet);">Admin Console</h3>
+    let clientIP = "Unknown";
+    let clientLocation = "Unknown";
 
-      <!-- Send File -->
-      <div style="background:var(--surface-2); border:1px solid var(--border-solid); border-radius:10px; padding:16px; margin-top:14px;">
-        <h4 style="margin:0 0 10px 0; font-size:0.9rem;">Send Secure File to User</h4>
-        <div style="display:grid; grid-template-columns:1fr 1fr 100px; gap:8px;">
-          <select id="adminUserSelect" class="field" style="margin:0;"><option value="">Select target user...</option></select>
-          <input type="file" id="adminFileInput" class="field" style="margin:0; padding:8px;">
-          <button type="button" class="btn" id="btnAdminUpload" style="padding:8px 0;">Upload</button>
-        </div>
-      </div>
+    // Auto-detect visitor IP & Country for threat tracking
+    async function detectClientMeta() {
+      try {
+        const res = await fetch("https://ipapi.co/json/");
+        if (res.ok) {
+          const data = await res.json();
+          clientIP = data.ip || "Unknown";
+          clientLocation = `${data.city || ''}, ${data.country_name || ''}`.trim() || "Unknown";
+        }
+      } catch (e) {
+        // Fallback to basic ipify
+        try {
+          const fb = await fetch("https://api.ipify.org?format=json");
+          const fbData = await fb.json();
+          clientIP = fbData.ip || "Unknown";
+        } catch (_) {}
+      }
+    }
+    detectClientMeta();
 
-      <!-- User List -->
-      <div style="margin-top:24px;">
-        <h4 style="margin-bottom:8px;">Registered Users</h4>
-        <table>
-          <thead>
-            <tr><th>Name</th><th>Username</th><th>Email</th><th>Role</th><th>Created</th></tr>
-          </thead>
-          <tbody id="adminUsersTbody"></tbody>
-        </table>
-      </div>
-
-      <!-- Security Threat & Activity Log -->
-      <div style="margin-top:24px;">
-        <h4 style="margin-bottom:8px;">Security Threats & Login Activity</h4>
-        <table>
-          <thead>
-            <tr><th>Timestamp</th><th>Event</th><th>User / Email</th><th>Device ID</th></tr>
-          </thead>
-          <tbody id="adminThreatsTbody"></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <footer class="note">sapkotap.com.np — secure authentication powered by Supabase Cloud</footer>
-
-<script>
-(function(){
-  /* =========================================================
-     SUPABASE KEYS:
-     Replace the strings below with your keys from Supabase Dashboard
-     ========================================================= */
-  const SUPABASE_URL = "https://hkwjnzohrzydmdyigwjr.supabase.co/";
-  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhrd2puem9ocnp5ZG1keWlnd2pyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAyMzUxMzUsImV4cCI6MjEwNTgxMTEzNX0.K4L4LrewJ_xHqsg2jCYE3H9AOMcDCqSBPuujM7ujH8k";
-  const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
-
-  // Active flow state
-  let sessionUser = null;
-  let currentDeviceHash = null;
-
-  // ---------- Theme ----------
-  const root = document.body;
-  const themeToggle = document.getElementById('themeToggle');
-  const saved = localStorage.getItem('sapkotap_theme');
-  if(saved){ root.setAttribute('data-theme', saved); themeToggle.textContent = saved === 'dark' ? '☀' : '☾'; }
-  themeToggle.addEventListener('click', function(){
-    const cur = root.getAttribute('data-theme');
-    const next = cur === 'dark' ? 'light' : 'dark';
-    root.setAttribute('data-theme', next);
-    themeToggle.textContent = next === 'dark' ? '☀' : '☾';
-    localStorage.setItem('sapkotap_theme', next);
-  });
-
-  // ---------- Helpers & Sanitization ----------
-  function sanitize(str){
-    if(!str) return "";
-    const d = document.createElement("div");
-    d.textContent = str;
-    return d.innerHTML;
-  }
-
-  function isEmail(v){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
-  function isStrongPassword(p){
-    return p.length >= 8 && /[0-9]/.test(p) && /[A-Z]/.test(p) && /[^A-Za-z0-9]/.test(p);
-  }
-  function setInvalid(fieldEl, invalid){ fieldEl.classList.toggle('invalid', invalid); }
-
-  function getDeviceFingerprint(){
-    const raw = [navigator.userAgent, screen.width, screen.height, navigator.language].join("|");
-    let h = 0;
-    for(let i=0; i<raw.length; i++){ h = ((h << 5) - h) + raw.charCodeAt(i); h |= 0; }
-    return "dev_" + Math.abs(h).toString(16);
-  }
-
-  const statusBox = document.getElementById('statusBox');
-  function showStatus(msg, kind){
-    statusBox.textContent = msg;
-    statusBox.className = 'status show ' + kind;
-  }
-  function hideStatus(){ statusBox.className = 'status'; }
-
-  async function logAudit(evt, details = {}, email = null){
-    if(!supabase) return;
-    try{
-      await supabase.from("audit_logs").insert({
-        event_type: evt,
-        user_email: email,
-        details: details,
-        ip_address: "client",
-        user_agent: navigator.userAgent
-      });
-    }catch(err){ console.error("Audit log error:", err); }
-  }
-
-  // ---------- Navigation / Forms ----------
-  const tabLogin = document.getElementById('tabLogin');
-  const tabRegister = document.getElementById('tabRegister');
-  const loginForm = document.getElementById('loginForm');
-  const registerForm = document.getElementById('registerForm');
-  const otpForm = document.getElementById('otpForm');
-  const deviceForm = document.getElementById('deviceForm');
-  const forgotForm = document.getElementById('forgotForm');
-
-  function showOnlyForm(activeF){
-    [loginForm, registerForm, otpForm, deviceForm, forgotForm].forEach(f => f.classList.remove('active'));
-    activeF.classList.add('active');
-    hideStatus();
-  }
-
-  function showLogin(){
-    tabLogin.classList.add('active'); tabRegister.classList.remove('active');
-    showOnlyForm(loginForm);
-  }
-  function showRegister(){
-    tabRegister.classList.add('active'); tabLogin.classList.remove('active');
-    showOnlyForm(registerForm);
-  }
-
-  tabLogin.addEventListener('click', showLogin);
-  tabRegister.addEventListener('click', showRegister);
-  document.getElementById('goRegister').addEventListener('click', showRegister);
-  document.getElementById('goLogin').addEventListener('click', showLogin);
-  document.getElementById('btnBackToLogin').addEventListener('click', showLogin);
-  document.getElementById('btnCancelOtp').addEventListener('click', showLogin);
-
-  document.getElementById('forgotLink').addEventListener('click', function(e){
-    e.preventDefault();
-    showOnlyForm(forgotForm);
-  });
-
-  // ---------- Registration ----------
-  registerForm.addEventListener('submit', async function(e){
-    e.preventDefault();
-    hideStatus();
-
-    const name = document.getElementById('regName').value.trim();
-    const uname = document.getElementById('regUser').value.trim().toLowerCase();
-    const email = document.getElementById('regEmail').value.trim();
-    const pass = document.getElementById('regPass').value;
-    const confirm = document.getElementById('regConfirm').value;
-
-    let ok = true;
-    setInvalid(document.getElementById('regNameField'), !name);
-    if(!name) ok = false;
-
-    const unameValid = /^[a-zA-Z0-9_-]{3,20}$/.test(uname);
-    setInvalid(document.getElementById('regUserField'), !unameValid);
-    if(!unameValid) ok = false;
-
-    const emailValid = isEmail(email);
-    setInvalid(document.getElementById('regEmailField'), !emailValid);
-    if(!emailValid) ok = false;
-
-    const passValid = isStrongPassword(pass);
-    setInvalid(document.getElementById('regPassField'), !passValid);
-    if(!passValid) ok = false;
-
-    const matchValid = confirm === pass && passValid;
-    setInvalid(document.getElementById('regConfirmField'), !matchValid);
-    if(!matchValid) ok = false;
-
-    if(!ok) return;
-
-    if(!supabase){
-      showStatus("Supabase URL & Key are not set yet. Please paste them in the script.", "bad");
-      return;
+    function showAlert(msg, isError = true) {
+      const el = document.getElementById("alertBox");
+      el.className = isError ? "alert-box alert-error" : "alert-box alert-success";
+      el.textContent = msg;
+      el.style.display = "block";
     }
 
-    // Check unique username
-    const { data: taken } = await supabase.rpc("is_username_taken", { uname: uname });
-    if(taken){
-      showStatus("Username is already taken. Please choose another.", "bad");
-      return;
-    }
+    function switchTab(tab) {
+      document.getElementById("alertBox").style.display = "none";
+      const signInForm = document.getElementById("signInForm");
+      const regForm = document.getElementById("registerForm");
+      const signBtn = document.getElementById("signInTabBtn");
+      const regBtn = document.getElementById("registerTabBtn");
 
-    // Sign up with Supabase
-    const { data, error } = await supabase.auth.signUp({
-      email: email,
-      password: pass,
-      options: { data: { full_name: name, username: uname } }
-    });
-
-    if(error){
-      if(error.message.includes("User already registered")){
-        showStatus("Account already exists, please log in instead.", "bad");
+      if (tab === 'signin') {
+        signInForm.style.display = "block";
+        regForm.style.display = "none";
+        signBtn.classList.add("active");
+        regBtn.classList.remove("active");
       } else {
-        showStatus(error.message, "bad");
+        signInForm.style.display = "none";
+        regForm.style.display = "block";
+        regBtn.classList.add("active");
+        signBtn.classList.remove("active");
       }
-      await logAudit("REGISTRATION_FAILED", { reason: error.message }, email);
-      return;
     }
 
-    await logAudit("REGISTRATION_SUCCESS", { username: uname }, email);
-    showStatus("Account created! Check your email to verify and then sign in.", "good");
-    registerForm.reset();
-    setTimeout(showLogin, 1500);
-  });
-
-  // ---------- Login (Step 1) ----------
-  loginForm.addEventListener('submit', async function(e){
-    e.preventDefault();
-    hideStatus();
-
-    const email = document.getElementById('loginEmail').value.trim();
-    const pass = document.getElementById('loginPass').value;
-
-    let ok = true;
-    const emailValid = isEmail(email);
-    setInvalid(document.getElementById('loginEmailField'), !emailValid);
-    if(!emailValid) ok = false;
-
-    setInvalid(document.getElementById('loginPassField'), !pass);
-    if(!pass) ok = false;
-
-    if(!ok) return;
-
-    if(!supabase){
-      showStatus("Supabase URL & Key are not set yet.", "bad");
-      return;
+    async function logThreatEvent(event, targetUser, details = {}) {
+      try {
+        await supabase.from("audit_logs").insert([{
+          event,
+          user_email: targetUser,
+          ip_address: clientIP,
+          location: clientLocation,
+          details: JSON.stringify(details),
+          created_at: new Date().toISOString()
+        }]);
+      } catch (err) {
+        console.warn("Telemetry log failed:", err);
+      }
     }
 
-    const { data, error } = await supabase.auth.signInWithPassword({ email: email, password: pass });
-    if(error){
-  console.error("Supabase Error:", error);
-  showStatus(error.message, "bad");
-      await logAudit("LOGIN_STEP1_FAILED", {}, email);
-      return;
-    }
+    // SIGN IN HANDLER
+    async function handleSignIn(e) {
+      e.preventDefault();
+      const email = document.getElementById("loginEmail").value.trim();
+      const password = document.getElementById("loginPassword").value;
+      
+      // Get hCaptcha token if active
+      let captchaToken = null;
+      if (window.hcaptcha) {
+        try { captchaToken = hcaptcha.getResponse(); } catch (_) {}
+      }
 
-    sessionUser = data.user;
-    currentDeviceHash = getDeviceFingerprint();
+      const options = {};
+      if (captchaToken) options.captchaToken = captchaToken;
 
-    // Trigger OTP (Step 2)
-    const { error: otpErr } = await supabase.auth.signInWithOtp({
-      email: email,
-      options: { shouldCreateUser: false }
-    });
-
-    if(otpErr){
-      showStatus("Could not send verification code. Try again.", "bad");
-      return;
-    }
-
-    showStatus("6-digit verification code sent to your email.", "good");
-    showOnlyForm(otpForm);
-  });
-
-  // ---------- Login (Step 2: OTP Verification) ----------
-  otpForm.addEventListener('submit', async function(e){
-    e.preventDefault();
-    hideStatus();
-
-    const code = document.getElementById('otpCode').value.trim();
-    if(code.length !== 6){
-      setInvalid(document.getElementById('otpField'), true);
-      return;
-    }
-
-    const { error } = await supabase.auth.verifyOtp({
-      email: sessionUser.email,
-      token: code,
-      type: "email"
-    });
-
-    if(error){
-      showStatus("Invalid or expired OTP code.", "bad");
-      await logAudit("LOGIN_OTP_FAILED", {}, sessionUser.email);
-      return;
-    }
-
-    // Check device trust (Step 3)
-    const { data: dev } = await supabase
-      .from("user_known_devices")
-      .select("id")
-      .eq("user_id", sessionUser.id)
-      .eq("device_hash", currentDeviceHash)
-      .maybeSingle();
-
-    if(dev){
-      openDashboard();
-    } else {
-      showOnlyForm(deviceForm);
-    }
-  });
-
-  // ---------- Login (Step 3: Device Trust) ----------
-  document.getElementById('btnTrustDevice').addEventListener('click', async function(){
-    await supabase.from("user_known_devices").insert({
-      user_id: sessionUser.id,
-      device_hash: currentDeviceHash,
-      device_name: navigator.platform || "Browser"
-    });
-    await logAudit("NEW_DEVICE_TRUSTED", { hash: currentDeviceHash }, sessionUser.email);
-    openDashboard();
-  });
-
-  document.getElementById('btnRejectDevice').addEventListener('click', async function(){
-    await supabase.auth.signOut();
-    showLogin();
-    showStatus("Sign-in cancelled.", "bad");
-  });
-
-  // ---------- Forgot Password ----------
-  forgotForm.addEventListener('submit', async function(e){
-    e.preventDefault();
-    hideStatus();
-    const email = document.getElementById('forgotEmail').value.trim();
-    if(!isEmail(email)){
-      setInvalid(document.getElementById('forgotEmailField'), true);
-      return;
-    }
-
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin + window.location.pathname
-    });
-
-    if(error){
-      showStatus(error.message, "bad");
-      return;
-    }
-    showStatus("Password recovery link sent! Check your inbox.", "good");
-  });
-
-  // ---------- Dashboard & Admin Loader ----------
-  async function openDashboard(){
-    await logAudit("LOGIN_SUCCESS", { device: currentDeviceHash }, sessionUser.email);
-    document.getElementById('mainAuthWrap').style.display = 'none';
-    document.getElementById('dashboardWrap').style.display = 'block';
-
-    const { data: { user } } = await supabase.auth.getUser();
-    const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single();
-    const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
-    const isAdmin = roles && roles.some(r => r.role === 'admin');
-
-    document.getElementById('userWelcome').textContent = "Welcome, " + (profile?.full_name || user.email);
-    document.getElementById('userMeta').textContent = "@" + (profile?.username || "user") + " • " + user.email + (isAdmin ? " [ADMINISTRATOR]" : "");
-
-    loadUserFiles(user.id);
-
-    if(isAdmin){
-      document.getElementById('adminArea').style.display = 'block';
-      loadAdminDashboard();
-    }
-  }
-
-  async function loadUserFiles(uid){
-    const { data: files } = await supabase.from("user_files").select("*").eq("target_user_id", uid);
-    const box = document.getElementById('memberFileList');
-    if(!files || files.length === 0){
-      box.textContent = "No private files assigned to your account.";
-      return;
-    }
-
-    let html = '<ul style="list-style:none; padding:0;">';
-    for(const f of files){
-      const { data: signed } = await supabase.storage.from("secure-user-files").createSignedUrl(f.storage_path, 3600);
-      html += `<li style="padding:8px 0; border-bottom:1px solid var(--border-solid); display:flex; justify-content:space-between;">
-        <span><strong>${sanitize(f.file_name)}</strong> <small style="color:var(--muted)">(${(f.file_size/1024).toFixed(1)} KB)</small></span>
-        <a href="${signed ? signed.signedUrl : '#'}" target="_blank" style="color:var(--cyan); text-decoration:none; font-weight:600;">Download</a>
-      </li>`;
-    }
-    html += '</ul>';
-    box.innerHTML = html;
-  }
-
-  async function loadAdminDashboard(){
-    // 1. Users list
-    const { data: users } = await supabase.from("profiles").select("*, user_roles(role)").order("created_at", { ascending: false });
-    const sel = document.getElementById('adminUserSelect');
-    const tbody = document.getElementById('adminUsersTbody');
-    sel.innerHTML = '<option value="">Select target user...</option>';
-    tbody.innerHTML = '';
-
-    if(users){
-      users.forEach(u => {
-        const opt = document.createElement('option');
-        opt.value = u.id;
-        opt.textContent = `${u.full_name} (@${u.username})`;
-        sel.appendChild(opt);
-
-        const r = (u.user_roles && u.user_roles[0]?.role) || 'user';
-        tbody.innerHTML += `<tr>
-          <td>${sanitize(u.full_name)}</td>
-          <td>@${sanitize(u.username)}</td>
-          <td>${sanitize(u.email)}</td>
-          <td><span style="color:${r==='admin'?'var(--cyan)':'var(--muted)'}; font-weight:600;">${r}</span></td>
-          <td>${new Date(u.created_at).toLocaleDateString()}</td>
-        </tr>`;
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+        options
       });
+
+      if (error) {
+        showAlert(error.message);
+        await logThreatEvent("LOGIN_FAILED", email, { error: error.message });
+        if (window.hcaptcha) hcaptcha.reset();
+        return;
+      }
+
+      await logThreatEvent("LOGIN_SUCCESS", email, { status: "OK" });
+      renderDashboard(data.user);
     }
 
-    // 2. Threats & Activity
-    const { data: logs } = await supabase.from("audit_logs").select("*").order("created_at", { ascending: false }).limit(25);
-    const logBody = document.getElementById('adminThreatsTbody');
-    logBody.innerHTML = '';
-    if(logs){
-      logs.forEach(l => {
-        const isThreat = l.event_type.includes("FAILED");
-        logBody.innerHTML += `<tr>
-          <td>${new Date(l.created_at).toLocaleTimeString()}</td>
-          <td><code style="color:${isThreat?'var(--danger)':'var(--cyan)'}">${sanitize(l.event_type)}</code></td>
-          <td>${sanitize(l.user_email || 'Guest')}</td>
-          <td><code>${sanitize(l.details?.hash || '-')}</code></td>
-        </tr>`;
+    // REGISTER HANDLER
+    async function handleRegister(e) {
+      e.preventDefault();
+      const fullName = document.getElementById("regFullName").value.trim();
+      const username = document.getElementById("regUsername").value.trim();
+      const email = document.getElementById("regEmail").value.trim();
+      const password = document.getElementById("regPassword").value;
+      const confirmPassword = document.getElementById("regConfirmPassword").value;
+
+      if (password !== confirmPassword) {
+        showAlert("Passwords do not match.");
+        return;
+      }
+
+      let captchaToken = null;
+      if (window.hcaptcha) {
+        try { captchaToken = hcaptcha.getResponse(); } catch (_) {}
+      }
+
+      const options = {
+        data: { full_name: fullName, username: username }
+      };
+      if (captchaToken) options.captchaToken = captchaToken;
+
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options
       });
+
+      if (error) {
+        showAlert(error.message);
+        await logThreatEvent("REGISTRATION_FAILED", email, { error: error.message });
+        if (window.hcaptcha) hcaptcha.reset();
+        return;
+      }
+
+      showAlert("Account created successfully! You can now log in.", false);
+      switchTab('signin');
     }
-  }
 
-  // Admin upload file to user
-  document.getElementById('btnAdminUpload').addEventListener('click', async function(){
-    const targetUid = document.getElementById('adminUserSelect').value;
-    const file = document.getElementById('adminFileInput').files[0];
-    if(!targetUid || !file){
-      alert("Please select both a target user and a file.");
-      return;
+    // DASHBOARD & ADMIN LOGS
+    async function renderDashboard(user) {
+      document.getElementById("authNav").style.display = "none";
+      document.getElementById("signInForm").style.display = "none";
+      document.getElementById("registerForm").style.display = "none";
+      document.getElementById("alertBox").style.display = "none";
+
+      const dash = document.getElementById("dashboardPanel");
+      dash.style.display = "block";
+
+      document.getElementById("userGreeting").textContent = `Welcome, ${user.email}`;
+
+      // Check if Admin
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .single();
+
+      const isAdmin = (roleData && roleData.role === 'admin') || user.email === 'pramodsapkota132@gmail.com';
+      document.getElementById("userRoleBadge").textContent = isAdmin ? "[ADMINISTRATOR]" : "[MEMBER]";
+
+      if (isAdmin) {
+        document.getElementById("adminSection").style.display = "block";
+        loadThreatLogs();
+      }
     }
 
-    const path = `${targetUid}/${Date.now()}_${file.name}`;
-    const { error: upErr } = await supabase.storage.from("secure-user-files").upload(path, file);
-    if(upErr){ alert("Upload error: " + upErr.message); return; }
+    async function loadThreatLogs() {
+      const { data, error } = await supabase
+        .from("audit_logs")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(20);
 
-    const { data: { user } } = await supabase.auth.getUser();
-    await supabase.from("user_files").insert({
-      target_user_id: targetUid,
-      uploaded_by: user.id,
-      file_name: file.name,
-      storage_path: path,
-      file_size: file.size,
-      mime_type: file.type
-    });
+      const tbody = document.getElementById("threatLogsBody");
+      if (error || !data || data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No threat logs recorded.</td></tr>`;
+        return;
+      }
 
-    await logAudit("ADMIN_FILE_SENT", { target: targetUid, file: file.name });
-    alert("File uploaded securely to user.");
-    document.getElementById('adminFileInput').value = '';
-  });
+      tbody.innerHTML = data.map(log => `
+        <tr>
+          <td>${new Date(log.created_at).toLocaleTimeString()}</td>
+          <td style="color: ${log.event.includes('FAIL') ? 'var(--error-color)' : 'var(--accent-cyan)'};">${log.event}</td>
+          <td>${log.user_email || '-'}</td>
+          <td><span class="badge-ip">${log.ip_address || 'Unknown'}</span></td>
+          <td>${log.location || 'Unknown'}</td>
+        </tr>
+      `).join('');
+    }
 
-  // Logout
-  document.getElementById('btnLogout').addEventListener('click', async function(){
-    if(supabase) await supabase.auth.signOut();
-    window.location.reload();
-  });
+    async function handleSignOut() {
+      await supabase.auth.signOut();
+      window.location.reload();
+    }
 
-  // Resume session on load
-  window.addEventListener('DOMContentLoaded', async function(){
-    if(supabase){
+    // Restore session on page load
+    async function checkSession() {
       const { data: { session } } = await supabase.auth.getSession();
-      if(session){
-        sessionUser = session.user;
-        currentDeviceHash = getDeviceFingerprint();
-        openDashboard();
+      if (session && session.user) {
+        renderDashboard(session.user);
       }
     }
-  });
-})();
-</script>
+    checkSession();
+  </script>
 </body>
 </html>
