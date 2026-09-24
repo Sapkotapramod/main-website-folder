@@ -8,7 +8,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
-<script src="https://js.hcaptcha.com/1/api.js" async defer></script>
 <!-- Supabase SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
 
@@ -320,8 +319,6 @@
             <input type="password" id="loginPass" autocomplete="current-password" placeholder="••••••••" required>
             <div class="err">Password is required.</div>
           </div>
-
-          <div id="loginCaptchaContainer" style="margin:12px 0; min-height:78px; display:none;"></div>
           <div class="row-between">
             <label><input type="checkbox" id="rememberMe"> Remember me</label>
             <a href="#" id="forgotLink">Forgot password?</a>
@@ -365,8 +362,6 @@
             <input type="email" id="forgotEmail" placeholder="you@gmail.com or outlook.com" required>
             <div class="err">Enter a valid email address.</div>
           </div>
-
-          <div id="forgotCaptchaContainer" style="margin:12px 0; min-height:78px; display:none;"></div>
 
           <button type="submit" class="btn">Send Reset Link</button>
           <button type="button" class="btn btn-outline" id="btnBackToLogin">Back to Sign In</button>
@@ -426,8 +421,6 @@
             <input type="password" id="regConfirm" autocomplete="new-password" placeholder="••••••••" required>
             <div class="err">Passwords do not match.</div>
           </div>
-
-          <div id="regCaptchaContainer" style="margin:12px 0; min-height:78px; display:none;"></div>
 
           <button type="submit" class="btn" id="btnCreateAccount">Create Account</button>
           <div class="switch-line">Already have an account? <button type="button" id="goLogin">Sign in</button></div>
@@ -502,7 +495,6 @@
      ========================================================= */
   const SUPABASE_URL = "https://hkwjnzohrzydmdyigwjr.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhrd2puem9ocnp5ZG1keWlnd2pyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAyMzUxMzUsImV4cCI6MjEwNTgxMTEzNX0.K4L4LrewJ_xHqsg2jCYE3H9AOMcDCqSBPuujM7ujH8k";
-  const HCAPTCHA_SITE_KEY = "a27a57aa-e9f0-47e8-96d4-25802e1c2e00";
 
   // Initialize Supabase Client
   let supabase = null;
@@ -516,49 +508,6 @@
     }
   }
 
-  // hCaptcha widget state & setup
-  const captchaWidgets = { login: null, reg: null, forgot: null };
-  const captchaRenderFailed = { login: false, reg: false, forgot: false };
-
-  function initHCaptcha(){
-    if(!window.hcaptcha || !HCAPTCHA_SITE_KEY) return;
-    const theme = document.documentElement.getAttribute('data-theme') || 'dark';
-    ['login', 'reg', 'forgot'].forEach(key => {
-      const container = document.getElementById(`${key}CaptchaContainer`);
-      if(container && captchaWidgets[key] === null && !captchaRenderFailed[key]){
-        try{
-          const wId = window.hcaptcha.render(`${key}CaptchaContainer`, {
-            sitekey: HCAPTCHA_SITE_KEY,
-            theme,
-            'error-callback': function(){
-              captchaRenderFailed[key] = true;
-              if(container) container.style.display = 'none';
-            }
-          });
-          captchaWidgets[key] = wId;
-          container.style.display = 'block';
-        }catch(e){
-          captchaRenderFailed[key] = true;
-          if(container) container.style.display = 'none';
-        }
-      }
-    });
-  }
-
-  function isCaptchaRequired(key){
-    return Boolean(HCAPTCHA_SITE_KEY && window.hcaptcha && captchaWidgets[key] !== null && !captchaRenderFailed[key]);
-  }
-
-  function getCaptchaToken(key){
-    if(!window.hcaptcha || captchaWidgets[key] === null) return null;
-    try{ return window.hcaptcha.getResponse(captchaWidgets[key]) || null; }catch(e){ return null; }
-  }
-
-  function resetCaptcha(key){
-    if(!window.hcaptcha || captchaWidgets[key] === null) return;
-    try{ window.hcaptcha.reset(captchaWidgets[key]); }catch(e){}
-  }
-  window.addEventListener('load', () => setTimeout(initHCaptcha, 400));
 
   // Auth State
   let sessionUser = null;
@@ -693,7 +642,6 @@
     allForms.forEach(f => { if(f) f.classList.remove('active'); });
     if(activeForm) activeForm.classList.add('active');
     hideStatus();
-    initHCaptcha();
   }
 
   function showLogin(){
@@ -757,15 +705,6 @@
       return;
     }
 
-    const token = getCaptchaToken('reg');
-    const keyOfForm = 'reg';
-    if(isCaptchaRequired('reg') && !token){
-      showStatus("Please complete the hCaptcha challenge before continuing.", "bad");
-      return;
-    }
-    if(HCAPTCHA_SITE_KEY && (!window.hcaptcha || captchaWidgets.reg === null)){
-      console.warn("hCaptcha unavailable for registration: site key invalid or domain not registered. Continuing without captcha token.");
-    }
 
     try{
       const { data: taken } = await supabase.rpc("is_username_taken", { uname });
@@ -776,10 +715,8 @@
     }catch(err){}
 
     const opts = { data: { full_name: name, username: uname } };
-    if(token) opts.captchaToken = token;
 
     const { error } = await supabase.auth.signUp({ email, password: pass, options: opts });
-    resetCaptcha('reg');
 
     if(error){
       showStatus(error.message.includes("User already registered") ? "Account already exists, please sign in." : error.message, "bad");
@@ -788,7 +725,7 @@
     }
 
     await logAudit("REGISTRATION_SUCCESS", { username: uname }, email);
-    showStatus("Account created! Check your email to verify your address.", "good");
+    showStatus("Account created! A confirmation email was sent. You MUST click the link in your email (check spam folder too) before you can sign in.", "good");
     registerForm.reset();
     setTimeout(showLogin, 2500);
   });
@@ -839,22 +776,20 @@
       await logAudit("LOGIN_BLOCKED_LOCKOUT", {}, loginEmail);
       return;
     }
-
-    const token = getCaptchaToken('login');
-    if(isCaptchaRequired('login') && !token){
-      showStatus("Please complete the hCaptcha challenge before continuing.", "bad");
-      return;
-    }
-
     const opts = {};
-    if(token) opts.captchaToken = token;
 
     const { data, error } = await supabase.auth.signInWithPassword({ email: loginEmail, password: pass, options: opts });
-    resetCaptcha('login');
 
     if(error){
       recordFailedAttempt(email);
-      showStatus(error.message.toLowerCase().includes("email not confirmed") ? "Please verify your email address first." : "Email or password is incorrect.", "bad");
+      const em = (error.message || "").toLowerCase();
+      if(em.includes("email not confirmed")){
+        showStatus("Your email isn't verified yet. Check your inbox (and spam) for the confirmation email from Supabase, click the link, then sign in.", "bad");
+      } else if(em.includes("invalid login credentials")){
+        showStatus("Email or password is incorrect. You can also sign in with your username.", "bad");
+      } else {
+        showStatus("Sign-in failed: " + error.message, "bad");
+      }
       await logAudit("LOGIN_STEP1_FAILED", { reason: error.message }, email);
       return;
     }
@@ -917,17 +852,10 @@
       return;
     }
 
-    const token = getCaptchaToken('forgot');
-    if(isCaptchaRequired('forgot') && !token){
-      showStatus("Please complete the hCaptcha challenge before continuing.", "bad");
-      return;
-    }
 
     const opts = { redirectTo: window.location.origin + window.location.pathname };
-    if(token) opts.captchaToken = token;
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, opts);
-    resetCaptcha('forgot');
 
     if(error){
       showStatus(error.message, "bad");
@@ -979,14 +907,24 @@
       showStatus("Please set your Supabase URL & Key in the script.", "bad");
       return;
     }
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: provider,
-      options: {
-        redirectTo: window.location.origin + window.location.pathname
+    hideStatus();
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: provider,
+        options: {
+          redirectTo: window.location.origin + window.location.pathname
+        }
+      });
+      if(error){
+        const msg = (error.message || "").toLowerCase();
+        if(msg.includes("not enabled") || msg.includes("validation_failed") || msg.includes("unsupported")){
+          showStatus(`${provider === 'google' ? 'Google' : 'Outlook'} login is not enabled in your Supabase dashboard yet. Enable it under Authentication -> Providers.`, "bad");
+        } else {
+          showStatus(`${provider} login error: ${error.message}`, "bad");
+        }
       }
-    });
-    if(error){
-      showStatus("Login failed: " + error.message, "bad");
+    } catch(err) {
+      showStatus(`${provider} login failed: ${err.message}`, "bad");
     }
   }
 
