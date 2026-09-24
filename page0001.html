@@ -638,10 +638,8 @@
 
     const { data, error } = await supabase.auth.signInWithPassword({ email: email, password: pass });
     if(error){
-    \if(error){
-  console.error("Supabase Error:", error);
-  showStatus(error.message, "bad");
-
+        console.error("Supabase Error:", error);
+      showStatus(error.message, "bad");
       await logAudit("LOGIN_STEP1_FAILED", {}, email);
       return;
     }
