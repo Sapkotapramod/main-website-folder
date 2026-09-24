@@ -311,9 +311,9 @@
 
 
           <div class="field" id="loginEmailField">
-            <label for="loginEmail">Email</label>
-            <input type="email" id="loginEmail" autocomplete="email" placeholder="you@gmail.com or outlook.com" required>
-            <div class="err">Enter a valid email address.</div>
+            <label for="loginEmail">Email or Username</label>
+            <input type="text" id="loginEmail" autocomplete="username" placeholder="Username or email address" required>
+            <div class="err">Enter your username or email.</div>
           </div>
           <div class="field" id="loginPassField">
             <label for="loginPass">Password</label>
@@ -427,6 +427,8 @@
             <div class="err">Passwords do not match.</div>
           </div>
 
+          <div id="regCaptchaContainer" style="margin:12px 0; min-height:78px; display:none;"></div>
+
           <button type="submit" class="btn" id="btnCreateAccount">Create Account</button>
           <div class="switch-line">Already have an account? <button type="button" id="goLogin">Sign in</button></div>
         </form>
@@ -516,19 +518,35 @@
 
   // hCaptcha widget state & setup
   const captchaWidgets = { login: null, reg: null, forgot: null };
+  const captchaRenderFailed = { login: false, reg: false, forgot: false };
 
   function initHCaptcha(){
     if(!window.hcaptcha || !HCAPTCHA_SITE_KEY) return;
     const theme = document.documentElement.getAttribute('data-theme') || 'dark';
     ['login', 'reg', 'forgot'].forEach(key => {
       const container = document.getElementById(`${key}CaptchaContainer`);
-      if(container && captchaWidgets[key] === null){
-        container.style.display = 'block';
+      if(container && captchaWidgets[key] === null && !captchaRenderFailed[key]){
         try{
-          captchaWidgets[key] = window.hcaptcha.render(`${key}CaptchaContainer`, { sitekey: HCAPTCHA_SITE_KEY, theme });
-        }catch(e){}
+          const wId = window.hcaptcha.render(`${key}CaptchaContainer`, {
+            sitekey: HCAPTCHA_SITE_KEY,
+            theme,
+            'error-callback': function(){
+              captchaRenderFailed[key] = true;
+              if(container) container.style.display = 'none';
+            }
+          });
+          captchaWidgets[key] = wId;
+          container.style.display = 'block';
+        }catch(e){
+          captchaRenderFailed[key] = true;
+          if(container) container.style.display = 'none';
+        }
       }
     });
+  }
+
+  function isCaptchaRequired(key){
+    return Boolean(HCAPTCHA_SITE_KEY && window.hcaptcha && captchaWidgets[key] !== null && !captchaRenderFailed[key]);
   }
 
   function getCaptchaToken(key){
@@ -540,7 +558,6 @@
     if(!window.hcaptcha || captchaWidgets[key] === null) return;
     try{ window.hcaptcha.reset(captchaWidgets[key]); }catch(e){}
   }
-
   window.addEventListener('load', () => setTimeout(initHCaptcha, 400));
 
   // Auth State
@@ -741,9 +758,13 @@
     }
 
     const token = getCaptchaToken('reg');
-    if(HCAPTCHA_SITE_KEY && !token){
-      showStatus("Please complete the hCaptcha challenge.", "bad");
+    const keyOfForm = 'reg';
+    if(isCaptchaRequired('reg') && !token){
+      showStatus("Please complete the hCaptcha challenge before continuing.", "bad");
       return;
+    }
+    if(HCAPTCHA_SITE_KEY && (!window.hcaptcha || captchaWidgets.reg === null)){
+      console.warn("hCaptcha unavailable for registration: site key invalid or domain not registered. Continuing without captcha token.");
     }
 
     try{
@@ -777,36 +798,58 @@
     e.preventDefault();
     hideStatus();
 
-    const email = document.getElementById('loginEmail').value.trim();
+    const identifier = document.getElementById('loginEmail').value.trim();
     const pass = document.getElementById('loginPass').value;
 
-    const emailValid = isEmail(email);
+    const identValid = identifier.length >= 2;
     const passValid = !!pass;
-    setInvalid(document.getElementById('loginEmailField'), !emailValid);
+    setInvalid(document.getElementById('loginEmailField'), !identValid);
     setInvalid(document.getElementById('loginPassField'), !passValid);
-    if(!emailValid || !passValid) return;
+    if(!identValid || !passValid) return;
 
     if(!supabase){
       showStatus("Please add your Supabase URL & Key in the script.", "bad");
       return;
     }
 
-    if(isLockedOut(email)){
-      showStatus(`Too many failed attempts. Try again in ${lockoutMinutesLeft(email)} min.`, "bad");
-      await logAudit("LOGIN_BLOCKED_LOCKOUT", {}, email);
+    let loginEmail = identifier;
+    if(!identifier.includes("@")){
+      // Resolve username to email
+      try {
+        const { data: resolvedEmail } = await supabase.rpc("get_email_by_username", { uname: identifier.toLowerCase() });
+        if(resolvedEmail){
+          loginEmail = resolvedEmail;
+        } else {
+          // Direct fallback query if RPC not yet created
+          const { data: prof } = await supabase.from("profiles").select("email").ilike("username", identifier).maybeSingle();
+          if(prof && prof.email) loginEmail = prof.email;
+          else {
+            showStatus("No account found with username @" + identifier, "bad");
+            return;
+          }
+        }
+      } catch(e) {
+        showStatus("Could not look up username: " + (e.message || "try using email"), "bad");
+        return;
+      }
+    }
+
+    if(isLockedOut(loginEmail)){
+      showStatus(`Too many failed attempts. Try again in ${lockoutMinutesLeft(loginEmail)} min.`, "bad");
+      await logAudit("LOGIN_BLOCKED_LOCKOUT", {}, loginEmail);
       return;
     }
 
     const token = getCaptchaToken('login');
-    if(HCAPTCHA_SITE_KEY && !token){
-      showStatus("Please complete the hCaptcha challenge.", "bad");
+    if(isCaptchaRequired('login') && !token){
+      showStatus("Please complete the hCaptcha challenge before continuing.", "bad");
       return;
     }
 
     const opts = {};
     if(token) opts.captchaToken = token;
 
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass, options: opts });
+    const { data, error } = await supabase.auth.signInWithPassword({ email: loginEmail, password: pass, options: opts });
     resetCaptcha('login');
 
     if(error){
@@ -875,8 +918,8 @@
     }
 
     const token = getCaptchaToken('forgot');
-    if(HCAPTCHA_SITE_KEY && !token){
-      showStatus("Please complete the hCaptcha challenge.", "bad");
+    if(isCaptchaRequired('forgot') && !token){
+      showStatus("Please complete the hCaptcha challenge before continuing.", "bad");
       return;
     }
 
@@ -1040,16 +1083,24 @@
     const thActions = document.getElementById('thActions');
     if(thActions) thActions.style.display = isMainAdmin ? 'table-cell' : 'none';
 
-    // 1. Users list
-    let users = null;
+    // 1. Users list & Roles
+    let users = [];
     try {
-      const res = await supabase.from("profiles").select("*, user_roles(role)").order("created_at", { ascending: false });
-      if(!res.error && res.data) users = res.data;
-    } catch(e) {}
-    if(!users){
-      const resFallback = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
-      users = resFallback.data || [];
+      const { data: profs, error: pErr } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
+      if(profs) users = profs;
+      if(pErr) console.warn("Admin profiles load warning:", pErr);
+    } catch(e) {
+      console.warn("Profiles fetch error:", e);
     }
+
+    // Fetch roles separately to avoid foreign-key constraint issues
+    let rolesMap = {};
+    try {
+      const { data: roles } = await supabase.from("user_roles").select("user_id, role");
+      if(roles){
+        roles.forEach(r => { rolesMap[r.user_id] = r.role; });
+      }
+    } catch(e) {}
     const sel = document.getElementById('adminUserSelect');
     const tbody = document.getElementById('adminUsersTbody');
     sel.innerHTML = '<option value="">Select target user...</option>';
@@ -1062,7 +1113,7 @@
         opt.textContent = `${u.full_name} (@${u.username})`;
         sel.appendChild(opt);
 
-        const r = (u.user_roles && u.user_roles[0]?.role) || (u.email === ADMIN_EMAIL ? 'admin' : 'user');
+        const r = rolesMap[u.id] || (u.user_roles && u.user_roles[0]?.role) || ((u.email && u.email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) ? 'admin' : 'user');
         const isTargetMainAdmin = (u.email && u.email.toLowerCase() === ADMIN_EMAIL.toLowerCase());
 
         let actionHtml = '';
@@ -1226,4 +1277,4 @@
 })();
 </script>
 </body>
-</html> 
+</html>
