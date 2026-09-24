@@ -448,7 +448,7 @@
      Replace the strings below with your keys from Supabase Dashboard
      ========================================================= */
   const SUPABASE_URL = "https://hkwjnzohrzydmdyigwjr.supabase.co";
-  const SUPABASE_ANON_KEY = "sb_publishable_EQoexcmNoJuos8Wla1Nykw_v5vwH1Qy";
+  const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY_HERE";
   const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
   // Active flow state
@@ -638,8 +638,7 @@
 
     const { data, error } = await supabase.auth.signInWithPassword({ email: email, password: pass });
     if(error){
-        console.error("Supabase Error:", error);
-      showStatus(error.message, "bad");
+      showStatus("Email or password is incorrect.", "bad");
       await logAudit("LOGIN_STEP1_FAILED", {}, email);
       return;
     }
