@@ -7,6 +7,10 @@
 <meta name="description" content="Login and registration for sapkotap.com.np">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<!-- Supabase SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <style>
   :root{
     --bg:#0b0f14;
@@ -138,7 +142,7 @@
     padding:clamp(20px,5vw,48px);
   }
   .card{
-    width:100%; max-width:420px;
+    width:100%; max-width:440px;
     background:var(--surface);
     border:1px solid var(--border-solid);
     border-radius:var(--radius);
@@ -167,13 +171,13 @@
     display:block; font-family:'JetBrains Mono',monospace; font-size:.72rem;
     letter-spacing:.04em; text-transform:uppercase; color:var(--muted); margin-bottom:7px;
   }
-  .field input{
+  .field input, .field select{
     width:100%; padding:11px 13px; border-radius:9px;
     background:var(--surface-2); border:1px solid var(--border-solid);
     color:var(--text); font-family:'Inter',sans-serif; font-size:.94rem;
     outline:none; transition:border-color .18s, box-shadow .18s;
   }
-  .field input:focus{
+  .field input:focus, .field select:focus{
     border-color:var(--cyan);
     box-shadow:0 0 0 3px rgba(34,211,238,0.18);
   }
@@ -195,6 +199,12 @@
   .btn:hover{transform:translateY(-1px); box-shadow:0 8px 24px -8px rgba(34,211,238,0.5);}
   .btn:active{transform:translateY(0);}
 
+  .btn-outline{
+    background:var(--surface-2); color:var(--text); border:1px solid var(--border-solid);
+    margin-top:10px;
+  }
+  .btn-outline:hover{box-shadow:none; border-color:var(--cyan);}
+
   .switch-line{text-align:center; font-size:.87rem; color:var(--muted); margin-top:20px;}
   .switch-line button{
     background:none; border:none; color:var(--cyan); font-weight:600; cursor:pointer;
@@ -213,6 +223,18 @@
   .form{display:none;}
   .form.active{display:block;}
 
+  /* Dashboard View */
+  .portal-container{
+    display:none; width:100%; max-width:960px; margin:20px auto;
+    padding:clamp(20px,4vw,36px); background:var(--surface);
+    border:1px solid var(--border-solid); border-radius:var(--radius);
+    box-shadow:var(--shadow);
+  }
+  table{width:100%; border-collapse:collapse; margin-top:14px; font-size:.85rem;}
+  th, td{text-align:left; padding:9px 12px; border-bottom:1px solid var(--border-solid);}
+  th{color:var(--muted); font-family:'Space Grotesk',sans-serif; font-weight:600;}
+  code{font-family:'JetBrains Mono',monospace; color:var(--cyan);}
+
   footer.note{
     text-align:center; color:var(--muted); font-size:.75rem;
     padding:18px; font-family:'JetBrains Mono',monospace;
@@ -229,7 +251,8 @@
     </div>
   </div>
 
-  <div class="wrap">
+  <!-- AUTHENTICATION VIEW -->
+  <div class="wrap" id="mainAuthWrap">
     <div class="panel-left">
       <div class="term">
         <div class="term-bar">
@@ -250,26 +273,26 @@
 
     <div class="panel-right">
       <div class="card">
-        <div class="tabs">
+        <div class="tabs" id="authTabs">
           <div class="tab active" id="tabLogin">Sign In</div>
           <div class="tab" id="tabRegister">Register</div>
         </div>
 
         <div class="status" id="statusBox"></div>
 
-        <!-- LOGIN -->
+        <!-- 1. LOGIN STEP 1: Email + Password -->
         <form class="form active" id="loginForm" novalidate>
           <div class="form-title">Welcome back</div>
           <p class="form-hint">Sign in with the email you registered with.</p>
 
           <div class="field" id="loginEmailField">
             <label for="loginEmail">Email</label>
-            <input type="email" id="loginEmail" autocomplete="email" placeholder="you@example.com">
+            <input type="email" id="loginEmail" autocomplete="email" placeholder="you@example.com" required>
             <div class="err">Enter a valid email address.</div>
           </div>
           <div class="field" id="loginPassField">
             <label for="loginPass">Password</label>
-            <input type="password" id="loginPass" autocomplete="current-password" placeholder="••••••••">
+            <input type="password" id="loginPass" autocomplete="current-password" placeholder="••••••••" required>
             <div class="err">Password is required.</div>
           </div>
 
@@ -278,47 +301,160 @@
             <a href="#" id="forgotLink">Forgot password?</a>
           </div>
 
-          <button type="submit" class="btn">Sign In</button>
+          <button type="submit" class="btn" id="btnSignIn">Sign In</button>
           <div class="switch-line">No account yet? <button type="button" id="goRegister">Register</button></div>
         </form>
 
-        <!-- REGISTER -->
+        <!-- 2. LOGIN STEP 2: One-Time Code (OTP) -->
+        <form class="form" id="otpForm" novalidate>
+          <div class="form-title">Step 2: Verification</div>
+          <p class="form-hint">Enter the 6-digit confirmation code sent to your email.</p>
+
+          <div class="field" id="otpField">
+            <label for="otpCode">6-Digit OTP</label>
+            <input type="text" id="otpCode" maxlength="6" pattern="[0-9]{6}" placeholder="123456" required>
+            <div class="err">Enter the 6-digit verification code.</div>
+          </div>
+
+          <button type="submit" class="btn">Verify & Continue</button>
+          <button type="button" class="btn btn-outline" id="btnCancelOtp">Cancel</button>
+        </form>
+
+        <!-- 3. LOGIN STEP 3: New Device Confirmation -->
+        <div class="form" id="deviceForm">
+          <div class="form-title">Step 3: New Device</div>
+          <p class="form-hint">You are logging in from an unrecognized browser. Is this you?</p>
+          <button type="button" class="btn" id="btnTrustDevice">Yes, trust this device</button>
+          <button type="button" class="btn btn-outline" id="btnRejectDevice">Deny & cancel</button>
+        </div>
+
+        <!-- 4. FORGOT PASSWORD -->
+        <form class="form" id="forgotForm" novalidate>
+          <div class="form-title">Reset Password</div>
+          <p class="form-hint">Enter your registered email to receive a recovery link.</p>
+
+          <div class="field" id="forgotEmailField">
+            <label for="forgotEmail">Email</label>
+            <input type="email" id="forgotEmail" placeholder="you@example.com" required>
+            <div class="err">Enter a valid email address.</div>
+          </div>
+
+          <button type="submit" class="btn">Send Reset Link</button>
+          <button type="button" class="btn btn-outline" id="btnBackToLogin">Back to Sign In</button>
+        </form>
+
+        <!-- 5. REGISTER FORM -->
         <form class="form" id="registerForm" novalidate>
           <div class="form-title">Create your account</div>
           <p class="form-hint">Takes less than a minute.</p>
 
           <div class="field" id="regNameField">
             <label for="regName">Full name</label>
-            <input type="text" id="regName" autocomplete="name" placeholder="Your name">
+            <input type="text" id="regName" autocomplete="name" placeholder="Pramod Sapkota" required>
             <div class="err">Please enter your name.</div>
           </div>
+
+          <div class="field" id="regUserField">
+            <label for="regUser">Username</label>
+            <input type="text" id="regUser" placeholder="pramod" pattern="^[a-zA-Z0-9_-]{3,20}$" required>
+            <div class="err">3-20 characters (letters, numbers, dash, underscore).</div>
+          </div>
+
           <div class="field" id="regEmailField">
             <label for="regEmail">Email</label>
-            <input type="email" id="regEmail" autocomplete="email" placeholder="you@example.com">
+            <input type="email" id="regEmail" autocomplete="email" placeholder="you@example.com" required>
             <div class="err">Enter a valid email address.</div>
           </div>
+
           <div class="field" id="regPassField">
             <label for="regPass">Password</label>
-            <input type="password" id="regPass" autocomplete="new-password" placeholder="At least 8 characters">
-            <div class="err">Password must be at least 8 characters.</div>
+            <input type="password" id="regPass" autocomplete="new-password" placeholder="••••••••" required>
+            <div class="err">Min 8 chars, 1 uppercase, 1 number, 1 special character.</div>
           </div>
+
           <div class="field" id="regConfirmField">
             <label for="regConfirm">Confirm password</label>
-            <input type="password" id="regConfirm" autocomplete="new-password" placeholder="••••••••">
+            <input type="password" id="regConfirm" autocomplete="new-password" placeholder="••••••••" required>
             <div class="err">Passwords do not match.</div>
           </div>
 
-          <button type="submit" class="btn">Create Account</button>
+          <button type="submit" class="btn" id="btnCreateAccount">Create Account</button>
           <div class="switch-line">Already have an account? <button type="button" id="goLogin">Sign in</button></div>
         </form>
       </div>
     </div>
   </div>
 
-  <footer class="note">sapkotap.com.np — demo authentication, stored locally in this browser only</footer>
+  <!-- AUTHENTICATED DASHBOARDS VIEW -->
+  <div class="portal-container" id="dashboardWrap">
+    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-solid); padding-bottom:14px;">
+      <div>
+        <h2 style="font-family:'Space Grotesk',sans-serif; margin:0;" id="userWelcome">Welcome</h2>
+        <div style="font-size:0.85rem; color:var(--muted); margin-top:4px;" id="userMeta"></div>
+      </div>
+      <button class="backlink" style="cursor:pointer;" id="btnLogout">Sign Out</button>
+    </div>
+
+    <!-- MEMBER FILES -->
+    <div style="margin-top:24px;">
+      <h3 style="font-family:'Space Grotesk',sans-serif; color:var(--cyan); margin-bottom:8px;">Your Private Files</h3>
+      <div id="memberFileList" style="font-size:0.85rem; color:var(--muted);">No files assigned to your account.</div>
+    </div>
+
+    <!-- ADMIN PANEL -->
+    <div id="adminArea" style="display:none; margin-top:36px; border-top:1px solid var(--border-solid); padding-top:24px;">
+      <h3 style="font-family:'Space Grotesk',sans-serif; color:var(--violet);">Admin Console</h3>
+
+      <!-- Send File -->
+      <div style="background:var(--surface-2); border:1px solid var(--border-solid); border-radius:10px; padding:16px; margin-top:14px;">
+        <h4 style="margin:0 0 10px 0; font-size:0.9rem;">Send Secure File to User</h4>
+        <div style="display:grid; grid-template-columns:1fr 1fr 100px; gap:8px;">
+          <select id="adminUserSelect" class="field" style="margin:0;"><option value="">Select target user...</option></select>
+          <input type="file" id="adminFileInput" class="field" style="margin:0; padding:8px;">
+          <button type="button" class="btn" id="btnAdminUpload" style="padding:8px 0;">Upload</button>
+        </div>
+      </div>
+
+      <!-- User List -->
+      <div style="margin-top:24px;">
+        <h4 style="margin-bottom:8px;">Registered Users</h4>
+        <table>
+          <thead>
+            <tr><th>Name</th><th>Username</th><th>Email</th><th>Role</th><th>Created</th></tr>
+          </thead>
+          <tbody id="adminUsersTbody"></tbody>
+        </table>
+      </div>
+
+      <!-- Security Threat & Activity Log -->
+      <div style="margin-top:24px;">
+        <h4 style="margin-bottom:8px;">Security Threats & Login Activity</h4>
+        <table>
+          <thead>
+            <tr><th>Timestamp</th><th>Event</th><th>User / Email</th><th>Device ID</th></tr>
+          </thead>
+          <tbody id="adminThreatsTbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <footer class="note">sapkotap.com.np — secure authentication powered by Supabase Cloud</footer>
 
 <script>
 (function(){
+  /* =========================================================
+     SUPABASE KEYS:
+     Replace the strings below with your keys from Supabase Dashboard
+     ========================================================= */
+  const SUPABASE_URL = "https://hkwjnzohrzydmdyigwjr.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_EQoexcmNoJuos8Wla1Nykw_v5vwH1Qy";
+  const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+  // Active flow state
+  let sessionUser = null;
+  let currentDeviceHash = null;
+
   // ---------- Theme ----------
   const root = document.body;
   const themeToggle = document.getElementById('themeToggle');
@@ -332,123 +468,404 @@
     localStorage.setItem('sapkotap_theme', next);
   });
 
-  // ---------- Tabs ----------
-  const tabLogin = document.getElementById('tabLogin');
-  const tabRegister = document.getElementById('tabRegister');
-  const loginForm = document.getElementById('loginForm');
-  const registerForm = document.getElementById('registerForm');
+  // ---------- Helpers & Sanitization ----------
+  function sanitize(str){
+    if(!str) return "";
+    const d = document.createElement("div");
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
+  function isEmail(v){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
+  function isStrongPassword(p){
+    return p.length >= 8 && /[0-9]/.test(p) && /[A-Z]/.test(p) && /[^A-Za-z0-9]/.test(p);
+  }
+  function setInvalid(fieldEl, invalid){ fieldEl.classList.toggle('invalid', invalid); }
+
+  function getDeviceFingerprint(){
+    const raw = [navigator.userAgent, screen.width, screen.height, navigator.language].join("|");
+    let h = 0;
+    for(let i=0; i<raw.length; i++){ h = ((h << 5) - h) + raw.charCodeAt(i); h |= 0; }
+    return "dev_" + Math.abs(h).toString(16);
+  }
+
   const statusBox = document.getElementById('statusBox');
-
-  function showLogin(){
-    tabLogin.classList.add('active'); tabRegister.classList.remove('active');
-    loginForm.classList.add('active'); registerForm.classList.remove('active');
-    hideStatus();
-  }
-  function showRegister(){
-    tabRegister.classList.add('active'); tabLogin.classList.remove('active');
-    registerForm.classList.add('active'); loginForm.classList.remove('active');
-    hideStatus();
-  }
-  tabLogin.addEventListener('click', showLogin);
-  tabRegister.addEventListener('click', showRegister);
-  document.getElementById('goRegister').addEventListener('click', showRegister);
-  document.getElementById('goLogin').addEventListener('click', showLogin);
-
   function showStatus(msg, kind){
     statusBox.textContent = msg;
     statusBox.className = 'status show ' + kind;
   }
   function hideStatus(){ statusBox.className = 'status'; }
 
-  // ---------- Helpers ----------
-  function isEmail(v){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
-  function setInvalid(fieldEl, invalid){
-    fieldEl.classList.toggle('invalid', invalid);
-  }
-  function getUsers(){
-    try{ return JSON.parse(localStorage.getItem('sapkotap_users') || '{}'); }
-    catch(e){ return {}; }
-  }
-  function saveUsers(u){ localStorage.setItem('sapkotap_users', JSON.stringify(u)); }
-
-  // simple non-cryptographic hash, fine for a client-only demo
-  function hash(str){
-    let h = 0;
-    for(let i=0;i<str.length;i++){ h = (Math.imul(31,h) + str.charCodeAt(i))|0; }
-    return h.toString(36);
+  async function logAudit(evt, details = {}, email = null){
+    if(!supabase) return;
+    try{
+      await supabase.from("audit_logs").insert({
+        event_type: evt,
+        user_email: email,
+        details: details,
+        ip_address: "client",
+        user_agent: navigator.userAgent
+      });
+    }catch(err){ console.error("Audit log error:", err); }
   }
 
-  // ---------- Register ----------
-  registerForm.addEventListener('submit', function(e){
+  // ---------- Navigation / Forms ----------
+  const tabLogin = document.getElementById('tabLogin');
+  const tabRegister = document.getElementById('tabRegister');
+  const loginForm = document.getElementById('loginForm');
+  const registerForm = document.getElementById('registerForm');
+  const otpForm = document.getElementById('otpForm');
+  const deviceForm = document.getElementById('deviceForm');
+  const forgotForm = document.getElementById('forgotForm');
+
+  function showOnlyForm(activeF){
+    [loginForm, registerForm, otpForm, deviceForm, forgotForm].forEach(f => f.classList.remove('active'));
+    activeF.classList.add('active');
+    hideStatus();
+  }
+
+  function showLogin(){
+    tabLogin.classList.add('active'); tabRegister.classList.remove('active');
+    showOnlyForm(loginForm);
+  }
+  function showRegister(){
+    tabRegister.classList.add('active'); tabLogin.classList.remove('active');
+    showOnlyForm(registerForm);
+  }
+
+  tabLogin.addEventListener('click', showLogin);
+  tabRegister.addEventListener('click', showRegister);
+  document.getElementById('goRegister').addEventListener('click', showRegister);
+  document.getElementById('goLogin').addEventListener('click', showLogin);
+  document.getElementById('btnBackToLogin').addEventListener('click', showLogin);
+  document.getElementById('btnCancelOtp').addEventListener('click', showLogin);
+
+  document.getElementById('forgotLink').addEventListener('click', function(e){
+    e.preventDefault();
+    showOnlyForm(forgotForm);
+  });
+
+  // ---------- Registration ----------
+  registerForm.addEventListener('submit', async function(e){
     e.preventDefault();
     hideStatus();
-    const name = document.getElementById('regName');
-    const email = document.getElementById('regEmail');
-    const pass = document.getElementById('regPass');
-    const confirm = document.getElementById('regConfirm');
+
+    const name = document.getElementById('regName').value.trim();
+    const uname = document.getElementById('regUser').value.trim().toLowerCase();
+    const email = document.getElementById('regEmail').value.trim();
+    const pass = document.getElementById('regPass').value;
+    const confirm = document.getElementById('regConfirm').value;
 
     let ok = true;
-    setInvalid(document.getElementById('regNameField'), !name.value.trim());
-    if(!name.value.trim()) ok = false;
+    setInvalid(document.getElementById('regNameField'), !name);
+    if(!name) ok = false;
 
-    const emailValid = isEmail(email.value.trim());
+    const unameValid = /^[a-zA-Z0-9_-]{3,20}$/.test(uname);
+    setInvalid(document.getElementById('regUserField'), !unameValid);
+    if(!unameValid) ok = false;
+
+    const emailValid = isEmail(email);
     setInvalid(document.getElementById('regEmailField'), !emailValid);
     if(!emailValid) ok = false;
 
-    const passValid = pass.value.length >= 8;
+    const passValid = isStrongPassword(pass);
     setInvalid(document.getElementById('regPassField'), !passValid);
     if(!passValid) ok = false;
 
-    const matchValid = confirm.value === pass.value && passValid;
+    const matchValid = confirm === pass && passValid;
     setInvalid(document.getElementById('regConfirmField'), !matchValid);
     if(!matchValid) ok = false;
 
     if(!ok) return;
 
-    const users = getUsers();
-    if(users[email.value.trim().toLowerCase()]){
-      showStatus('An account with this email already exists.', 'bad');
+    if(!supabase){
+      showStatus("Supabase URL & Key are not set yet. Please paste them in the script.", "bad");
       return;
     }
-    users[email.value.trim().toLowerCase()] = { name: name.value.trim(), pass: hash(pass.value), joined: Date.now() };
-    saveUsers(users);
-    showStatus('Account created. You can sign in now.', 'good');
+
+    // Check unique username
+    const { data: taken } = await supabase.rpc("is_username_taken", { uname: uname });
+    if(taken){
+      showStatus("Username is already taken. Please choose another.", "bad");
+      return;
+    }
+
+    // Sign up with Supabase
+    const { data, error } = await supabase.auth.signUp({
+      email: email,
+      password: pass,
+      options: { data: { full_name: name, username: uname } }
+    });
+
+    if(error){
+      if(error.message.includes("User already registered")){
+        showStatus("Account already exists, please log in instead.", "bad");
+      } else {
+        showStatus(error.message, "bad");
+      }
+      await logAudit("REGISTRATION_FAILED", { reason: error.message }, email);
+      return;
+    }
+
+    await logAudit("REGISTRATION_SUCCESS", { username: uname }, email);
+    showStatus("Account created! Check your email to verify and then sign in.", "good");
     registerForm.reset();
-    setTimeout(showLogin, 900);
+    setTimeout(showLogin, 1500);
   });
 
-  // ---------- Login ----------
-  loginForm.addEventListener('submit', function(e){
+  // ---------- Login (Step 1) ----------
+  loginForm.addEventListener('submit', async function(e){
     e.preventDefault();
     hideStatus();
-    const email = document.getElementById('loginEmail');
-    const pass = document.getElementById('loginPass');
+
+    const email = document.getElementById('loginEmail').value.trim();
+    const pass = document.getElementById('loginPass').value;
 
     let ok = true;
-    const emailValid = isEmail(email.value.trim());
+    const emailValid = isEmail(email);
     setInvalid(document.getElementById('loginEmailField'), !emailValid);
     if(!emailValid) ok = false;
 
-    setInvalid(document.getElementById('loginPassField'), !pass.value);
-    if(!pass.value) ok = false;
+    setInvalid(document.getElementById('loginPassField'), !pass);
+    if(!pass) ok = false;
 
     if(!ok) return;
 
-    const users = getUsers();
-    const record = users[email.value.trim().toLowerCase()];
-    if(!record || record.pass !== hash(pass.value)){
-      showStatus('Email or password is incorrect.', 'bad');
+    if(!supabase){
+      showStatus("Supabase URL & Key are not set yet.", "bad");
       return;
     }
-    if(document.getElementById('rememberMe').checked){
-      localStorage.setItem('sapkotap_session', email.value.trim().toLowerCase());
+
+    const { data, error } = await supabase.auth.signInWithPassword({ email: email, password: pass });
+    if(error){
+      showStatus("Email or password is incorrect.", "bad");
+      await logAudit("LOGIN_STEP1_FAILED", {}, email);
+      return;
     }
-    showStatus('Signed in as ' + record.name + '.', 'good');
+
+    sessionUser = data.user;
+    currentDeviceHash = getDeviceFingerprint();
+
+    // Trigger OTP (Step 2)
+    const { error: otpErr } = await supabase.auth.signInWithOtp({
+      email: email,
+      options: { shouldCreateUser: false }
+    });
+
+    if(otpErr){
+      showStatus("Could not send verification code. Try again.", "bad");
+      return;
+    }
+
+    showStatus("6-digit verification code sent to your email.", "good");
+    showOnlyForm(otpForm);
   });
 
-  document.getElementById('forgotLink').addEventListener('click', function(e){
+  // ---------- Login (Step 2: OTP Verification) ----------
+  otpForm.addEventListener('submit', async function(e){
     e.preventDefault();
-    showStatus('Password reset is a demo placeholder — wire this up to your backend.', 'bad');
+    hideStatus();
+
+    const code = document.getElementById('otpCode').value.trim();
+    if(code.length !== 6){
+      setInvalid(document.getElementById('otpField'), true);
+      return;
+    }
+
+    const { error } = await supabase.auth.verifyOtp({
+      email: sessionUser.email,
+      token: code,
+      type: "email"
+    });
+
+    if(error){
+      showStatus("Invalid or expired OTP code.", "bad");
+      await logAudit("LOGIN_OTP_FAILED", {}, sessionUser.email);
+      return;
+    }
+
+    // Check device trust (Step 3)
+    const { data: dev } = await supabase
+      .from("user_known_devices")
+      .select("id")
+      .eq("user_id", sessionUser.id)
+      .eq("device_hash", currentDeviceHash)
+      .maybeSingle();
+
+    if(dev){
+      openDashboard();
+    } else {
+      showOnlyForm(deviceForm);
+    }
+  });
+
+  // ---------- Login (Step 3: Device Trust) ----------
+  document.getElementById('btnTrustDevice').addEventListener('click', async function(){
+    await supabase.from("user_known_devices").insert({
+      user_id: sessionUser.id,
+      device_hash: currentDeviceHash,
+      device_name: navigator.platform || "Browser"
+    });
+    await logAudit("NEW_DEVICE_TRUSTED", { hash: currentDeviceHash }, sessionUser.email);
+    openDashboard();
+  });
+
+  document.getElementById('btnRejectDevice').addEventListener('click', async function(){
+    await supabase.auth.signOut();
+    showLogin();
+    showStatus("Sign-in cancelled.", "bad");
+  });
+
+  // ---------- Forgot Password ----------
+  forgotForm.addEventListener('submit', async function(e){
+    e.preventDefault();
+    hideStatus();
+    const email = document.getElementById('forgotEmail').value.trim();
+    if(!isEmail(email)){
+      setInvalid(document.getElementById('forgotEmailField'), true);
+      return;
+    }
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + window.location.pathname
+    });
+
+    if(error){
+      showStatus(error.message, "bad");
+      return;
+    }
+    showStatus("Password recovery link sent! Check your inbox.", "good");
+  });
+
+  // ---------- Dashboard & Admin Loader ----------
+  async function openDashboard(){
+    await logAudit("LOGIN_SUCCESS", { device: currentDeviceHash }, sessionUser.email);
+    document.getElementById('mainAuthWrap').style.display = 'none';
+    document.getElementById('dashboardWrap').style.display = 'block';
+
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single();
+    const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
+    const isAdmin = roles && roles.some(r => r.role === 'admin');
+
+    document.getElementById('userWelcome').textContent = "Welcome, " + (profile?.full_name || user.email);
+    document.getElementById('userMeta').textContent = "@" + (profile?.username || "user") + " • " + user.email + (isAdmin ? " [ADMINISTRATOR]" : "");
+
+    loadUserFiles(user.id);
+
+    if(isAdmin){
+      document.getElementById('adminArea').style.display = 'block';
+      loadAdminDashboard();
+    }
+  }
+
+  async function loadUserFiles(uid){
+    const { data: files } = await supabase.from("user_files").select("*").eq("target_user_id", uid);
+    const box = document.getElementById('memberFileList');
+    if(!files || files.length === 0){
+      box.textContent = "No private files assigned to your account.";
+      return;
+    }
+
+    let html = '<ul style="list-style:none; padding:0;">';
+    for(const f of files){
+      const { data: signed } = await supabase.storage.from("secure-user-files").createSignedUrl(f.storage_path, 3600);
+      html += `<li style="padding:8px 0; border-bottom:1px solid var(--border-solid); display:flex; justify-content:space-between;">
+        <span><strong>${sanitize(f.file_name)}</strong> <small style="color:var(--muted)">(${(f.file_size/1024).toFixed(1)} KB)</small></span>
+        <a href="${signed ? signed.signedUrl : '#'}" target="_blank" style="color:var(--cyan); text-decoration:none; font-weight:600;">Download</a>
+      </li>`;
+    }
+    html += '</ul>';
+    box.innerHTML = html;
+  }
+
+  async function loadAdminDashboard(){
+    // 1. Users list
+    const { data: users } = await supabase.from("profiles").select("*, user_roles(role)").order("created_at", { ascending: false });
+    const sel = document.getElementById('adminUserSelect');
+    const tbody = document.getElementById('adminUsersTbody');
+    sel.innerHTML = '<option value="">Select target user...</option>';
+    tbody.innerHTML = '';
+
+    if(users){
+      users.forEach(u => {
+        const opt = document.createElement('option');
+        opt.value = u.id;
+        opt.textContent = `${u.full_name} (@${u.username})`;
+        sel.appendChild(opt);
+
+        const r = (u.user_roles && u.user_roles[0]?.role) || 'user';
+        tbody.innerHTML += `<tr>
+          <td>${sanitize(u.full_name)}</td>
+          <td>@${sanitize(u.username)}</td>
+          <td>${sanitize(u.email)}</td>
+          <td><span style="color:${r==='admin'?'var(--cyan)':'var(--muted)'}; font-weight:600;">${r}</span></td>
+          <td>${new Date(u.created_at).toLocaleDateString()}</td>
+        </tr>`;
+      });
+    }
+
+    // 2. Threats & Activity
+    const { data: logs } = await supabase.from("audit_logs").select("*").order("created_at", { ascending: false }).limit(25);
+    const logBody = document.getElementById('adminThreatsTbody');
+    logBody.innerHTML = '';
+    if(logs){
+      logs.forEach(l => {
+        const isThreat = l.event_type.includes("FAILED");
+        logBody.innerHTML += `<tr>
+          <td>${new Date(l.created_at).toLocaleTimeString()}</td>
+          <td><code style="color:${isThreat?'var(--danger)':'var(--cyan)'}">${sanitize(l.event_type)}</code></td>
+          <td>${sanitize(l.user_email || 'Guest')}</td>
+          <td><code>${sanitize(l.details?.hash || '-')}</code></td>
+        </tr>`;
+      });
+    }
+  }
+
+  // Admin upload file to user
+  document.getElementById('btnAdminUpload').addEventListener('click', async function(){
+    const targetUid = document.getElementById('adminUserSelect').value;
+    const file = document.getElementById('adminFileInput').files[0];
+    if(!targetUid || !file){
+      alert("Please select both a target user and a file.");
+      return;
+    }
+
+    const path = `${targetUid}/${Date.now()}_${file.name}`;
+    const { error: upErr } = await supabase.storage.from("secure-user-files").upload(path, file);
+    if(upErr){ alert("Upload error: " + upErr.message); return; }
+
+    const { data: { user } } = await supabase.auth.getUser();
+    await supabase.from("user_files").insert({
+      target_user_id: targetUid,
+      uploaded_by: user.id,
+      file_name: file.name,
+      storage_path: path,
+      file_size: file.size,
+      mime_type: file.type
+    });
+
+    await logAudit("ADMIN_FILE_SENT", { target: targetUid, file: file.name });
+    alert("File uploaded securely to user.");
+    document.getElementById('adminFileInput').value = '';
+  });
+
+  // Logout
+  document.getElementById('btnLogout').addEventListener('click', async function(){
+    if(supabase) await supabase.auth.signOut();
+    window.location.reload();
+  });
+
+  // Resume session on load
+  window.addEventListener('DOMContentLoaded', async function(){
+    if(supabase){
+      const { data: { session } } = await supabase.auth.getSession();
+      if(session){
+        sessionUser = session.user;
+        currentDeviceHash = getDeviceFingerprint();
+        openDashboard();
+      }
+    }
   });
 })();
 </script>
