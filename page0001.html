@@ -532,13 +532,31 @@
     <div id="adminArea" style="display:none; margin-top:36px; border-top:1px solid var(--border-solid); padding-top:24px;">
       <h3 style="font-family:'Space Grotesk',sans-serif; color:var(--violet);">Admin Console</h3>
 
-      <!-- Send File -->
-      <div style="background:var(--surface-2); border:1px solid var(--border-solid); border-radius:10px; padding:16px; margin-top:14px;">
-        <h4 style="margin:0 0 10px 0; font-size:0.9rem;">Send Secure File to User</h4>
-        <div style="display:grid; grid-template-columns:1fr 1fr 100px; gap:8px;">
-          <select id="adminUserSelect" class="field" style="margin:0;"><option value="">Select target user...</option></select>
-          <input type="file" id="adminFileInput" class="field" style="margin:0; padding:8px;">
-          <button type="button" class="btn" id="btnAdminUpload" style="padding:8px 0;">Upload</button>
+            <!-- Admin Actions: Add User & Send File -->
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:14px;">
+        <!-- Add New User Directly -->
+        <div style="background:var(--surface-2); border:1px solid var(--border-solid); border-radius:10px; padding:16px;">
+          <h4 style="margin:0 0 10px 0; font-size:0.9rem; color:var(--violet);">Add New User (Admin Provisioning)</h4>
+          <form id="adminAddUserForm" style="display:flex; flex-direction:column; gap:8px;">
+            <input type="text" id="adminNewFullName" class="field" style="margin:0;" placeholder="Full Name" required>
+            <input type="text" id="adminNewUsername" class="field" style="margin:0;" placeholder="Username (unique)" required>
+            <input type="email" id="adminNewEmail" class="field" style="margin:0;" placeholder="User Email" required>
+            <input type="password" id="adminNewPassword" class="field" style="margin:0;" placeholder="Initial Password (min 6 chars)" minlength="6" required>
+            <div style="display:flex; align-items:center; gap:8px; margin-top:4px;">
+              <button type="submit" class="btn" style="padding:6px 14px; font-size:0.85rem; width:auto;">Create User</button>
+              <span id="adminAddUserNotice" style="font-size:0.8rem;"></span>
+            </div>
+          </form>
+        </div>
+
+        <!-- Send File -->
+        <div style="background:var(--surface-2); border:1px solid var(--border-solid); border-radius:10px; padding:16px;">
+          <h4 style="margin:0 0 10px 0; font-size:0.9rem; color:var(--cyan);">Send Secure File to User</h4>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <select id="adminUserSelect" class="field" style="margin:0;"><option value="">Select target user...</option></select>
+            <input type="file" id="adminFileInput" class="field" style="margin:0; padding:6px;">
+            <button type="button" class="btn" id="btnAdminUpload" style="padding:6px 0;">Upload File</button>
+          </div>
         </div>
       </div>
 
@@ -818,11 +836,11 @@
 
     if(error){
       showStatus(error.message.includes("User already registered") ? "Account already exists, please sign in." : error.message, "bad");
-      await logAudit("REGISTRATION_FAILED", { reason: error.message }, email);
+      logAudit("REGISTRATION_FAILED", { reason: error.message }, email);
       return;
     }
 
-    await logAudit("REGISTRATION_SUCCESS", { username: uname }, email);
+    logAudit("REGISTRATION_SUCCESS", { username: uname }, email);
     showStatus("Account created! Please check your email inbox (and spam/junk folder) for an activation email from noreply@sapkotap.com.np before signing in.", "good");
     registerForm.reset();
     setTimeout(showLogin, 2500);
@@ -888,7 +906,7 @@
       } else {
         showStatus("Sign-in failed: " + error.message, "bad");
       }
-      await logAudit("LOGIN_STEP1_FAILED", { reason: error.message }, email);
+      logAudit("LOGIN_STEP1_FAILED", { reason: error.message }, email);
       return;
     }
 
@@ -1058,7 +1076,7 @@
       return;
     }
     sessionUser = user;
-    await logAudit("LOGIN_SUCCESS", { device: currentDeviceHash }, user.email);
+    logAudit("LOGIN_SUCCESS", { device: currentDeviceHash }, user.email);
     document.getElementById('mainAuthWrap').style.display = 'none';
     document.getElementById('dashboardWrap').style.display = 'block';
 
@@ -1083,19 +1101,33 @@
 
     const displayName = profile?.full_name || user.user_metadata?.full_name || user.email;
     const displayUsername = profile?.username || user.email.split('@')[0];
-    document.getElementById('userWelcome').textContent = "Welcome, " + displayName;
-    document.getElementById('userMeta').textContent = "@" + displayUsername + " • " + user.email + (isAdmin ? " [ADMINISTRATOR]" : "");
+    const roleBadge = isMainAdmin ? " [MAIN ADMINISTRATOR]" : (isAdmin ? " [ADMINISTRATOR]" : " [MEMBER]");
+    
+    document.getElementById('userWelcome').textContent = (isAdmin ? "Welcome Admin, " : "Welcome, ") + displayName;
+    
+    const regDateStr = user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A';
+    const lastSignStr = user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleString() : new Date().toLocaleString();
+    
+    document.getElementById('userMeta').innerHTML = `
+      <span>@${escapeHtml(displayUsername)} • ${escapeHtml(user.email)} <strong style="color:${isAdmin?'var(--violet)':'var(--cyan)'};">${roleBadge}</strong></span>
+      <div style="font-size:0.75rem; color:var(--muted); margin-top:4px;">
+        Registered: ${regDateStr} &nbsp;|&nbsp; Last Sign In: ${lastSignStr}
+      </div>
+    `;
 
     loadUserFiles(user.id);
 
     
     if(isAdmin){
       const tabAdm = document.getElementById('tabBtnAdmin');
-      if(tabAdm) tabAdm.style.display = 'block';
+      if(tabAdm) {
+        tabAdm.style.display = 'inline-block';
+      }
+      switchDashboardTab('Admin');
       loadAdminSupportInquiries();
-
-      document.getElementById('adminArea').style.display = 'block';
       loadAdminDashboard(isMainAdmin);
+    } else {
+      switchDashboardTab('Files');
     }
   }
 
@@ -1732,6 +1764,58 @@
     } catch(err){
       alert("Message could not be sent: " + err.message);
     }
+  }
+
+
+  // Admin Provisioning: Add User Handler
+  const adminAddUserForm = document.getElementById('adminAddUserForm');
+  if(adminAddUserForm){
+    adminAddUserForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if(!supabase) return;
+      const fn = document.getElementById('adminNewFullName').value.trim();
+      const un = document.getElementById('adminNewUsername').value.trim().toLowerCase();
+      const em = document.getElementById('adminNewEmail').value.trim().toLowerCase();
+      const pw = document.getElementById('adminNewPassword').value;
+      const notice = document.getElementById('adminAddUserNotice');
+
+      notice.textContent = "Creating user...";
+      notice.style.color = "var(--muted)";
+
+      try {
+        // Sign up through Supabase Auth
+        const { data: upData, error: upErr } = await supabase.auth.signUp({
+          email: em,
+          password: pw,
+          options: {
+            data: { full_name: fn, username: un }
+          }
+        });
+
+        if(upErr) throw upErr;
+
+        // Try inserting profile if trigger did not auto-insert
+        if(upData && upData.user){
+          await supabase.from('profiles').upsert({
+            id: upData.user.id,
+            full_name: fn,
+            username: un,
+            email: em,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'id' });
+        }
+
+        notice.textContent = "User created successfully!";
+        notice.style.color = "var(--good)";
+        adminAddUserForm.reset();
+        
+        // Refresh registered users table
+        loadAdminDashboard(true);
+      } catch(err){
+        notice.textContent = "Error: " + err.message;
+        notice.style.color = "var(--bad)";
+      }
+    });
   }
 
 })();
