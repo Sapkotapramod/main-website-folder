@@ -302,6 +302,20 @@
 .admin-tabpane { display: none; }
 .admin-tabpane.active { display: block; }
 
+#adminDropzone:hover { border-color: var(--cyan); background: rgba(34,211,238,0.04); }
+#adminDropzone.drag-active { border-color: var(--cyan); background: rgba(34,211,238,0.08); }
+.queue-chip {
+  display:flex; align-items:center; justify-content:space-between; gap:8px;
+  background:var(--surface); border:1px solid var(--border-solid); border-radius:8px;
+  padding:6px 10px; margin-bottom:6px; font-size:0.78rem;
+}
+.queue-chip .qname { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text); }
+.queue-chip .qmeta { color:var(--muted); font-size:0.7rem; white-space:nowrap; margin-left:8px; }
+.queue-chip .qremove { cursor:pointer; color:var(--danger); font-weight:700; margin-left:8px; }
+.queue-chip.uploading .qmeta { color:var(--cyan); }
+.queue-chip.done .qmeta { color:var(--good); }
+.queue-chip.failed .qmeta { color:var(--danger); }
+
 </style>
 </head>
 <body data-theme="dark">
@@ -514,9 +528,17 @@
 
     <!-- TAB 2: USER-TO-USER CHAT (WITH INVITATION APPROVAL) -->
     <div id="tabContentChat" style="display:none; margin-top:20px;">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:10px;">
         <h3 style="font-family:'Space Grotesk',sans-serif; color:var(--cyan); margin:0;">User-to-User Chat</h3>
         <span style="font-size:0.75rem; color:var(--muted);">Requires mutual invitation acceptance</span>
+      </div>
+
+      <!-- Anonymous nickname -->
+      <div style="background:var(--surface-2); border:1px solid var(--border-solid); border-radius:8px; padding:10px 12px; margin-bottom:14px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+        <span style="font-size:0.78rem; color:var(--muted); white-space:nowrap;">Chat as:</span>
+        <input type="text" id="chatNicknameInput" placeholder="Anonymous nickname (optional)" style="flex:1; min-width:160px; padding:7px 10px; border-radius:7px; background:var(--bg); border:1px solid var(--border-solid); color:var(--text); font-size:0.82rem;">
+        <button type="button" class="btn-outline" id="btnSaveNickname" style="width:auto; padding:6px 14px; font-size:0.78rem; margin:0;">Save</button>
+        <span id="nicknameNotice" style="font-size:0.72rem;"></span>
       </div>
 
       <!-- Send Invite -->
@@ -559,10 +581,14 @@
           <div id="chatMessagesBox" style="flex:1; overflow-y:auto; max-height:220px; display:flex; flex-direction:column; gap:6px; padding:6px 0; font-size:0.85rem;">
             <div style="color:var(--muted); font-size:0.8rem; text-align:center; margin-top:40px;">No conversation selected.</div>
           </div>
-          <div id="chatInputBar" style="display:none; gap:8px; margin-top:8px;">
-            <input type="text" id="chatMessageInput" class="field" style="margin:0;" placeholder="Type your message...">
+          <div id="chatInputBar" style="display:none; gap:8px; margin-top:8px; align-items:center;">
+            <button type="button" id="btnChatAttach" title="Attach photo or file" style="background:var(--surface-2); border:1px solid var(--border-solid); color:var(--text); border-radius:8px; width:38px; height:38px; cursor:pointer; font-size:1rem;">📎</button>
+            <button type="button" id="btnChatVoice" title="Record voice message" style="background:var(--surface-2); border:1px solid var(--border-solid); color:var(--text); border-radius:8px; width:38px; height:38px; cursor:pointer; font-size:1rem;">🎤</button>
+            <input type="file" id="chatAttachInput" accept="image/*,audio/*,.pdf,.doc,.docx,.zip" style="display:none;">
+            <input type="text" id="chatMessageInput" class="field" style="margin:0; flex:1;" placeholder="Type your message...">
             <button type="button" class="btn" id="btnSendChatMessage" style="width:auto; padding:0 16px;">Send</button>
           </div>
+          <div id="chatUploadStatus" style="font-size:0.72rem; color:var(--muted); margin-top:4px;"></div>
         </div>
       </div>
     </div>
@@ -653,15 +679,27 @@
             </form>
           </div>
 
-          <!-- Send File (kept here too for convenience) -->
+          <!-- Send File / Folder -->
           <div style="background:var(--surface-2); border:1px solid var(--border-solid); border-radius:10px; padding:16px;">
-            <h4 style="margin:0 0 10px 0; font-size:0.9rem; color:var(--cyan);">Send Secure File to User</h4>
-            <div style="display:flex; flex-direction:column; gap:8px;">
-              <select id="adminUserSelect" class="field" style="margin:0;"><option value="">Select target user...</option></select>
-              <input type="file" id="adminFileInput" class="field" style="margin:0; padding:6px;">
-              <button type="button" class="btn" id="btnAdminUpload" style="padding:6px 0;">Upload File</button>
-              <span id="adminUploadNotice" style="font-size:0.78rem;"></span>
+            <h4 style="margin:0 0 10px 0; font-size:0.9rem; color:var(--cyan);">Send Secure Files to User</h4>
+            <select id="adminUserSelect" class="field" style="margin:0 0 10px;"><option value="">Select target user...</option></select>
+
+            <div id="adminDropzone" style="border:2px dashed var(--border-solid); border-radius:10px; padding:20px; text-align:center; cursor:pointer; transition:border-color .18s, background .18s;">
+              <div style="font-size:1.6rem; margin-bottom:4px;">📁</div>
+              <div style="font-size:0.85rem; color:var(--text); font-weight:600;">Drag files or a folder here</div>
+              <div style="font-size:0.75rem; color:var(--muted); margin-top:2px;">or use a button below</div>
+              <div style="display:flex; gap:8px; justify-content:center; margin-top:12px;">
+                <button type="button" class="btn-outline" id="btnChooseFiles" style="width:auto; padding:6px 14px; font-size:0.78rem; margin:0;">Choose Files</button>
+                <button type="button" class="btn-outline" id="btnChooseFolder" style="width:auto; padding:6px 14px; font-size:0.78rem; margin:0;">Choose Folder</button>
+              </div>
+              <input type="file" id="adminFileInput" multiple style="display:none;">
+              <input type="file" id="adminFolderInput" webkitdirectory directory multiple style="display:none;">
             </div>
+
+            <div id="adminFileQueue" style="margin-top:10px; display:none; max-height:160px; overflow-y:auto;"></div>
+
+            <button type="button" class="btn" id="btnAdminUpload" style="padding:8px 0; margin-top:12px; display:none;">Upload All</button>
+            <div id="adminUploadNotice" style="font-size:0.78rem; margin-top:8px;"></div>
           </div>
         </div>
 
@@ -1514,61 +1552,161 @@
     }
   };
 
-  // Admin upload file to user
-  document.getElementById('btnAdminUpload').addEventListener('click', async function(){
-    const targetUid = document.getElementById('adminUserSelect').value;
-    const file = document.getElementById('adminFileInput').files[0];
-    const notice = document.getElementById('adminUploadNotice');
-    if(!targetUid || !file){
-      alert("Please select both a target user and a file.");
+  // ---------- Admin file/folder uploader ----------
+  let uploadQueue = []; // { file, relPath, id, status }
+  const dropzone = document.getElementById('adminDropzone');
+  const fileInput = document.getElementById('adminFileInput');
+  const folderInput = document.getElementById('adminFolderInput');
+  const queueBox = document.getElementById('adminFileQueue');
+  const uploadBtn = document.getElementById('btnAdminUpload');
+  const uploadNotice = document.getElementById('adminUploadNotice');
+
+  document.getElementById('btnChooseFiles')?.addEventListener('click', () => fileInput.click());
+  document.getElementById('btnChooseFolder')?.addEventListener('click', () => folderInput.click());
+
+  fileInput?.addEventListener('change', () => addFilesToQueue(Array.from(fileInput.files)));
+  folderInput?.addEventListener('change', () => addFilesToQueue(Array.from(folderInput.files)));
+
+  if(dropzone){
+    ['dragenter','dragover'].forEach(evt => dropzone.addEventListener(evt, (e) => {
+      e.preventDefault(); dropzone.classList.add('drag-active');
+    }));
+    ['dragleave','drop'].forEach(evt => dropzone.addEventListener(evt, (e) => {
+      e.preventDefault(); dropzone.classList.remove('drag-active');
+    }));
+    dropzone.addEventListener('drop', (e) => {
+      const items = e.dataTransfer.files;
+      if(items && items.length) addFilesToQueue(Array.from(items));
+    });
+  }
+
+  function addFilesToQueue(files){
+    files.forEach(f => {
+      uploadQueue.push({
+        file: f,
+        relPath: f.webkitRelativePath || f.name,
+        id: 'q_' + Math.random().toString(36).slice(2),
+        status: 'pending'
+      });
+    });
+    renderQueue();
+  }
+
+  function fileIcon(name){
+    const ext = (name.split('.').pop() || '').toLowerCase();
+    if(['png','jpg','jpeg','gif','webp','svg'].includes(ext)) return '🖼️';
+    if(['pdf'].includes(ext)) return '📕';
+    if(['zip','rar','7z'].includes(ext)) return '🗜️';
+    if(['doc','docx'].includes(ext)) return '📝';
+    if(['xls','xlsx','csv'].includes(ext)) return '📊';
+    if(['mp4','mov','avi','webm'].includes(ext)) return '🎞️';
+    if(['mp3','wav'].includes(ext)) return '🎵';
+    return '📄';
+  }
+
+  function renderQueue(){
+    if(!queueBox) return;
+    if(uploadQueue.length === 0){
+      queueBox.style.display = 'none';
+      uploadBtn.style.display = 'none';
       return;
     }
+    queueBox.style.display = 'block';
+    uploadBtn.style.display = 'block';
+    uploadBtn.textContent = `Upload All (${uploadQueue.length})`;
+
+    queueBox.innerHTML = uploadQueue.map(item => {
+      const sizeKb = (item.file.size / 1024).toFixed(1);
+      const statusLabel = item.status === 'pending' ? sizeKb + ' KB'
+        : item.status === 'uploading' ? 'Uploading…'
+        : item.status === 'done' ? '✓ Sent'
+        : 'Failed';
+      const cls = item.status === 'uploading' ? 'uploading' : item.status === 'done' ? 'done' : item.status === 'failed' ? 'failed' : '';
+      return `<div class="queue-chip ${cls}" data-qid="${item.id}">
+        <span class="qname">${fileIcon(item.relPath)} ${escapeHtml(item.relPath)}</span>
+        <span style="display:flex; align-items:center;">
+          <span class="qmeta">${statusLabel}</span>
+          ${item.status === 'pending' ? `<span class="qremove" onclick="window.removeFromQueue('${item.id}')">✕</span>` : ''}
+        </span>
+      </div>`;
+    }).join('');
+  }
+
+  window.removeFromQueue = function(id){
+    uploadQueue = uploadQueue.filter(i => i.id !== id);
+    renderQueue();
+  };
+
+  uploadBtn?.addEventListener('click', async function(){
+    const targetUid = document.getElementById('adminUserSelect').value;
+    if(!targetUid){
+      alert("Please select a target user first.");
+      return;
+    }
+    if(uploadQueue.length === 0) return;
 
     const MAX_FILE_MB = 25;
-    if(file.size > MAX_FILE_MB * 1024 * 1024){
-      alert(`File is too large. Max size is ${MAX_FILE_MB}MB.`);
-      return;
+    uploadBtn.disabled = true;
+
+    let sent = 0, failedCount = 0;
+    for(const item of uploadQueue){
+      if(item.status === 'done') { sent++; continue; }
+      item.status = 'uploading';
+      renderQueue();
+
+      if(item.file.size > MAX_FILE_MB * 1024 * 1024){
+        item.status = 'failed';
+        failedCount++;
+        renderQueue();
+        continue;
+      }
+
+      // Preserve folder structure in the stored name; strip unsafe characters
+      // from each path segment so it can't be used to escape the storage path.
+      const safeRelPath = item.relPath.split('/').map(seg =>
+        seg.replace(/[^a-zA-Z0-9._-]/g, "_")
+      ).join('/').slice(0, 200);
+      const path = `${targetUid}/${Date.now()}_${Math.random().toString(36).slice(2,7)}_${safeRelPath}`;
+
+      try{
+        const { error: upErr } = await supabase.storage.from("secure-user-files").upload(path, item.file);
+        if(upErr) throw upErr;
+
+        const { data: { user } } = await supabase.auth.getUser();
+        const { error: insErr } = await supabase.from("user_files").insert({
+          target_user_id: targetUid,
+          uploaded_by: user.id,
+          file_name: item.relPath,
+          storage_path: path,
+          file_size: item.file.size,
+          mime_type: item.file.type
+        });
+        if(insErr) throw insErr;
+
+        item.status = 'done';
+        sent++;
+      }catch(err){
+        item.status = 'failed';
+        failedCount++;
+        console.error("Upload failed for", item.relPath, err);
+      }
+      renderQueue();
     }
 
-    if(notice){ notice.textContent = "Uploading..."; notice.style.color = "var(--muted)"; }
+    await logAudit("ADMIN_FILE_SENT", { target: targetUid, count: sent });
 
-    // Strip anything that isn't a safe filename character so the storage
-    // path can't be manipulated (no "../", no special characters).
-    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 150);
-    const path = `${targetUid}/${Date.now()}_${safeName}`;
-    const { error: upErr } = await supabase.storage.from("secure-user-files").upload(path, file);
-    if(upErr){
-      // This is the exact error that fires when the admin's user_roles row
-      // isn't actually set to 'admin' — the RLS policy blocks the write.
-      const msg = "Upload failed: " + upErr.message +
-        (upErr.message && upErr.message.toLowerCase().includes("row-level security")
-          ? " — your account isn't confirmed as admin in the database yet. Run the admin-role SQL fix in Supabase."
-          : "");
-      if(notice){ notice.textContent = msg; notice.style.color = "var(--danger)"; }
-      else alert(msg);
-      return;
+    if(failedCount === 0){
+      uploadNotice.textContent = `${sent} file(s) sent successfully.`;
+      uploadNotice.style.color = "var(--good)";
+      uploadQueue = [];
+      fileInput.value = ''; folderInput.value = '';
+    } else {
+      uploadNotice.textContent = `${sent} sent, ${failedCount} failed — check your admin role is confirmed in Supabase if uploads keep failing.`;
+      uploadNotice.style.color = "var(--danger)";
+      uploadQueue = uploadQueue.filter(i => i.status !== 'done');
     }
-
-    const { data: { user } } = await supabase.auth.getUser();
-    const { error: insErr } = await supabase.from("user_files").insert({
-      target_user_id: targetUid,
-      uploaded_by: user.id,
-      file_name: file.name,
-      storage_path: path,
-      file_size: file.size,
-      mime_type: file.type
-    });
-
-    if(insErr){
-      const msg = "File uploaded to storage, but the record failed to save: " + insErr.message;
-      if(notice){ notice.textContent = msg; notice.style.color = "var(--danger)"; }
-      else alert(msg);
-      return;
-    }
-
-    await logAudit("ADMIN_FILE_SENT", { target: targetUid, file: file.name });
-    if(notice){ notice.textContent = "File sent successfully."; notice.style.color = "var(--good)"; }
-    document.getElementById('adminFileInput').value = '';
+    renderQueue();
+    uploadBtn.disabled = false;
     loadAdminFilesList();
   });
 
@@ -1818,7 +1956,34 @@
   function loadChatSystem(){
     loadChatInvitations();
     loadAcceptedContacts();
+    loadMyNickname();
   }
+
+  async function loadMyNickname(){
+    const input = document.getElementById('chatNicknameInput');
+    if(!input || !supabase || !sessionUser) return;
+    try{
+      const { data } = await supabase.from('profiles').select('chat_nickname').eq('id', sessionUser.id).maybeSingle();
+      input.value = (data && data.chat_nickname) || '';
+    }catch(e){}
+  }
+
+  document.getElementById('btnSaveNickname')?.addEventListener('click', async () => {
+    const input = document.getElementById('chatNicknameInput');
+    const notice = document.getElementById('nicknameNotice');
+    if(!input || !supabase || !sessionUser) return;
+    const val = input.value.trim().slice(0, 40);
+    try{
+      const { error } = await supabase.from('profiles').update({ chat_nickname: val || null }).eq('id', sessionUser.id);
+      if(error) throw error;
+      notice.textContent = "Saved.";
+      notice.style.color = "var(--good)";
+      loadAcceptedContacts();
+    }catch(err){
+      notice.textContent = "Could not save: " + err.message;
+      notice.style.color = "var(--danger)";
+    }
+  });
 
   // Send invitation
   document.getElementById('btnSendChatInvite')?.addEventListener('click', async () => {
@@ -1976,17 +2141,18 @@
       }
 
       const otherUserIds = accepted.map(a => a.sender_id === sessionUser.id ? a.receiver_id : a.sender_id);
-      const { data: profiles } = await supabase.from('profiles').select('id, username, full_name').in('id', otherUserIds);
+      const { data: profiles } = await supabase.from('profiles').select('id, username, full_name, chat_nickname').in('id', otherUserIds);
       const profMap = {};
       (profiles || []).forEach(p => profMap[p.id] = p);
 
       cont.innerHTML = otherUserIds.map(uid => {
         const p = profMap[uid] || { username: 'user', full_name: 'Contact' };
+        const displayName = p.chat_nickname || ('@' + p.username);
         const isSel = (uid === activeChatContactId);
         return `
-          <div onclick="window.selectChatContact('${uid}', '${escapeHtml(p.username)}')" style="cursor:pointer; padding:6px 8px; border-radius:6px; margin-bottom:4px; background:${isSel?'rgba(34,211,238,0.15)':'transparent'}; border:${isSel?'1px solid var(--cyan)':'1px solid transparent'};">
-            <div style="font-weight:600; font-size:0.85rem; color:${isSel?'var(--cyan)':'var(--text)'};">@${escapeHtml(p.username)}</div>
-            <div style="font-size:0.75rem; color:var(--muted);">${escapeHtml(p.full_name || '')}</div>
+          <div onclick="window.selectChatContact('${uid}', '${escapeHtml(p.username)}', '${escapeHtml(p.chat_nickname || '')}')" style="cursor:pointer; padding:6px 8px; border-radius:6px; margin-bottom:4px; background:${isSel?'rgba(34,211,238,0.15)':'transparent'}; border:${isSel?'1px solid var(--cyan)':'1px solid transparent'};">
+            <div style="font-weight:600; font-size:0.85rem; color:${isSel?'var(--cyan)':'var(--text)'};">${escapeHtml(displayName)}</div>
+            <div style="font-size:0.75rem; color:var(--muted);">${p.chat_nickname ? '@' + escapeHtml(p.username) : escapeHtml(p.full_name || '')}</div>
           </div>
         `;
       }).join('');
@@ -1995,10 +2161,10 @@
     }
   }
 
-  window.selectChatContact = function(userId, username){
+  window.selectChatContact = function(userId, username, nickname){
     activeChatContactId = userId;
     activeChatContactName = username;
-    document.getElementById('chatHeader').textContent = "Chatting with @" + username;
+    document.getElementById('chatHeader').textContent = "Chatting with " + (nickname || ("@" + username));
     document.getElementById('chatInputBar').style.display = 'flex';
     loadAcceptedContacts();
     loadActiveConversation(userId, username, false);
@@ -2023,17 +2189,39 @@
 
       const shouldScroll = (!isPoll || box.scrollTop + box.clientHeight >= box.scrollHeight - 50);
 
-      box.innerHTML = msgs.map(m => {
+      const rendered = await Promise.all(msgs.map(async (m) => {
         const isMe = (m.sender_id === sessionUser.id);
+        const bubbleStyle = `max-width:75%; padding:6px 12px; border-radius:12px; font-size:0.85rem; background:${isMe?'var(--cyan)':'var(--surface)'}; color:${isMe?'#0f172a':'var(--text)'}; border:${isMe?'none':'1px solid var(--border-solid)'};`;
+        let inner = '';
+
+        if(m.message_type === 'image' && m.attachment_path){
+          const { data: signed } = await supabase.storage.from('chat-attachments').createSignedUrl(m.attachment_path, 3600);
+          inner = signed
+            ? `<img src="${signed.signedUrl}" style="max-width:220px; max-height:220px; border-radius:8px; display:block;">`
+            : `<span>[image unavailable]</span>`;
+        } else if(m.message_type === 'audio' && m.attachment_path){
+          const { data: signed } = await supabase.storage.from('chat-attachments').createSignedUrl(m.attachment_path, 3600);
+          inner = signed
+            ? `<audio controls src="${signed.signedUrl}" style="max-width:220px; height:34px;"></audio>`
+            : `<span>[voice message unavailable]</span>`;
+        } else if(m.message_type === 'file' && m.attachment_path){
+          const { data: signed } = await supabase.storage.from('chat-attachments').createSignedUrl(m.attachment_path, 3600);
+          inner = signed
+            ? `<a href="${signed.signedUrl}" target="_blank" style="color:inherit; text-decoration:underline;">📄 ${escapeHtml(m.attachment_name || 'file')}</a>`
+            : `<span>[file unavailable]</span>`;
+        } else {
+          inner = escapeHtml(m.message);
+        }
+
         return `
           <div style="display:flex; flex-direction:column; align-items:${isMe?'flex-end':'flex-start'};">
-            <div style="max-width:75%; padding:6px 12px; border-radius:12px; font-size:0.85rem; background:${isMe?'var(--cyan)':'var(--surface)'}; color:${isMe?'#0f172a':'var(--text)'}; border:${isMe?'none':'1px solid var(--border-solid)'};">
-              ${escapeHtml(m.message)}
-            </div>
+            <div style="${bubbleStyle}">${inner}</div>
             <span style="font-size:0.65rem; color:var(--muted); margin-top:2px;">${new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
           </div>
         `;
-      }).join('');
+      }));
+
+      box.innerHTML = rendered.join('');
 
       if(shouldScroll){
         box.scrollTop = box.scrollHeight;
