@@ -1,0 +1,2467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign In / Register — Pramod Sapkota</title>
+<meta name="description" content="Login and registration for sapkotap.com.np">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<!-- Supabase SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
+
+<style>
+  :root{
+    --bg:#0b0f14;
+    --surface:#121821;
+    --surface-2:#161d27;
+    --border:#20293480;
+    --border-solid:#232d3a;
+    --text:#e8edf2;
+    --muted:#8a97a6;
+    --cyan:#22d3ee;
+    --violet:#8b5cf6;
+    --danger:#f87171;
+    --good:#34d399;
+    --radius:14px;
+    --shadow: 0 20px 60px -20px rgba(0,0,0,0.6);
+  }
+  [data-theme="light"]{
+    --bg:#f3f5f8;
+    --surface:#ffffff;
+    --surface-2:#eef1f5;
+    --border:#dbe1e8c0;
+    --border-solid:#dde3ea;
+    --text:#131a22;
+    --muted:#5b6572;
+    --shadow: 0 20px 60px -20px rgba(20,30,45,0.18);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    transition:background .35s ease, color .35s ease;
+    overflow-x:hidden;
+  }
+  a{color:inherit;}
+
+  .top{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:20px clamp(16px,5vw,48px);
+  }
+  .brand{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700; font-size:1.05rem; letter-spacing:.01em;
+    text-decoration:none; color:var(--text);
+    display:flex; align-items:center; gap:8px;
+  }
+  .brand .dot{width:8px;height:8px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px var(--cyan);}
+  .backlink{
+    font-size:.85rem; color:var(--muted); text-decoration:none;
+    font-family:'JetBrains Mono',monospace;
+    border:1px solid var(--border-solid); padding:8px 14px; border-radius:999px;
+    transition:border-color .2s, color .2s;
+  }
+  .backlink:hover{color:var(--text); border-color:var(--cyan);}
+  .themeToggle{
+    background:var(--surface-2); border:1px solid var(--border-solid);
+    width:38px;height:38px;border-radius:50%; cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    font-size:1rem; margin-left:10px; color:var(--text);
+  }
+  .topRight{display:flex; align-items:center;}
+
+  .wrap{
+    display:grid;
+    grid-template-columns: 1.1fr 1fr;
+    min-height:calc(100vh - 78px);
+  }
+  @media (max-width: 900px){
+    .wrap{grid-template-columns:1fr;}
+    .panel-left{display:none;}
+  }
+
+  /* LEFT: terminal panel */
+  .panel-left{
+    position:relative;
+    padding:clamp(28px,5vw,64px);
+    display:flex; flex-direction:column; justify-content:center;
+    background:
+      radial-gradient(circle at 20% 20%, rgba(139,92,246,0.12), transparent 45%),
+      radial-gradient(circle at 80% 70%, rgba(34,211,238,0.10), transparent 45%);
+    border-right:1px solid var(--border-solid);
+  }
+  .term{
+    background:var(--surface);
+    border:1px solid var(--border-solid);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    max-width:520px;
+    overflow:hidden;
+  }
+  .term-bar{
+    display:flex; gap:6px; padding:12px 14px;
+    border-bottom:1px solid var(--border-solid);
+    background:var(--surface-2);
+  }
+  .term-dot{width:10px;height:10px;border-radius:50%;}
+  .term-dot.r{background:#ff5f57;} .term-dot.y{background:#febc2e;} .term-dot.g{background:#28c840;}
+  .term-body{
+    font-family:'JetBrains Mono',monospace;
+    font-size:.88rem; line-height:1.9;
+    padding:22px 24px 26px;
+    min-height:210px;
+    color:var(--muted);
+  }
+  .term-body .prompt{color:var(--cyan);}
+  .term-body .out{color:var(--text);}
+  .term-body .accent{color:var(--violet);}
+  .cursor{
+    display:inline-block; width:8px; height:1.1em; background:var(--cyan);
+    vertical-align:text-bottom; margin-left:2px;
+    animation:blink 1s steps(1) infinite;
+  }
+  @keyframes blink{50%{opacity:0;}}
+  .type-line{opacity:0; animation:reveal .4s forwards;}
+  .headline{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:clamp(1.4rem,2.4vw,1.9rem);
+    font-weight:600; margin:26px 0 8px; max-width:480px;
+  }
+  .sub{color:var(--muted); max-width:440px; font-size:.95rem; line-height:1.6;}
+
+  @keyframes reveal{to{opacity:1;}}
+
+  /* RIGHT: auth card */
+  .panel-right{
+    display:flex; align-items:center; justify-content:center;
+    padding:clamp(20px,5vw,48px);
+  }
+  .card{
+    width:100%; max-width:440px;
+    background:var(--surface);
+    border:1px solid var(--border-solid);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:clamp(24px,4vw,34px);
+  }
+  .tabs{
+    display:flex; background:var(--surface-2); border-radius:999px;
+    padding:4px; margin-bottom:26px; border:1px solid var(--border-solid);
+  }
+  .tab{
+    flex:1; text-align:center; padding:9px 0; border-radius:999px;
+    font-size:.88rem; font-weight:600; cursor:pointer; color:var(--muted);
+    font-family:'Space Grotesk',sans-serif;
+    transition:background .2s, color .2s;
+    user-select:none;
+  }
+  .tab.active{ background:var(--bg); color:var(--text); }
+  [data-theme="light"] .tab.active{ background:#fff; box-shadow:0 1px 4px rgba(0,0,0,.08);}
+
+  .form-title{font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:1.3rem; margin:0 0 4px;}
+  .form-hint{color:var(--muted); font-size:.85rem; margin:0 0 22px;}
+
+  .field{margin-bottom:16px;}
+  .field label{
+    display:block; font-family:'JetBrains Mono',monospace; font-size:.72rem;
+    letter-spacing:.04em; text-transform:uppercase; color:var(--muted); margin-bottom:7px;
+  }
+  .field input, .field select{
+    width:100%; padding:11px 13px; border-radius:9px;
+    background:var(--surface-2); border:1px solid var(--border-solid);
+    color:var(--text); font-family:'Inter',sans-serif; font-size:.94rem;
+    outline:none; transition:border-color .18s, box-shadow .18s;
+  }
+  .field input:focus, .field select:focus{
+    border-color:var(--cyan);
+    box-shadow:0 0 0 3px rgba(34,211,238,0.18);
+  }
+  .field .err{color:var(--danger); font-size:.78rem; margin-top:6px; display:none; font-family:'JetBrains Mono',monospace;}
+  .field.invalid input{border-color:var(--danger);}
+  .field.invalid .err{display:block;}
+
+  .row-between{display:flex; align-items:center; justify-content:space-between; margin:2px 0 20px; font-size:.85rem; color:var(--muted);}
+  .row-between label{display:flex; align-items:center; gap:7px; cursor:pointer;}
+  .row-between a{color:var(--cyan); text-decoration:none; font-weight:500;}
+  .row-between a:hover{text-decoration:underline;}
+
+  .btn{
+    width:100%; padding:12px 0; border:none; border-radius:9px; cursor:pointer;
+    font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:.95rem;
+    background:linear-gradient(90deg,var(--cyan),var(--violet)); color:#0b0f14;
+    transition:transform .12s ease, box-shadow .2s ease;
+  }
+  .btn:hover{transform:translateY(-1px); box-shadow:0 8px 24px -8px rgba(34,211,238,0.5);}
+  .btn:active{transform:translateY(0);}
+
+  .btn-outline{
+    background:var(--surface-2); color:var(--text); border:1px solid var(--border-solid);
+    margin-top:10px;
+  }
+  .btn-outline:hover{box-shadow:none; border-color:var(--cyan);}
+
+  .switch-line{text-align:center; font-size:.87rem; color:var(--muted); margin-top:20px;}
+  .switch-line button{
+    background:none; border:none; color:var(--cyan); font-weight:600; cursor:pointer;
+    font-family:'Inter',sans-serif; font-size:.87rem; padding:0;
+  }
+
+  .status{
+    display:none; align-items:center; gap:8px; font-size:.85rem;
+    font-family:'JetBrains Mono',monospace; padding:11px 13px; border-radius:9px;
+    margin-bottom:18px; border:1px solid var(--border-solid);
+  }
+  .status.show{display:flex;}
+  .status.good{color:var(--good); background:rgba(52,211,153,0.08); border-color:rgba(52,211,153,0.3);}
+  .status.bad{color:var(--danger); background:rgba(248,113,113,0.08); border-color:rgba(248,113,113,0.3);}
+
+  .form{display:none;}
+  .form.active{display:block;}
+
+  /* Dashboard View */
+  .portal-container{
+    display:none; width:100%; max-width:960px; margin:20px auto;
+    padding:clamp(20px,4vw,36px); background:var(--surface);
+    border:1px solid var(--border-solid); border-radius:var(--radius);
+    box-shadow:var(--shadow);
+  }
+  table{width:100%; border-collapse:collapse; margin-top:14px; font-size:.85rem;}
+  th, td{text-align:left; padding:9px 12px; border-bottom:1px solid var(--border-solid);}
+  th{color:var(--muted); font-family:'Space Grotesk',sans-serif; font-weight:600;}
+  code{font-family:'JetBrains Mono',monospace; color:var(--cyan);}
+  .badge-ip{
+    color:var(--cyan); background:rgba(34,211,238,0.08);
+    padding:2px 7px; border-radius:5px; font-family:'JetBrains Mono',monospace; font-size:.78rem;
+  }
+
+  footer.note{
+    text-align:center; color:var(--muted); font-size:.75rem;
+    padding:18px; font-family:'JetBrains Mono',monospace;
+  }
+
+/* REACT-TIER DASHBOARD ENHANCEMENTS */
+#dashboardWrap {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 30px 24px;
+}
+.react-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  border-bottom: 1px solid var(--border-solid);
+  padding-bottom: 20px;
+  margin-bottom: 24px;
+}
+.react-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.react-stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border-solid);
+  border-radius: 12px;
+  padding: 18px 20px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+.react-stat-card .label {
+  font-size: 0.7rem;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+  margin-bottom: 8px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.react-stat-card .value {
+  font-size: 2.1rem;
+  font-weight: 800;
+  color: var(--cyan);
+}
+.react-stat-card .value.active-green {
+  color: #10b981;
+}
+
+/* Admin Control Room pill tabs */
+.admin-pill {
+  padding: 8px 18px; border-radius: 999px; border: 1px solid var(--border-solid);
+  background: transparent; color: var(--muted); font-family:'Space Grotesk',sans-serif;
+  font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: all .18s ease;
+}
+.admin-pill:hover { color: var(--text); border-color: var(--cyan); }
+.admin-pill.active { background: var(--surface-2); color: var(--cyan); border-color: var(--cyan); }
+.admin-tabpane { display: none; }
+.admin-tabpane.active { display: block; }
+
+#adminDropzone:hover { border-color: var(--cyan); background: rgba(34,211,238,0.04); }
+#adminDropzone.drag-active { border-color: var(--cyan); background: rgba(34,211,238,0.08); }
+.queue-chip {
+  display:flex; align-items:center; justify-content:space-between; gap:8px;
+  background:var(--surface); border:1px solid var(--border-solid); border-radius:8px;
+  padding:6px 10px; margin-bottom:6px; font-size:0.78rem;
+}
+.queue-chip .qname { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text); }
+.queue-chip .qmeta { color:var(--muted); font-size:0.7rem; white-space:nowrap; margin-left:8px; }
+.queue-chip .qremove { cursor:pointer; color:var(--danger); font-weight:700; margin-left:8px; }
+.queue-chip.uploading .qmeta { color:var(--cyan); }
+.queue-chip.done .qmeta { color:var(--good); }
+.queue-chip.failed .qmeta { color:var(--danger); }
+
+</style>
+</head>
+<body data-theme="dark">
+
+  <div class="top">
+    <a class="brand" href="index.html"><span class="dot"></span>Pramod</a>
+    <div class="topRight">
+      <a class="backlink" href="index.html">&larr; back to portfolio</a>
+      <button class="themeToggle" id="themeToggle" aria-label="Toggle theme">☀</button>
+    </div>
+  </div>
+
+  <!-- AUTHENTICATION VIEW -->
+  <div class="wrap" id="mainAuthWrap">
+    <div class="panel-left">
+      <div class="term">
+        <div class="term-bar">
+          <span class="term-dot r"></span><span class="term-dot y"></span><span class="term-dot g"></span>
+        </div>
+        <div class="term-body" id="termBody">
+          <div class="type-line" style="animation-delay:.1s"><span class="prompt">$</span> whoami</div>
+          <div class="type-line out" style="animation-delay:.5s">Pramod Sapkota — Creative Developer</div>
+          <div class="type-line" style="animation-delay:.9s"><span class="prompt">$</span> cat status.txt</div>
+          <div class="type-line out" style="animation-delay:1.3s">Building sapkotap.com.np, one commit at a time.</div>
+          <div class="type-line" style="animation-delay:1.7s"><span class="prompt">$</span> auth --new-session</div>
+          <div class="type-line accent" style="animation-delay:2.1s">Ready for sign in<span class="cursor"></span></div>
+        </div>
+      </div>
+      <div class="headline">One account, full access to the work.</div>
+      <div class="sub">Sign in to pick up where you left off, or register to save projects, leave feedback, and follow along as new builds ship.</div>
+    </div>
+
+    <div class="panel-right">
+      <div class="card">
+        <div class="tabs" id="authTabs">
+          <div class="tab active" id="tabLogin">Sign In</div>
+          <div class="tab" id="tabRegister">Register</div>
+        </div>
+
+        <div class="status" id="statusBox"></div>
+
+        <!-- 1. LOGIN STEP 1: Email + Password -->
+        <form class="form active" id="loginForm" novalidate>
+          <div class="form-title">Welcome back</div>
+          <p class="form-hint">Sign in with the email you registered with.</p>
+
+          <!-- Social Login: Google / Microsoft / Apple -->
+          <div class="social-auth-group" style="margin-bottom: 18px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <button type="button" class="btn btn-outline" id="btnAuthGoogle" style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 14px; font-size: 0.85rem;">
+                <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.4 1 3.5 3.6 1.6 7.4l3.7 2.9C6.2 7.3 8.9 5 12 5z"/><path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.6h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.9z"/><path fill="#FBBC05" d="M5.3 14.7c-.2-.7-.4-1.5-.4-2.3s.2-1.6.4-2.3L1.6 7.2C.6 9.2 0 11.5 0 14s.6 4.8 1.6 6.8l3.7-2.9z"/><path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3.1 0-5.8-2.3-6.7-5.3L1.6 16C3.5 19.8 7.4 23 12 23z"/></svg>
+                Google
+              </button>
+              <button type="button" class="btn btn-outline" id="btnAuthOutlook" style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 14px; font-size: 0.85rem;">
+                <svg width="18" height="18" viewBox="0 0 24 24"><rect x="1" y="1" width="10" height="10" fill="#F25022"/><rect x="13" y="1" width="10" height="10" fill="#7FBA00"/><rect x="1" y="13" width="10" height="10" fill="#00A4EF"/><rect x="13" y="13" width="10" height="10" fill="#FFB900"/></svg>
+                Outlook
+              </button>
+            </div>
+            <div style="display: flex; align-items: center; margin: 16px 0 14px; gap: 12px;">
+              <div style="flex: 1; height: 1px; background: var(--border-solid);"></div>
+              <span style="font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em;">or email</span>
+              <div style="flex: 1; height: 1px; background: var(--border-solid);"></div>
+            </div>
+          </div>
+
+
+          <div class="field" id="loginEmailField">
+            <label for="loginEmail">Email or Username</label>
+            <input type="text" id="loginEmail" autocomplete="username" placeholder="Username or email address" required>
+            <div class="err">Enter your username or email.</div>
+          </div>
+          <div class="field" id="loginPassField">
+            <label for="loginPass">Password</label>
+            <input type="password" id="loginPass" autocomplete="current-password" placeholder="••••••••" required>
+            <div class="err">Password is required.</div>
+          </div>
+          <div class="row-between">
+            <label><input type="checkbox" id="rememberMe"> Remember me</label>
+            <a href="#" id="forgotLink">Forgot password?</a>
+          </div>
+
+          <button type="submit" class="btn" id="btnSignIn">Sign In</button>
+          <div class="switch-line">No account yet? <button type="button" id="goRegister">Register</button></div>
+        </form>
+
+        <!-- 2. LOGIN STEP 2: One-Time Code (OTP) -->
+        <form class="form" id="otpForm" novalidate>
+          <div class="form-title">Step 2: Verification</div>
+          <p class="form-hint">Enter the 6-digit confirmation code sent to your email.</p>
+
+          <div class="field" id="otpField">
+            <label for="otpCode">6-Digit OTP</label>
+            <input type="text" id="otpCode" maxlength="6" pattern="[0-9]{6}" placeholder="123456" required>
+            <div class="err">Enter the 6-digit verification code.</div>
+          </div>
+
+          <button type="submit" class="btn">Verify & Continue</button>
+          <button type="button" class="btn btn-outline" id="btnResendOtp">Resend code</button>
+          <button type="button" class="btn btn-outline" id="btnCancelOtp">Cancel</button>
+        </form>
+
+        <!-- 3. LOGIN STEP 3: New Device Confirmation -->
+        <div class="form" id="deviceForm">
+          <div class="form-title">Step 3: New Device</div>
+          <p class="form-hint">You are logging in from an unrecognized browser. Is this you?</p>
+          <button type="button" class="btn" id="btnTrustDevice">Yes, trust this device</button>
+          <button type="button" class="btn btn-outline" id="btnRejectDevice">Deny & cancel</button>
+        </div>
+
+        <!-- 4. FORGOT PASSWORD -->
+        <form class="form" id="forgotForm" novalidate>
+          <div class="form-title">Reset Password</div>
+          <p class="form-hint">Enter your registered email to receive a recovery link.</p>
+
+          <div class="field" id="forgotEmailField">
+            <label for="forgotEmail">Email</label>
+            <input type="email" id="forgotEmail" placeholder="you@gmail.com or outlook.com" required>
+            <div class="err">Enter a valid email address.</div>
+          </div>
+
+          <button type="submit" class="btn">Send Reset Link</button>
+          <button type="button" class="btn btn-outline" id="btnBackToLogin">Back to Sign In</button>
+        </form>
+
+        <!-- 4b. SET NEW PASSWORD (AFTER CLICKING EMAIL LINK) -->
+        <form class="form" id="updatePassForm" novalidate>
+          <div class="form-title">Set New Password</div>
+          <p class="form-hint">Enter your new password to regain access to your account.</p>
+
+          <div class="field" id="updatePassField">
+            <label for="updatePassInput">New Password</label>
+            <input type="password" id="updatePassInput" placeholder="••••••••" required>
+            <div class="err">Must be 8+ chars with upper, lower, number & symbol.</div>
+          </div>
+
+          <div class="field" id="updateConfirmField">
+            <label for="updateConfirmInput">Confirm New Password</label>
+            <input type="password" id="updateConfirmInput" placeholder="••••••••" required>
+            <div class="err">Passwords do not match.</div>
+          </div>
+
+          <button type="submit" class="btn" id="btnSaveNewPassword">Save New Password</button>
+        </form>
+
+        <!-- 5. REGISTER FORM -->
+        <form class="form" id="registerForm" novalidate>
+          <div class="form-title">Create your account</div>
+          <p class="form-hint">Takes less than a minute.</p>
+
+          <div class="field" id="regNameField">
+            <label for="regName">Full name</label>
+            <input type="text" id="regName" autocomplete="name" placeholder="Pramod Sapkota" required>
+            <div class="err">Please enter your name.</div>
+          </div>
+
+          <div class="field" id="regUserField">
+            <label for="regUser">Username</label>
+            <input type="text" id="regUser" placeholder="pramod" pattern="^[a-zA-Z0-9_-]{3,20}$" required>
+            <div class="err">3-20 characters (letters, numbers, dash, underscore).</div>
+          </div>
+
+          <div class="field" id="regEmailField">
+            <label for="regEmail">Email</label>
+            <input type="email" id="regEmail" autocomplete="email" placeholder="you@gmail.com or outlook.com" required>
+            <div class="err">Enter a valid email address.</div>
+          </div>
+
+          <div class="field" id="regPassField">
+            <label for="regPass">Password</label>
+            <input type="password" id="regPass" autocomplete="new-password" placeholder="••••••••" required>
+            <div class="err">Min 8 chars, 1 uppercase, 1 number, 1 special character.</div>
+          </div>
+
+          <div class="field" id="regConfirmField">
+            <label for="regConfirm">Confirm password</label>
+            <input type="password" id="regConfirm" autocomplete="new-password" placeholder="••••••••" required>
+            <div class="err">Passwords do not match.</div>
+          </div>
+
+          <button type="submit" class="btn" id="btnCreateAccount">Create Account</button>
+          <div class="switch-line">Already have an account? <button type="button" id="goLogin">Sign in</button></div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- AUTHENTICATED DASHBOARDS VIEW -->
+  <div class="portal-container" id="dashboardWrap">
+    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-solid); padding-bottom:14px;">
+      <div>
+        <h2 style="font-family:'Space Grotesk',sans-serif; margin:0;" id="userWelcome">Welcome</h2>
+        <div style="font-size:0.85rem; color:var(--muted); margin-top:4px;" id="userMeta"></div>
+      </div>
+      <button class="backlink" style="cursor:pointer;" id="btnLogout">Sign Out</button>
+    </div>
+
+    <!-- DASHBOARD NAVIGATION TABS -->
+    <div style="display:flex; gap:10px; margin-top:20px; border-bottom:1px solid var(--border-solid); padding-bottom:12px; overflow-x:auto;">
+      <button type="button" class="btn-subtle active" id="tabBtnFiles" style="padding:6px 14px; font-size:0.85rem; cursor:pointer; background:var(--surface-2); border:1px solid var(--border-solid); color:var(--text); border-radius:6px;">My Files</button>
+      <button type="button" class="btn-subtle" id="tabBtnChat" style="padding:6px 14px; font-size:0.85rem; cursor:pointer; background:transparent; border:1px solid var(--border-solid); color:var(--muted); border-radius:6px;">Direct Chat</button>
+      <button type="button" class="btn-subtle" id="tabBtnSupport" style="padding:6px 14px; font-size:0.85rem; cursor:pointer; background:transparent; border:1px solid var(--border-solid); color:var(--muted); border-radius:6px;">Message Admin</button>
+      <button type="button" class="btn-subtle" id="tabBtnAdmin" style="display:none; padding:6px 14px; font-size:0.85rem; cursor:pointer; background:transparent; border:1px solid var(--violet); color:var(--violet); border-radius:6px;">Admin Console</button>
+    </div>
+
+    <!-- TAB 1: MEMBER FILES -->
+    <div id="tabContentFiles" style="margin-top:20px;">
+      <h3 style="font-family:'Space Grotesk',sans-serif; color:var(--cyan); margin-bottom:8px;">Your Private Files</h3>
+      <div id="memberFileList" style="font-size:0.85rem; color:var(--muted);">No files assigned to your account.</div>
+    </div>
+
+    <!-- TAB 2: USER-TO-USER CHAT (WITH INVITATION APPROVAL) -->
+    <div id="tabContentChat" style="display:none; margin-top:20px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:10px;">
+        <h3 style="font-family:'Space Grotesk',sans-serif; color:var(--cyan); margin:0;">User-to-User Chat</h3>
+        <span style="font-size:0.75rem; color:var(--muted);">Requires mutual invitation acceptance</span>
+      </div>
+
+      <!-- Anonymous nickname -->
+      <div style="background:var(--surface-2); border:1px solid var(--border-solid); border-radius:8px; padding:10px 12px; margin-bottom:14px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+        <span style="font-size:0.78rem; color:var(--muted); white-space:nowrap;">Chat as:</span>
+        <input type="text" id="chatNicknameInput" placeholder="Anonymous nickname (optional)" style="flex:1; min-width:160px; padding:7px 10px; border-radius:7px; background:var(--bg); border:1px solid var(--border-solid); color:var(--text); font-size:0.82rem;">
+        <button type="button" class="btn-outline" id="btnSaveNickname" style="width:auto; padding:6px 14px; font-size:0.78rem; margin:0;">Save</button>
+        <span id="nicknameNotice" style="font-size:0.72rem;"></span>
+      </div>
+
+      <!-- Send Invite -->
+      <div style="background:var(--surface-2); border:1px solid var(--border-solid); border-radius:8px; padding:12px; margin-bottom:16px;">
+        <div style="font-size:0.85rem; font-weight:600; margin-bottom:8px; color:var(--text);">Send Chat Invitation to Site User</div>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="chatInviteUsername" class="field" style="margin:0;" placeholder="Enter target username (e.g. john)">
+          <button type="button" class="btn" id="btnSendChatInvite" style="width:auto; padding:0 18px; white-space:nowrap;">Invite</button>
+        </div>
+        <div id="chatInviteNotice" style="font-size:0.8rem; margin-top:6px;"></div>
+      </div>
+
+      <!-- Pending Invitations -->
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px;">
+        <div style="background:var(--surface-2); border:1px solid var(--border-solid); border-radius:8px; padding:12px;">
+          <div style="font-size:0.8rem; font-weight:600; color:var(--cyan); margin-bottom:8px;">Incoming Requests</div>
+          <div id="incomingInvitesList" style="font-size:0.8rem; color:var(--muted);">No pending incoming requests.</div>
+        </div>
+        <div style="background:var(--surface-2); border:1px solid var(--border-solid); border-radius:8px; padding:12px;">
+          <div style="font-size:0.8rem; font-weight:600; color:var(--muted); margin-bottom:8px;">Sent Requests (Waiting)</div>
+          <div id="outgoingInvitesList" style="font-size:0.8rem; color:var(--muted);">No outgoing requests.</div>
+        </div>
+      </div>
+
+      <!-- Chat Workspace: Left contacts, Right active chat -->
+      <div style="display:grid; grid-template-columns:200px 1fr; gap:12px; background:var(--surface-2); border:1px solid var(--border-solid); border-radius:8px; min-height:340px; overflow:hidden;">
+        <!-- Accepted Contacts -->
+        <div style="border-right:1px solid var(--border-solid); padding:10px; display:flex; flex-direction:column;">
+          <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--muted); margin-bottom:8px;">Accepted Friends</div>
+          <div id="acceptedContactsList" style="flex:1; overflow-y:auto; font-size:0.85rem;">
+            <div style="color:var(--muted); font-size:0.8rem;">No accepted contacts yet.</div>
+          </div>
+        </div>
+
+        <!-- Chat Area -->
+        <div id="chatActiveArea" style="display:flex; flex-direction:column; padding:10px;">
+          <div id="chatHeader" style="border-bottom:1px solid var(--border-solid); padding-bottom:6px; margin-bottom:8px; font-weight:600; font-size:0.85rem; color:var(--cyan);">
+            Select an accepted user to chat
+          </div>
+          <div id="chatMessagesBox" style="flex:1; overflow-y:auto; max-height:220px; display:flex; flex-direction:column; gap:6px; padding:6px 0; font-size:0.85rem;">
+            <div style="color:var(--muted); font-size:0.8rem; text-align:center; margin-top:40px;">No conversation selected.</div>
+          </div>
+          <div id="chatInputBar" style="display:none; gap:8px; margin-top:8px; align-items:center;">
+            <button type="button" id="btnChatAttach" title="Attach photo or file" style="background:var(--surface-2); border:1px solid var(--border-solid); color:var(--text); border-radius:8px; width:38px; height:38px; cursor:pointer; font-size:1rem;">📎</button>
+            <button type="button" id="btnChatVoice" title="Record voice message" style="background:var(--surface-2); border:1px solid var(--border-solid); color:var(--text); border-radius:8px; width:38px; height:38px; cursor:pointer; font-size:1rem;">🎤</button>
+            <input type="file" id="chatAttachInput" accept="image/*,audio/*,.pdf,.doc,.docx,.zip" style="display:none;">
+            <input type="text" id="chatMessageInput" class="field" style="margin:0; flex:1;" placeholder="Type your message...">
+            <button type="button" class="btn" id="btnSendChatMessage" style="width:auto; padding:0 16px;">Send</button>
+          </div>
+          <div id="chatUploadStatus" style="font-size:0.72rem; color:var(--muted); margin-top:4px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: MESSAGE ADMIN / SUPPORT -->
+    <div id="tabContentSupport" style="display:none; margin-top:20px;">
+      <h3 style="font-family:'Space Grotesk',sans-serif; color:var(--cyan); margin-bottom:6px;">Contact Admin & Support</h3>
+      <p style="font-size:0.8rem; color:var(--muted); margin-bottom:14px;">Have an issue, account question, or bug to report? Send a direct private message to the administration team.</p>
+
+      <form id="supportForm" style="background:var(--surface-2); border:1px solid var(--border-solid); border-radius:8px; padding:14px; margin-bottom:16px;">
+        <label style="font-size:0.75rem; color:var(--muted); text-transform:uppercase;">Subject</label>
+        <input type="text" id="supportSubject" class="field" style="margin-top:4px; margin-bottom:10px;" placeholder="Brief summary of your problem" required>
+
+        <label style="font-size:0.75rem; color:var(--muted); text-transform:uppercase;">Message</label>
+        <textarea id="supportMessage" class="field" style="margin-top:4px; margin-bottom:12px; min-height:80px; resize:vertical;" placeholder="Describe what went wrong or what you need help with..." required></textarea>
+
+        <button type="submit" class="btn" id="btnSendSupport" style="width:auto; padding:8px 24px;">Send to Admin</button>
+        <span id="supportNotice" style="font-size:0.8rem; margin-left:12px;"></span>
+      </form>
+
+      <h4 style="font-size:0.85rem; margin-bottom:8px;">Your Past Inquiries</h4>
+      <div id="userSupportTicketsList" style="font-size:0.8rem; color:var(--muted);">No messages submitted yet.</div>
+    </div>
+
+    <!-- ADMIN PANEL: "Control room" -->
+    <div id="adminArea" style="display:none; margin-top:36px; border-top:1px solid var(--border-solid); padding-top:24px;">
+
+      <div class="react-topbar" style="border-bottom:none; margin-bottom:12px; padding-bottom:0;">
+        <div>
+          <h2 style="font-family:'Space Grotesk',sans-serif; margin:0; font-size:1.6rem;">Control room</h2>
+          <p style="color:var(--muted); font-size:0.85rem; margin-top:4px;">Everything happening on sapkotap.com.np.</p>
+        </div>
+      </div>
+
+      <div class="react-stat-grid">
+        <div class="react-stat-card">
+          <div class="label">Members</div>
+          <div class="value" id="statMembers">–</div>
+        </div>
+        <div class="react-stat-card">
+          <div class="label">Logged Actions</div>
+          <div class="value" id="statActions">–</div>
+        </div>
+        <div class="react-stat-card">
+          <div class="label">Suspicious Events</div>
+          <div class="value" id="statSuspicious">–</div>
+        </div>
+        <div class="react-stat-card">
+          <div class="label">Serious Threats</div>
+          <div class="value" id="statThreats" style="color:var(--danger);">–</div>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap;">
+        <button type="button" class="admin-pill active" data-admintab="overview">overview</button>
+        <button type="button" class="admin-pill" data-admintab="users">users</button>
+        <button type="button" class="admin-pill" data-admintab="activity">activity</button>
+        <button type="button" class="admin-pill" data-admintab="attacks">attacks</button>
+        <button type="button" class="admin-pill" data-admintab="files">files</button>
+      </div>
+
+      <!-- OVERVIEW -->
+      <div class="admin-tabpane active" id="adminTab-overview">
+        <h4 style="margin-bottom:8px;">Latest activity</h4>
+        <div style="width:100%; overflow-x:auto;">
+          <table>
+            <thead><tr><th>Who</th><th>Action</th><th>Detail</th><th>Address</th></tr></thead>
+            <tbody id="adminOverviewTbody"><tr><td colspan="4" style="text-align:center; color:var(--muted);">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- USERS -->
+      <div class="admin-tabpane" id="adminTab-users">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:10px;">
+          <!-- Add New User Directly -->
+          <div style="background:var(--surface-2); border:1px solid var(--border-solid); border-radius:10px; padding:16px;">
+            <h4 style="margin:0 0 10px 0; font-size:0.9rem; color:var(--violet);">Add New User (Admin Provisioning)</h4>
+            <form id="adminAddUserForm" style="display:flex; flex-direction:column; gap:8px;">
+              <input type="text" id="adminNewFullName" class="field" style="margin:0;" placeholder="Full Name" required>
+              <input type="text" id="adminNewUsername" class="field" style="margin:0;" placeholder="Username (unique)" required>
+              <input type="email" id="adminNewEmail" class="field" style="margin:0;" placeholder="User Email" required>
+              <input type="password" id="adminNewPassword" class="field" style="margin:0;" placeholder="Initial Password (min 6 chars)" minlength="6" required>
+              <div style="display:flex; align-items:center; gap:8px; margin-top:4px;">
+                <button type="submit" class="btn" style="padding:6px 14px; font-size:0.85rem; width:auto;">Create User</button>
+                <span id="adminAddUserNotice" style="font-size:0.8rem;"></span>
+              </div>
+            </form>
+          </div>
+
+          <!-- Send File / Folder -->
+          <div style="background:var(--surface-2); border:1px solid var(--border-solid); border-radius:10px; padding:16px;">
+            <h4 style="margin:0 0 10px 0; font-size:0.9rem; color:var(--cyan);">Send Secure Files to User</h4>
+            <select id="adminUserSelect" class="field" style="margin:0 0 10px;"><option value="">Select target user...</option></select>
+
+            <div id="adminDropzone" style="border:2px dashed var(--border-solid); border-radius:10px; padding:20px; text-align:center; cursor:pointer; transition:border-color .18s, background .18s;">
+              <div style="font-size:1.6rem; margin-bottom:4px;">📁</div>
+              <div style="font-size:0.85rem; color:var(--text); font-weight:600;">Drag files or a folder here</div>
+              <div style="font-size:0.75rem; color:var(--muted); margin-top:2px;">or use a button below</div>
+              <div style="display:flex; gap:8px; justify-content:center; margin-top:12px;">
+                <button type="button" class="btn-outline" id="btnChooseFiles" style="width:auto; padding:6px 14px; font-size:0.78rem; margin:0;">Choose Files</button>
+                <button type="button" class="btn-outline" id="btnChooseFolder" style="width:auto; padding:6px 14px; font-size:0.78rem; margin:0;">Choose Folder</button>
+              </div>
+              <input type="file" id="adminFileInput" multiple style="display:none;">
+              <input type="file" id="adminFolderInput" webkitdirectory directory multiple style="display:none;">
+            </div>
+
+            <div id="adminFileQueue" style="margin-top:10px; display:none; max-height:160px; overflow-y:auto;"></div>
+
+            <button type="button" class="btn" id="btnAdminUpload" style="padding:8px 0; margin-top:12px; display:none;">Upload All</button>
+            <div id="adminUploadNotice" style="font-size:0.78rem; margin-top:8px;"></div>
+          </div>
+        </div>
+
+        <h4 style="margin-bottom:8px;">Registered Users</h4>
+        <table>
+          <thead>
+            <tr><th>Name</th><th>Username</th><th>Email</th><th>Role</th><th>Created</th><th id="thActions">Actions</th></tr>
+          </thead>
+          <tbody id="adminUsersTbody"></tbody>
+        </table>
+      </div>
+
+      <!-- ACTIVITY -->
+      <div class="admin-tabpane" id="adminTab-activity">
+        <h4 style="margin-bottom:8px;">User Support Inquiries & Messages</h4>
+        <div style="width:100%; overflow-x:auto; margin-bottom:24px;">
+          <table>
+            <thead>
+              <tr><th>Date</th><th>User Email</th><th>Subject</th><th>Message</th><th>Status</th><th>Action</th></tr>
+            </thead>
+            <tbody id="adminSupportTbody">
+              <tr><td colspan="6" style="text-align:center; color:var(--muted);">No support inquiries found.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h4 style="margin-bottom:8px;">All Logged Activity <span style="font-size:0.75rem; color:var(--cyan); font-weight:normal;">(Main Admin Only)</span></h4>
+        <div style="width:100%; overflow-x:auto;">
+          <table>
+            <thead>
+              <tr><th>Timestamp</th><th>Event</th><th>User / Email</th><th>IP Address</th><th>Location</th></tr>
+            </thead>
+            <tbody id="adminThreatsTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ATTACKS -->
+      <div class="admin-tabpane" id="adminTab-attacks">
+        <h4 style="margin-bottom:8px;">Failed Logins, Lockouts & Suspicious Attempts</h4>
+        <div style="width:100%; overflow-x:auto;">
+          <table>
+            <thead>
+              <tr><th>Timestamp</th><th>Event</th><th>User / Email</th><th>IP Address</th><th>Location</th></tr>
+            </thead>
+            <tbody id="adminAttacksTbody"><tr><td colspan="5" style="text-align:center; color:var(--muted);">No suspicious activity recorded.</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- FILES -->
+      <div class="admin-tabpane" id="adminTab-files">
+        <h4 style="margin-bottom:8px;">All Files Sent to Users</h4>
+        <div style="width:100%; overflow-x:auto;">
+          <table>
+            <thead>
+              <tr><th>File</th><th>Sent To</th><th>Size</th><th>Sent</th></tr>
+            </thead>
+            <tbody id="adminFilesTbody"><tr><td colspan="4" style="text-align:center; color:var(--muted);">No files sent yet.</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <footer class="note">sapkotap.com.np — secure authentication powered by Supabase Cloud</footer>
+
+<script>
+(function(){
+  /* =========================================================
+     CONFIGURATION
+     Paste your Supabase URL, anon key, and hCaptcha site key below
+     ========================================================= */
+  const SUPABASE_URL = "https://hkwjnzohrzydmdyigwjr.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhrd2puem9ocnp5ZG1keWlnd2pyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAyMzUxMzUsImV4cCI6MjEwNTgxMTEzNX0.K4L4LrewJ_xHqsg2jCYE3H9AOMcDCqSBPuujM7ujH8k";
+  const ADMIN_EMAIL = "pramodsapkota132@gmail.com";
+
+  // Safe string sanitization helper
+  function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+  function sanitize(str) {
+    return escapeHtml(str);
+  }
+  let idleTimer = null;
+
+
+  // Initialize Supabase Client
+  let supabase = null;
+  const isConfigured = SUPABASE_URL.startsWith("http") && !SUPABASE_URL.includes("your-project-id") && SUPABASE_ANON_KEY.length > 20 && !SUPABASE_ANON_KEY.includes("your-anon");
+
+  if(isConfigured && window.supabase){
+    try{
+      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    }catch(err){
+      console.error("Supabase init error:", err);
+    }
+  }
+
+
+  // Auth State
+  let sessionUser = null;
+  let currentDeviceHash = null;
+  let pendingLoginEmail = null;
+  let otpRequestedAt = null;
+  let otpResendTimer = null;
+
+  // Geo Detection
+  let clientIP = "detecting...";
+  let clientLocation = "detecting...";
+  fetch("https://ipapi.co/json/")
+    .then(r => r.json())
+    .then(d => {
+      if(d.ip) clientIP = d.ip;
+      const parts = [d.city, d.region, d.country_name].filter(Boolean);
+      if(parts.length) clientLocation = parts.join(", ");
+    })
+    .catch(() => {
+      fetch("https://api.ipify.org?format=json")
+        .then(r => r.json())
+        .then(d => { if(d.ip) clientIP = d.ip; })
+        .catch(() => {});
+    });
+
+  // Client Lockout
+  const LOCKOUT_KEY = "sapkotap_login_attempts";
+  function getAttempts(email){
+    try{
+      const data = JSON.parse(localStorage.getItem(LOCKOUT_KEY) || "{}");
+      return data[email.toLowerCase()] || { count: 0, lockedUntil: 0 };
+    }catch(e){ return { count: 0, lockedUntil: 0 }; }
+  }
+
+  function recordFailedAttempt(email){
+    try{
+      const data = JSON.parse(localStorage.getItem(LOCKOUT_KEY) || "{}");
+      const k = email.toLowerCase();
+      const curr = data[k] || { count: 0, lockedUntil: 0 };
+      curr.count += 1;
+      if(curr.count >= 5) curr.lockedUntil = Date.now() + 15 * 60 * 1000;
+      data[k] = curr;
+      localStorage.setItem(LOCKOUT_KEY, JSON.stringify(data));
+    }catch(e){}
+  }
+
+  function clearAttempts(email){
+    try{
+      const data = JSON.parse(localStorage.getItem(LOCKOUT_KEY) || "{}");
+      delete data[email.toLowerCase()];
+      localStorage.setItem(LOCKOUT_KEY, JSON.stringify(data));
+    }catch(e){}
+  }
+
+  function isLockedOut(email){
+    const a = getAttempts(email);
+    if(!a.lockedUntil) return false;
+    if(Date.now() < a.lockedUntil) return true;
+    clearAttempts(email);
+    return false;
+  }
+
+  function lockoutMinutesLeft(email){
+    const a = getAttempts(email);
+    return !a.lockedUntil ? 0 : Math.max(1, Math.ceil((a.lockedUntil - Date.now()) / 60000));
+  }
+
+  // Theme Toggle
+  const themeToggle = document.getElementById('themeToggle');
+  const savedTheme = localStorage.getItem('theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  themeToggle.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+
+  themeToggle.addEventListener('click', () => {
+    const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+    themeToggle.textContent = next === 'dark' ? '☀️' : '🌙';
+  });
+
+  // Helpers
+  function isEmail(e){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
+  function isStrongPassword(p){
+    if(p.length < 8) return false;
+    const matchCount = [/[A-Z]/, /[a-z]/, /[0-9]/, /[^A-Za-z0-9]/].filter(rx => rx.test(p)).length;
+    return matchCount >= 3;
+  }
+
+  function setInvalid(fieldEl, invalid){
+    if(fieldEl) fieldEl.classList.toggle('invalid', !!invalid);
+  }
+
+  function getDeviceFingerprint(){
+    const raw = [navigator.userAgent, screen.width, screen.height, navigator.language].join("|");
+    let h = 0;
+    for(let i=0; i<raw.length; i++){ h = ((h << 5) - h) + raw.charCodeAt(i); h |= 0; }
+    return "dev_" + Math.abs(h).toString(16);
+  }
+
+  const statusBox = document.getElementById('statusBox');
+  function showStatus(msg, kind){
+    statusBox.textContent = msg;
+    statusBox.className = 'status show ' + kind;
+  }
+  function hideStatus(){ statusBox.className = 'status'; }
+
+  async function logAudit(evt, details = {}, email = null){
+    if(!supabase) return;
+    try{
+      await supabase.from("audit_logs").insert({
+        event_type: evt,
+        user_email: email,
+        details: { ...details, location: clientLocation },
+        ip_address: clientIP,
+        user_agent: navigator.userAgent
+      });
+    }catch(e){}
+  }
+
+  // Elements
+  const tabLogin = document.getElementById('tabLogin');
+  const tabRegister = document.getElementById('tabRegister');
+  const loginForm = document.getElementById('loginForm');
+  const registerForm = document.getElementById('registerForm');
+  const otpForm = document.getElementById('otpForm');
+  const deviceForm = document.getElementById('deviceForm');
+  const forgotForm = document.getElementById('forgotForm');
+  const updatePassForm = document.getElementById('updatePassForm');
+  const allForms = [loginForm, registerForm, otpForm, deviceForm, forgotForm, updatePassForm];
+
+  function showOnlyForm(activeForm){
+    allForms.forEach(f => { if(f) f.classList.remove('active'); });
+    if(activeForm) activeForm.classList.add('active');
+    hideStatus();
+  }
+
+  function showLogin(){
+    tabLogin.classList.add('active');
+    tabRegister.classList.remove('active');
+    showOnlyForm(loginForm);
+  }
+
+  function showRegister(){
+    tabRegister.classList.add('active');
+    tabLogin.classList.remove('active');
+    showOnlyForm(registerForm);
+  }
+
+  tabLogin.addEventListener('click', showLogin);
+  tabRegister.addEventListener('click', showRegister);
+  document.getElementById('goRegister').addEventListener('click', showRegister);
+  document.getElementById('goLogin').addEventListener('click', showLogin);
+  document.getElementById('btnBackToLogin').addEventListener('click', showLogin);
+
+  document.getElementById('forgotLink').addEventListener('click', (e) => {
+    e.preventDefault();
+    tabLogin.classList.remove('active');
+    tabRegister.classList.remove('active');
+    showOnlyForm(forgotForm);
+  });
+
+  document.getElementById('btnCancelOtp').addEventListener('click', async () => {
+    if(supabase) await supabase.auth.signOut();
+    showLogin();
+    showStatus("Sign-in cancelled.", "bad");
+  });
+
+  // ---------- Register ----------
+  registerForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    hideStatus();
+
+    const name = document.getElementById('regName').value.trim();
+    const uname = document.getElementById('regUser').value.trim().toLowerCase();
+    const email = document.getElementById('regEmail').value.trim();
+    const pass = document.getElementById('regPass').value;
+    const confirm = document.getElementById('regConfirm').value;
+
+    const nameValid = !!name;
+    const unameValid = /^[a-zA-Z0-9_-]{3,20}$/.test(uname);
+    const emailValid = isEmail(email);
+    const passValid = isStrongPassword(pass);
+    const confirmValid = confirm === pass && passValid;
+
+    setInvalid(document.getElementById('regNameField'), !nameValid);
+    setInvalid(document.getElementById('regUserField'), !unameValid);
+    setInvalid(document.getElementById('regEmailField'), !emailValid);
+    setInvalid(document.getElementById('regPassField'), !passValid);
+    setInvalid(document.getElementById('regConfirmField'), !confirmValid);
+
+    if(!nameValid || !unameValid || !emailValid || !passValid || !confirmValid) return;
+
+    if(!supabase){
+      showStatus("Please add your Supabase URL & Key in the script.", "bad");
+      return;
+    }
+
+
+    try{
+      const { data: taken } = await supabase.rpc("is_username_taken", { uname });
+      if(taken){
+        showStatus("Username is already taken.", "bad");
+        return;
+      }
+    }catch(err){}
+
+    const opts = { data: { full_name: name, username: uname } };
+
+    const { error } = await supabase.auth.signUp({ email, password: pass, options: opts });
+
+    if(error){
+      showStatus(error.message.includes("User already registered") ? "Account already exists, please sign in." : error.message, "bad");
+      logAudit("REGISTRATION_FAILED", { reason: error.message }, email);
+      return;
+    }
+
+    logAudit("REGISTRATION_SUCCESS", { username: uname }, email);
+    showStatus("Account created! Please check your email inbox (and spam/junk folder) for an activation email from noreply@sapkotap.com.np before signing in.", "good");
+    registerForm.reset();
+    setTimeout(showLogin, 2500);
+  });
+
+  // ---------- Login (Step 1) ----------
+  loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    hideStatus();
+
+    const identifier = document.getElementById('loginEmail').value.trim();
+    const pass = document.getElementById('loginPass').value;
+
+    const identValid = identifier.length >= 2;
+    const passValid = !!pass;
+    setInvalid(document.getElementById('loginEmailField'), !identValid);
+    setInvalid(document.getElementById('loginPassField'), !passValid);
+    if(!identValid || !passValid) return;
+
+    if(!supabase){
+      showStatus("Please add your Supabase URL & Key in the script.", "bad");
+      return;
+    }
+
+    let loginEmail = identifier;
+    if(!identifier.includes("@")){
+      // Resolve username to email
+      try {
+        const { data: resolvedEmail } = await supabase.rpc("get_email_by_username", { uname: identifier.toLowerCase() });
+        if(resolvedEmail){
+          loginEmail = resolvedEmail;
+        } else {
+          // Direct fallback query if RPC not yet created
+          const { data: prof } = await supabase.from("profiles").select("email").ilike("username", identifier).maybeSingle();
+          if(prof && prof.email) loginEmail = prof.email;
+          else {
+            showStatus("No account found with username @" + identifier, "bad");
+            return;
+          }
+        }
+      } catch(e) {
+        showStatus("Could not look up username: " + (e.message || "try using email"), "bad");
+        return;
+      }
+    }
+
+    if(isLockedOut(loginEmail)){
+      showStatus(`Too many failed attempts. Try again in ${lockoutMinutesLeft(loginEmail)} min.`, "bad");
+      await logAudit("LOGIN_BLOCKED_LOCKOUT", {}, loginEmail);
+      return;
+    }
+    const opts = {};
+
+    const { data, error } = await supabase.auth.signInWithPassword({ email: loginEmail, password: pass, options: opts });
+
+    if(error){
+      recordFailedAttempt(loginEmail);
+      const em = (error.message || "").toLowerCase();
+      if(em.includes("email not confirmed")){
+        showStatus("Your email isn't verified yet. Check your inbox (and spam) for the confirmation email from Supabase, click the link, then sign in.", "bad");
+      } else if(em.includes("invalid login credentials")){
+        showStatus("Email or password is incorrect. You can also sign in with your username.", "bad");
+      } else {
+        showStatus("Sign-in failed: " + error.message, "bad");
+      }
+      logAudit("LOGIN_STEP1_FAILED", { reason: error.message }, loginEmail);
+      return;
+    }
+
+    clearAttempts(loginEmail);
+    sessionUser = data.user;
+    pendingLoginEmail = loginEmail;
+    currentDeviceHash = getDeviceFingerprint();
+
+    // Check device trust or proceed to dashboard
+    try{
+      const { data: dev } = await supabase
+        .from("user_known_devices")
+        .select("id")
+        .eq("user_id", sessionUser.id)
+        .eq("device_hash", currentDeviceHash)
+        .maybeSingle();
+
+      if(dev){
+        openDashboard();
+      }else{
+        showOnlyForm(deviceForm);
+      }
+    }catch(err){
+      openDashboard();
+    }
+  });
+
+  // Device Trust buttons
+  document.getElementById('btnTrustDevice').addEventListener('click', async () => {
+    try{
+      await supabase.from("user_known_devices").insert({
+        user_id: sessionUser.id,
+        device_hash: currentDeviceHash,
+        device_name: navigator.platform || "Browser"
+      });
+      await logAudit("NEW_DEVICE_TRUSTED", { hash: currentDeviceHash }, sessionUser.email);
+    }catch(e){}
+    openDashboard();
+  });
+
+  document.getElementById('btnRejectDevice').addEventListener('click', async () => {
+    if(supabase) await supabase.auth.signOut();
+    showLogin();
+    showStatus("Sign-in cancelled.", "bad");
+  });
+
+  // ---------- Forgot Password ----------
+  forgotForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    hideStatus();
+    const email = document.getElementById('forgotEmail').value.trim();
+    if(!isEmail(email)){
+      setInvalid(document.getElementById('forgotEmailField'), true);
+      return;
+    }
+
+    if(!supabase){
+      showStatus("Please add your Supabase URL & Key in the script.", "bad");
+      return;
+    }
+
+
+    const opts = { redirectTo: window.location.origin + window.location.pathname };
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, opts);
+
+    if(error){
+      showStatus(error.message, "bad");
+      return;
+    }
+    showStatus("Password recovery link sent! Check your email inbox.", "good");
+  });
+
+  // ---------- Set New Password (Recovery Landing) ----------
+  updatePassForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    hideStatus();
+
+    const newPass = document.getElementById('updatePassInput').value;
+    const confirm = document.getElementById('updateConfirmInput').value;
+    const passValid = isStrongPassword(newPass);
+    const confirmValid = confirm === newPass && passValid;
+
+    setInvalid(document.getElementById('updatePassField'), !passValid);
+    setInvalid(document.getElementById('updateConfirmField'), !confirmValid);
+    if(!passValid || !confirmValid) return;
+
+    if(!supabase){
+      showStatus("Supabase is not connected.", "bad");
+      return;
+    }
+
+    const { error } = await supabase.auth.updateUser({ password: newPass });
+    if(error){
+      showStatus(error.message, "bad");
+      return;
+    }
+
+    showStatus("Password successfully updated! You can now sign in.", "good");
+    updatePassForm.reset();
+    setTimeout(showLogin, 2000);
+  });
+
+  // Check recovery hash on page load
+  if(window.location.hash && window.location.hash.includes("type=recovery")){
+    showOnlyForm(updatePassForm);
+    showStatus("Please enter your new password below.", "good");
+  }
+
+
+  // Social Logins (Google / Outlook Azure)
+  async function signInWithProvider(provider){
+    if(!supabase){
+      showStatus("Please set your Supabase URL & Key in the script.", "bad");
+      return;
+    }
+    hideStatus();
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: provider,
+        options: {
+          redirectTo: window.location.origin + window.location.pathname
+        }
+      });
+      if(error){
+        const msg = (error.message || "").toLowerCase();
+        if(msg.includes("not enabled") || msg.includes("validation_failed") || msg.includes("unsupported")){
+          showStatus(`${provider === 'google' ? 'Google' : 'Outlook'} login is not enabled in your Supabase dashboard yet. Enable it under Authentication -> Providers.`, "bad");
+        } else {
+          showStatus(`${provider} login error: ${error.message}`, "bad");
+        }
+      }
+    } catch(err) {
+      showStatus(`${provider} login failed: ${err.message}`, "bad");
+    }
+  }
+
+
+
+  const btnGoogle = document.getElementById('btnAuthGoogle');
+  if(btnGoogle) btnGoogle.addEventListener('click', () => signInWithProvider('google'));
+
+  const btnOutlook = document.getElementById('btnAuthOutlook');
+  if(btnOutlook) btnOutlook.addEventListener('click', () => signInWithProvider('azure'));
+
+  if(supabase){
+    supabase.auth.onAuthStateChange((event) => {
+      if(event === 'PASSWORD_RECOVERY'){
+        tabLogin.classList.remove('active');
+        tabRegister.classList.remove('active');
+        showOnlyForm(updatePassForm);
+        showStatus("Please enter your new password below.", "good");
+      }
+      if(event === 'SIGNED_OUT'){
+        document.getElementById('mainAuthWrap').style.display = 'grid';
+        showLogin();
+      }
+    });
+  }
+
+  // ---------- Dashboard & Admin Loader ----------
+  async function openDashboard(){
+    if(!supabase) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    if(!user){
+      showLogin();
+      return;
+    }
+    sessionUser = user;
+    logAudit("LOGIN_SUCCESS", { device: currentDeviceHash }, user.email);
+    document.getElementById('mainAuthWrap').style.display = 'none';
+    document.getElementById('dashboardWrap').style.display = 'block';
+
+    let profile = null;
+    try {
+      const { data } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
+      profile = data;
+    } catch(err){
+      console.warn("Profile fetch notice:", err);
+    }
+
+    const isMainAdmin = (user.email && user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase());
+    let isAdmin = isMainAdmin;
+    if(!isAdmin){
+      try {
+        const { data: isAdminResult } = await supabase.rpc('is_admin');
+        isAdmin = !!isAdminResult;
+      } catch(e) {
+        // RPC might not exist yet
+      }
+    }
+
+    const displayName = profile?.full_name || user.user_metadata?.full_name || user.email;
+    const displayUsername = profile?.username || user.email.split('@')[0];
+    const roleBadge = isMainAdmin ? " [MAIN ADMINISTRATOR]" : (isAdmin ? " [ADMINISTRATOR]" : " [MEMBER]");
+    
+    document.getElementById('userWelcome').textContent = (isAdmin ? "Welcome Admin, " : "Welcome, ") + displayName;
+    
+    const regDateStr = user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A';
+    const lastSignStr = user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleString() : new Date().toLocaleString();
+    
+    document.getElementById('userMeta').innerHTML = `
+      <span>@${escapeHtml(displayUsername)} • ${escapeHtml(user.email)} <strong style="color:${isAdmin?'var(--violet)':'var(--cyan)'};">${roleBadge}</strong></span>
+      <div style="font-size:0.75rem; color:var(--muted); margin-top:4px;">
+        Registered: ${regDateStr} &nbsp;|&nbsp; Last Sign In: ${lastSignStr}
+      </div>
+    `;
+
+    loadUserFiles(user.id);
+
+    
+    if(isAdmin){
+      const tabAdm = document.getElementById('tabBtnAdmin');
+      if(tabAdm) {
+        tabAdm.style.display = 'inline-block';
+      }
+      switchDashboardTab('Admin');
+      loadAdminSupportInquiries();
+      loadAdminDashboard(isMainAdmin);
+    } else {
+      switchDashboardTab('Files');
+    }
+  }
+
+  async function loadUserFiles(uid){
+    const { data: files } = await supabase.from("user_files").select("*").eq("target_user_id", uid);
+    const box = document.getElementById('memberFileList');
+    if(!files || files.length === 0){
+      box.textContent = "No private files assigned to your account.";
+      return;
+    }
+
+    let html = '<ul style="list-style:none; padding:0;">';
+    for(const f of files){
+      const { data: signed } = await supabase.storage.from("secure-user-files").createSignedUrl(f.storage_path, 3600);
+      html += `<li style="padding:8px 0; border-bottom:1px solid var(--border-solid); display:flex; justify-content:space-between;">
+        <span><strong>${sanitize(f.file_name)}</strong> <small style="color:var(--muted)">(${(f.file_size/1024).toFixed(1)} KB)</small></span>
+        <a href="${signed ? signed.signedUrl : '#'}" target="_blank" style="color:var(--cyan); text-decoration:none; font-weight:600;">Download</a>
+      </li>`;
+    }
+    html += '</ul>';
+    box.innerHTML = html;
+  }
+
+  /* ---- Admin "Control room" tab switching ---- */
+  document.querySelectorAll('.admin-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.admin-pill').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.admin-tabpane').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('adminTab-' + btn.dataset.admintab).classList.add('active');
+    });
+  });
+
+  async function loadAdminDashboard(isMainAdmin){
+    const thActions = document.getElementById('thActions');
+    if(thActions) thActions.style.display = isMainAdmin ? 'table-cell' : 'none';
+
+    // 1. Users list & Roles
+    let users = [];
+    try {
+      const { data: profs, error: pErr } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
+      if(profs) users = profs;
+      if(pErr) console.warn("Admin profiles load warning:", pErr);
+    } catch(e) {
+      console.warn("Profiles fetch error:", e);
+    }
+
+    document.getElementById('statMembers').textContent = users.length;
+
+    // Fetch roles separately to avoid foreign-key constraint issues
+    let rolesMap = {};
+    try {
+      const { data: roles } = await supabase.from("user_roles").select("user_id, role");
+      if(roles){
+        roles.forEach(r => { rolesMap[r.user_id] = r.role; });
+      }
+    } catch(e) {}
+    const sel = document.getElementById('adminUserSelect');
+    const tbody = document.getElementById('adminUsersTbody');
+    sel.innerHTML = '<option value="">Select target user...</option>';
+    tbody.innerHTML = '';
+
+    if(users){
+      users.forEach(u => {
+        const opt = document.createElement('option');
+        opt.value = u.id;
+        opt.textContent = `${u.full_name} (@${u.username})`;
+        sel.appendChild(opt);
+
+        const r = rolesMap[u.id] || (u.user_roles && u.user_roles[0]?.role) || ((u.email && u.email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) ? 'admin' : 'user');
+        const isTargetMainAdmin = (u.email && u.email.toLowerCase() === ADMIN_EMAIL.toLowerCase());
+
+        let actionHtml = '';
+        if(isMainAdmin){
+          if(isTargetMainAdmin){
+            actionHtml = '<span style="color:var(--cyan); font-size:0.8rem; font-weight:600;">Main Owner</span>';
+          } else {
+            const roleButton = r === 'admin'
+              ? `<button type="button" class="btn btn-outline" style="padding:4px 10px; font-size:0.75rem; border-color:var(--danger); color:var(--danger);" onclick="window.changeUserRole('${u.id}', 'user')">Demote to User</button>`
+              : `<button type="button" class="btn btn-outline" style="padding:4px 10px; font-size:0.75rem; border-color:var(--violet); color:var(--violet);" onclick="window.changeUserRole('${u.id}', 'admin')">Make Admin</button>`;
+            actionHtml = `${roleButton} <button type="button" class="btn btn-outline" style="padding:4px 10px; font-size:0.75rem; border-color:var(--danger); color:var(--danger);" onclick="window.adminDeleteUser('${u.id}', '${sanitize(u.username)}')">Delete User</button>`;
+          }
+        }
+
+        tbody.innerHTML += `<tr>
+          <td>${sanitize(u.full_name)}</td>
+          <td>@${sanitize(u.username)}</td>
+          <td>${sanitize(u.email)}</td>
+          <td><span style="color:${r==='admin'?'var(--cyan)':'var(--muted)'}; font-weight:600;">${r}</span></td>
+          <td>${new Date(u.created_at).toLocaleDateString()}</td>
+          ${isMainAdmin ? `<td>${actionHtml}</td>` : ''}
+        </tr>`;
+      });
+    }
+
+    // 2. Threats & Incoming IP Activity — RESTRICTED TO MAIN ADMIN ONLY
+    if(!isMainAdmin){
+      document.getElementById('statActions').textContent = '–';
+      document.getElementById('statSuspicious').textContent = '–';
+      document.getElementById('statThreats').textContent = '–';
+      return;
+    }
+
+    // Total logged actions (real count, not just the page of 25)
+    try{
+      const { count: totalCount } = await supabase.from("audit_logs").select("*", { count: "exact", head: true });
+      document.getElementById('statActions').textContent = (totalCount ?? 0).toLocaleString();
+    }catch(e){ document.getElementById('statActions').textContent = '–'; }
+
+    const { data: logs } = await supabase.from("audit_logs").select("*").order("created_at", { ascending: false }).limit(25);
+
+    const logBody = document.getElementById('adminThreatsTbody');
+    const overviewBody = document.getElementById('adminOverviewTbody');
+    const attacksBody = document.getElementById('adminAttacksTbody');
+    logBody.innerHTML = '';
+    overviewBody.innerHTML = '';
+    attacksBody.innerHTML = '';
+
+    let suspiciousCount = 0;
+    let seriousCount = 0;
+
+    if(logs && logs.length){
+      logs.forEach(l => {
+        const isThreat = l.event_type.includes("FAILED") || l.event_type.includes("LOCKOUT");
+        const isSerious = l.event_type.includes("LOCKOUT");
+        if(isThreat) suspiciousCount++;
+        if(isSerious) seriousCount++;
+        const loc = (l.details && l.details.location) ? l.details.location : 'Unknown';
+
+        // Full activity table
+        logBody.innerHTML += `<tr>
+          <td>${new Date(l.created_at).toLocaleTimeString()}</td>
+          <td><code style="color:${isThreat?'var(--danger)':'var(--cyan)'}">${sanitize(l.event_type)}</code></td>
+          <td>${sanitize(l.user_email || 'Guest')}</td>
+          <td><span class="badge-ip">${sanitize(l.ip_address || 'Unknown')}</span></td>
+          <td>${sanitize(loc)}</td>
+        </tr>`;
+
+        // Attacks-only table
+        if(isThreat){
+          attacksBody.innerHTML += `<tr>
+            <td>${new Date(l.created_at).toLocaleTimeString()}</td>
+            <td><code style="color:var(--danger)">${sanitize(l.event_type)}</code></td>
+            <td>${sanitize(l.user_email || 'Guest')}</td>
+            <td><span class="badge-ip">${sanitize(l.ip_address || 'Unknown')}</span></td>
+            <td>${sanitize(loc)}</td>
+          </tr>`;
+        }
+      });
+
+      // Overview: latest 8, simplified columns (Who / Action / Detail / Address)
+      logs.slice(0, 8).forEach(l => {
+        overviewBody.innerHTML += `<tr>
+          <td>${sanitize(l.user_email || 'Guest')}</td>
+          <td><code style="color:var(--cyan)">${sanitize(l.event_type.toLowerCase())}</code></td>
+          <td>${sanitize((l.details && l.details.reason) || l.event_type.replace(/_/g,' '))}</td>
+          <td><span class="badge-ip">${sanitize(l.ip_address || 'Unknown')}</span></td>
+        </tr>`;
+      });
+    } else {
+      overviewBody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--muted);">No activity recorded yet.</td></tr>';
+    }
+
+    if(!attacksBody.innerHTML){
+      attacksBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--muted);">No suspicious activity recorded.</td></tr>';
+    }
+
+    document.getElementById('statSuspicious').textContent = suspiciousCount;
+    document.getElementById('statThreats').textContent = seriousCount;
+
+    // 3. Files tab — every file ever sent, across all users
+    loadAdminFilesList();
+  }
+
+  async function loadAdminFilesList(){
+    const body = document.getElementById('adminFilesTbody');
+    if(!body || !supabase) return;
+    try{
+      const { data: files, error } = await supabase
+        .from("user_files")
+        .select("*, profiles!user_files_target_user_id_fkey(full_name, username, email)")
+        .order("created_at", { ascending: false });
+
+      if(error) throw error;
+      if(!files || files.length === 0){
+        body.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--muted);">No files sent yet.</td></tr>';
+        return;
+      }
+
+      body.innerHTML = files.map(f => {
+        const target = f.profiles ? `@${escapeHtml(f.profiles.username)}` : escapeHtml(f.target_user_id);
+        const sizeKb = f.file_size ? (f.file_size / 1024).toFixed(1) + ' KB' : '–';
+        return `<tr>
+          <td>${escapeHtml(f.file_name)}</td>
+          <td>${target}</td>
+          <td>${sizeKb}</td>
+          <td>${new Date(f.created_at).toLocaleString()}</td>
+        </tr>`;
+      }).join('');
+    }catch(err){
+      // Falls back gracefully if the FK join name differs — still shows a flat list
+      try{
+        const { data: files } = await supabase.from("user_files").select("*").order("created_at", { ascending: false });
+        if(!files || files.length === 0){
+          body.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--muted);">No files sent yet.</td></tr>';
+          return;
+        }
+        body.innerHTML = files.map(f => `<tr>
+          <td>${escapeHtml(f.file_name)}</td>
+          <td>${escapeHtml(f.target_user_id)}</td>
+          <td>${f.file_size ? (f.file_size/1024).toFixed(1) + ' KB' : '–'}</td>
+          <td>${new Date(f.created_at).toLocaleString()}</td>
+        </tr>`).join('');
+      }catch(e2){
+        body.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--muted);">Could not load files list.</td></tr>';
+      }
+    }
+  }
+
+  // Global helper for Main Admin to assign/revoke admin roles
+  window.changeUserRole = async function(targetUserId, newRole){
+    if(!confirm("Are you sure you want to change this user's role to " + newRole.toUpperCase() + "?")) return;
+    try {
+      const { error: delErr } = await supabase.from("user_roles").delete().eq("user_id", targetUserId);
+      if(delErr){
+        alert("Failed to update role (delete step): " + delErr.message);
+        return;
+      }
+      const { error: insErr } = await supabase.from("user_roles").insert({
+        user_id: targetUserId,
+        role: newRole
+      });
+      if(insErr){
+        alert("Failed to update role (insert step): " + insErr.message);
+        return;
+      }
+      alert("Role updated successfully to " + newRole.toUpperCase());
+      loadAdminDashboard(true);
+    } catch(err){
+      alert("Error updating role: " + err.message);
+    }
+  };
+
+  // ---------- Admin file/folder uploader ----------
+  let uploadQueue = []; // { file, relPath, id, status }
+  const dropzone = document.getElementById('adminDropzone');
+  const fileInput = document.getElementById('adminFileInput');
+  const folderInput = document.getElementById('adminFolderInput');
+  const queueBox = document.getElementById('adminFileQueue');
+  const uploadBtn = document.getElementById('btnAdminUpload');
+  const uploadNotice = document.getElementById('adminUploadNotice');
+
+  document.getElementById('btnChooseFiles')?.addEventListener('click', () => fileInput.click());
+  document.getElementById('btnChooseFolder')?.addEventListener('click', () => folderInput.click());
+
+  fileInput?.addEventListener('change', () => addFilesToQueue(Array.from(fileInput.files)));
+  folderInput?.addEventListener('change', () => addFilesToQueue(Array.from(folderInput.files)));
+
+  if(dropzone){
+    ['dragenter','dragover'].forEach(evt => dropzone.addEventListener(evt, (e) => {
+      e.preventDefault(); dropzone.classList.add('drag-active');
+    }));
+    ['dragleave','drop'].forEach(evt => dropzone.addEventListener(evt, (e) => {
+      e.preventDefault(); dropzone.classList.remove('drag-active');
+    }));
+    dropzone.addEventListener('drop', (e) => {
+      const items = e.dataTransfer.files;
+      if(items && items.length) addFilesToQueue(Array.from(items));
+    });
+  }
+
+  function addFilesToQueue(files){
+    files.forEach(f => {
+      uploadQueue.push({
+        file: f,
+        relPath: f.webkitRelativePath || f.name,
+        id: 'q_' + Math.random().toString(36).slice(2),
+        status: 'pending'
+      });
+    });
+    renderQueue();
+  }
+
+  function fileIcon(name){
+    const ext = (name.split('.').pop() || '').toLowerCase();
+    if(['png','jpg','jpeg','gif','webp','svg'].includes(ext)) return '🖼️';
+    if(['pdf'].includes(ext)) return '📕';
+    if(['zip','rar','7z'].includes(ext)) return '🗜️';
+    if(['doc','docx'].includes(ext)) return '📝';
+    if(['xls','xlsx','csv'].includes(ext)) return '📊';
+    if(['mp4','mov','avi','webm'].includes(ext)) return '🎞️';
+    if(['mp3','wav'].includes(ext)) return '🎵';
+    return '📄';
+  }
+
+  function renderQueue(){
+    if(!queueBox) return;
+    if(uploadQueue.length === 0){
+      queueBox.style.display = 'none';
+      uploadBtn.style.display = 'none';
+      return;
+    }
+    queueBox.style.display = 'block';
+    uploadBtn.style.display = 'block';
+    uploadBtn.textContent = `Upload All (${uploadQueue.length})`;
+
+    queueBox.innerHTML = uploadQueue.map(item => {
+      const sizeKb = (item.file.size / 1024).toFixed(1);
+      const statusLabel = item.status === 'pending' ? sizeKb + ' KB'
+        : item.status === 'uploading' ? 'Uploading…'
+        : item.status === 'done' ? '✓ Sent'
+        : 'Failed';
+      const cls = item.status === 'uploading' ? 'uploading' : item.status === 'done' ? 'done' : item.status === 'failed' ? 'failed' : '';
+      return `<div class="queue-chip ${cls}" data-qid="${item.id}">
+        <span class="qname">${fileIcon(item.relPath)} ${escapeHtml(item.relPath)}</span>
+        <span style="display:flex; align-items:center;">
+          <span class="qmeta">${statusLabel}</span>
+          ${item.status === 'pending' ? `<span class="qremove" onclick="window.removeFromQueue('${item.id}')">✕</span>` : ''}
+        </span>
+      </div>`;
+    }).join('');
+  }
+
+  window.removeFromQueue = function(id){
+    uploadQueue = uploadQueue.filter(i => i.id !== id);
+    renderQueue();
+  };
+
+  uploadBtn?.addEventListener('click', async function(){
+    const targetUid = document.getElementById('adminUserSelect').value;
+    if(!targetUid){
+      alert("Please select a target user first.");
+      return;
+    }
+    if(uploadQueue.length === 0) return;
+
+    const MAX_FILE_MB = 25;
+    uploadBtn.disabled = true;
+
+    let sent = 0, failedCount = 0;
+    for(const item of uploadQueue){
+      if(item.status === 'done') { sent++; continue; }
+      item.status = 'uploading';
+      renderQueue();
+
+      if(item.file.size > MAX_FILE_MB * 1024 * 1024){
+        item.status = 'failed';
+        failedCount++;
+        renderQueue();
+        continue;
+      }
+
+      // Preserve folder structure in the stored name; strip unsafe characters
+      // from each path segment so it can't be used to escape the storage path.
+      const safeRelPath = item.relPath.split('/').map(seg =>
+        seg.replace(/[^a-zA-Z0-9._-]/g, "_")
+      ).join('/').slice(0, 200);
+      const path = `${targetUid}/${Date.now()}_${Math.random().toString(36).slice(2,7)}_${safeRelPath}`;
+
+      try{
+        const { error: upErr } = await supabase.storage.from("secure-user-files").upload(path, item.file);
+        if(upErr) throw upErr;
+
+        const { data: { user } } = await supabase.auth.getUser();
+        const { error: insErr } = await supabase.from("user_files").insert({
+          target_user_id: targetUid,
+          uploaded_by: user.id,
+          file_name: item.relPath,
+          storage_path: path,
+          file_size: item.file.size,
+          mime_type: item.file.type
+        });
+        if(insErr) throw insErr;
+
+        item.status = 'done';
+        sent++;
+      }catch(err){
+        item.status = 'failed';
+        failedCount++;
+        console.error("Upload failed for", item.relPath, err);
+      }
+      renderQueue();
+    }
+
+    await logAudit("ADMIN_FILE_SENT", { target: targetUid, count: sent });
+
+    if(failedCount === 0){
+      uploadNotice.textContent = `${sent} file(s) sent successfully.`;
+      uploadNotice.style.color = "var(--good)";
+      uploadQueue = [];
+      fileInput.value = ''; folderInput.value = '';
+    } else {
+      uploadNotice.textContent = `${sent} sent, ${failedCount} failed — check your admin role is confirmed in Supabase if uploads keep failing.`;
+      uploadNotice.style.color = "var(--danger)";
+      uploadQueue = uploadQueue.filter(i => i.status !== 'done');
+    }
+    renderQueue();
+    uploadBtn.disabled = false;
+    loadAdminFilesList();
+  });
+
+  // Logout
+  document.getElementById('btnLogout').addEventListener('click', async function(){
+    if(supabase) await supabase.auth.signOut();
+    window.location.reload();
+  });
+
+  // ---------- Idle auto-logout (advanced session security) ----------
+  const IDLE_LIMIT_MS = 20 * 60 * 1000; // 20 minutes of inactivity
+  function resetIdleTimer(){
+    clearTimeout(idleTimer);
+    if(document.getElementById('dashboardWrap').style.display !== 'block') return;
+    idleTimer = setTimeout(async function(){
+      if(supabase) await supabase.auth.signOut();
+      window.location.reload();
+    }, IDLE_LIMIT_MS);
+  }
+  ['mousemove', 'keydown', 'click', 'scroll'].forEach(evt =>
+    document.addEventListener(evt, resetIdleTimer, { passive: true })
+  );
+
+  if(supabase){
+    supabase.auth.onAuthStateChange((event) => {
+      if(event === 'SIGNED_OUT'){
+        document.getElementById('dashboardWrap').style.display = 'none';
+        document.getElementById('mainAuthWrap').style.display = 'grid';
+        showLogin();
+      }
+    });
+  }
+
+  // Resume session on load
+  window.addEventListener('DOMContentLoaded', async function(){
+    if(!supabase){
+      showStatus("Setup incomplete: Supabase URL/key are missing or invalid in the script. Nothing will work until these are set.", "bad");
+      return;
+    }
+    const { data: { session } } = await supabase.auth.getSession();
+    if(session){
+      sessionUser = session.user;
+      currentDeviceHash = getDeviceFingerprint();
+      openDashboard();
+      resetIdleTimer();
+    }
+  });
+
+  /* =========================================================
+     DASHBOARD TABS & FEATURES (CHAT, SUPPORT, USER FILES)
+     ========================================================= */
+  let activeChatContactId = null;
+  let activeChatContactName = "";
+  let chatPollInterval = null;
+
+  function switchDashboardTab(tabName){
+    const tabs = ['Files', 'Chat', 'Support', 'Admin'];
+    tabs.forEach(t => {
+      const btn = document.getElementById('tabBtn' + t);
+      const content = document.getElementById(t === 'Admin' ? 'adminArea' : 'tabContent' + t);
+      if(btn && content){
+        if(t.toLowerCase() === tabName.toLowerCase()){
+          btn.style.background = 'var(--surface-2)';
+          btn.style.color = (t === 'Admin') ? 'var(--violet)' : 'var(--text)';
+          content.style.display = 'block';
+        } else {
+          btn.style.background = 'transparent';
+          btn.style.color = (t === 'Admin') ? 'var(--violet)' : 'var(--muted)';
+          content.style.display = 'none';
+        }
+      }
+    });
+
+    if(tabName.toLowerCase() === 'chat'){
+      loadChatSystem();
+      if(!chatPollInterval){
+        chatPollInterval = setInterval(() => {
+          if(activeChatContactId) loadActiveConversation(activeChatContactId, activeChatContactName, true);
+          loadChatInvitations();
+        }, 4000);
+      }
+    } else {
+      if(chatPollInterval){
+        clearInterval(chatPollInterval);
+        chatPollInterval = null;
+      }
+    }
+
+    if(tabName.toLowerCase() === 'support'){
+      loadUserSupportTickets();
+    }
+  }
+
+  document.getElementById('tabBtnFiles')?.addEventListener('click', () => switchDashboardTab('Files'));
+  document.getElementById('tabBtnChat')?.addEventListener('click', () => switchDashboardTab('Chat'));
+  document.getElementById('tabBtnSupport')?.addEventListener('click', () => switchDashboardTab('Support'));
+  document.getElementById('tabBtnAdmin')?.addEventListener('click', () => switchDashboardTab('Admin'));
+
+  /* --- SUPPORT INQUIRIES (USER & ADMIN) --- */
+  const supportForm = document.getElementById('supportForm');
+  if(supportForm){
+    supportForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if(!supabase || !sessionUser) return;
+      const subj = document.getElementById('supportSubject').value.trim();
+      const msg = document.getElementById('supportMessage').value.trim();
+      const notice = document.getElementById('supportNotice');
+      if(!subj || !msg) return;
+
+      notice.textContent = "Sending...";
+      notice.style.color = "var(--muted)";
+
+      try {
+        const { error } = await supabase.from('support_messages').insert({
+          user_id: sessionUser.id,
+          user_email: sessionUser.email,
+          subject: subj,
+          message: msg,
+          status: 'open'
+        });
+
+        if(error) throw error;
+        notice.textContent = "Message sent to admin successfully!";
+        notice.style.color = "var(--good)";
+        supportForm.reset();
+        loadUserSupportTickets();
+      } catch(err){
+        notice.textContent = "Could not send: " + (err.message || "Ensure support_messages table exists in Supabase — run the provided SQL fix.");
+        notice.style.color = "var(--danger)";
+      }
+    });
+  }
+
+  async function loadUserSupportTickets(){
+    const container = document.getElementById('userSupportTicketsList');
+    if(!container || !supabase || !sessionUser) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('support_messages')
+        .select('*')
+        .eq('user_id', sessionUser.id)
+        .order('created_at', { ascending: false });
+
+      if(error) throw error;
+      if(!data || data.length === 0){
+        container.innerHTML = '<div>No messages submitted yet.</div>';
+        return;
+      }
+
+      container.innerHTML = data.map(m => `
+        <div style="background:var(--surface); border:1px solid var(--border-solid); border-radius:6px; padding:10px; margin-bottom:8px;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+            <strong style="color:var(--text);">${escapeHtml(m.subject)}</strong>
+            <span style="padding:2px 8px; border-radius:4px; font-size:0.7rem; background:${m.status==='resolved'?'rgba(34,197,94,0.15)':'rgba(234,179,8,0.15)'}; color:${m.status==='resolved'?'var(--good)':'#eab308'};">${m.status.toUpperCase()}</span>
+          </div>
+          <div style="color:var(--muted); font-size:0.8rem; white-space:pre-wrap;">${escapeHtml(m.message)}</div>
+          <div style="font-size:0.7rem; color:var(--muted); margin-top:6px;">${new Date(m.created_at).toLocaleString()}</div>
+          ${m.admin_reply ? `
+            <div style="margin-top:10px; padding-top:10px; border-top:1px dashed var(--border-solid);">
+              <div style="font-size:0.7rem; color:var(--violet); font-weight:700; margin-bottom:4px;">ADMIN REPLY</div>
+              <div style="color:var(--text); font-size:0.82rem; white-space:pre-wrap;">${escapeHtml(m.admin_reply)}</div>
+              <div style="font-size:0.65rem; color:var(--muted); margin-top:4px;">${m.replied_at ? new Date(m.replied_at).toLocaleString() : ''}</div>
+            </div>
+          ` : ''}
+        </div>
+      `).join('');
+    } catch(err){
+      container.innerHTML = '<div style="color:var(--muted); font-size:0.75rem;">Support table not yet created in Supabase SQL editor.</div>';
+    }
+  }
+
+  async function loadAdminSupportInquiries(){
+    const tbody = document.getElementById('adminSupportTbody');
+    if(!tbody || !supabase) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('support_messages')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if(error) throw error;
+      if(!data || data.length === 0){
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--muted);">No support inquiries found.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = data.map(m => `
+        <tr>
+          <td style="white-space:nowrap;">${new Date(m.created_at).toLocaleString()}</td>
+          <td>${escapeHtml(m.user_email || 'Anonymous')}</td>
+          <td><strong>${escapeHtml(m.subject)}</strong></td>
+          <td style="max-width:220px; word-break:break-word;">${escapeHtml(m.message)}</td>
+          <td><span style="padding:2px 6px; border-radius:4px; font-size:0.7rem; color:${m.status==='resolved'?'var(--good)':'#eab308'};">${m.status}</span></td>
+          <td style="min-width:220px;">
+            ${m.admin_reply ? `
+              <div style="font-size:0.75rem; color:var(--violet); font-weight:700; margin-bottom:4px;">Replied:</div>
+              <div style="font-size:0.78rem; color:var(--muted); margin-bottom:6px; white-space:pre-wrap;">${escapeHtml(m.admin_reply)}</div>
+            ` : ''}
+            <textarea id="replyBox-${m.id}" placeholder="Write a reply to ${escapeHtml(m.user_email || 'this user')}..." style="width:100%; min-height:50px; font-size:0.78rem; padding:6px; border-radius:6px; background:var(--bg); border:1px solid var(--border-solid); color:var(--text); resize:vertical;">${m.admin_reply ? '' : ''}</textarea>
+            <div style="display:flex; gap:6px; margin-top:6px;">
+              <button type="button" class="btn" style="padding:4px 10px; font-size:0.72rem; width:auto;" onclick="window.sendAdminReply('${m.id}')">Send Reply</button>
+              ${m.status !== 'resolved' ? `<button type="button" class="btn-outline" style="padding:4px 10px; font-size:0.72rem; width:auto; border:1px solid var(--border-solid);" onclick="window.resolveSupportMessage('${m.id}')">Mark Resolved</button>` : ''}
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    } catch(err){
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--muted); font-size:0.75rem;">Requires support_messages table & RLS policies in Supabase — run the provided SQL fix.</td></tr>';
+    }
+  }
+
+  window.resolveSupportMessage = async function(id){
+    if(!supabase) return;
+    try {
+      await supabase.from('support_messages').update({ status: 'resolved' }).eq('id', id);
+      loadAdminSupportInquiries();
+    } catch(err){
+      alert("Failed to update status: " + err.message);
+    }
+  };
+
+  window.sendAdminReply = async function(ticketId){
+    if(!supabase) return;
+    const box = document.getElementById('replyBox-' + ticketId);
+    if(!box) return;
+    const replyText = box.value.trim();
+    if(!replyText){
+      alert("Write a reply before sending.");
+      return;
+    }
+    try {
+      const { error } = await supabase.from('support_messages').update({
+        admin_reply: replyText,
+        replied_at: new Date().toISOString(),
+        status: 'resolved'
+      }).eq('id', ticketId);
+      if(error) throw error;
+      loadAdminSupportInquiries();
+    } catch(err){
+      alert("Reply could not be sent: " + err.message);
+    }
+  };
+
+  /* --- CHAT SYSTEM (WITH INVITATION APPROVAL) --- */
+  function loadChatSystem(){
+    loadChatInvitations();
+    loadAcceptedContacts();
+    loadMyNickname();
+  }
+
+  async function loadMyNickname(){
+    const input = document.getElementById('chatNicknameInput');
+    if(!input || !supabase || !sessionUser) return;
+    try{
+      const { data } = await supabase.from('profiles').select('chat_nickname').eq('id', sessionUser.id).maybeSingle();
+      input.value = (data && data.chat_nickname) || '';
+    }catch(e){}
+  }
+
+  document.getElementById('btnSaveNickname')?.addEventListener('click', async () => {
+    const input = document.getElementById('chatNicknameInput');
+    const notice = document.getElementById('nicknameNotice');
+    if(!input || !supabase || !sessionUser) return;
+    const val = input.value.trim().slice(0, 40);
+    try{
+      const { error } = await supabase.from('profiles').update({ chat_nickname: val || null }).eq('id', sessionUser.id);
+      if(error) throw error;
+      notice.textContent = "Saved.";
+      notice.style.color = "var(--good)";
+      loadAcceptedContacts();
+    }catch(err){
+      notice.textContent = "Could not save: " + err.message;
+      notice.style.color = "var(--danger)";
+    }
+  });
+
+  // Send invitation
+  document.getElementById('btnSendChatInvite')?.addEventListener('click', async () => {
+    const input = document.getElementById('chatInviteUsername');
+    const notice = document.getElementById('chatInviteNotice');
+    if(!input || !notice || !supabase || !sessionUser) return;
+
+    const targetUsername = input.value.trim().toLowerCase();
+    if(!targetUsername){
+      notice.textContent = "Please enter a username.";
+      notice.style.color = "var(--danger)";
+      return;
+    }
+
+    notice.textContent = "Searching for user...";
+    notice.style.color = "var(--muted)";
+
+    try {
+      // Find user profile by username
+      const { data: targetProfile, error: profErr } = await supabase
+        .from('profiles')
+        .select('id, username, full_name')
+        .ilike('username', targetUsername)
+        .maybeSingle();
+
+      if(profErr || !targetProfile){
+        notice.textContent = "No user found with username @" + targetUsername;
+        notice.style.color = "var(--danger)";
+        return;
+      }
+
+      if(targetProfile.id === sessionUser.id){
+        notice.textContent = "You cannot send a chat invitation to yourself.";
+        notice.style.color = "var(--danger)";
+        return;
+      }
+
+      // Check existing invitation
+      const { data: existing } = await supabase
+        .from('chat_invitations')
+        .select('id, status')
+        .or(`and(sender_id.eq.${sessionUser.id},receiver_id.eq.${targetProfile.id}),and(sender_id.eq.${targetProfile.id},receiver_id.eq.${sessionUser.id})`)
+        .maybeSingle();
+
+      if(existing){
+        if(existing.status === 'accepted'){
+          notice.textContent = "You are already connected with @" + targetUsername + "! Click their name under Accepted Friends.";
+          notice.style.color = "var(--good)";
+          loadAcceptedContacts();
+          return;
+        } else if(existing.status === 'pending'){
+          notice.textContent = "An invitation is already pending with @" + targetUsername;
+          notice.style.color = "#eab308";
+          return;
+        }
+      }
+
+      const { error: insErr } = await supabase.from('chat_invitations').insert({
+        sender_id: sessionUser.id,
+        receiver_id: targetProfile.id,
+        status: 'pending'
+      });
+
+      if(insErr) throw insErr;
+
+      notice.textContent = "Invitation sent to @" + targetUsername + "! They must accept before you can chat.";
+      notice.style.color = "var(--good)";
+      input.value = "";
+      loadChatInvitations();
+    } catch(err){
+      notice.textContent = "Failed to send invitation: " + (err.message || "Table check needed — run the provided SQL fix.");
+      notice.style.color = "var(--danger)";
+    }
+  });
+
+  async function loadChatInvitations(){
+    if(!supabase || !sessionUser) return;
+    const incomingCont = document.getElementById('incomingInvitesList');
+    const outgoingCont = document.getElementById('outgoingInvitesList');
+
+    try {
+      // Incoming pending
+      const { data: incoming } = await supabase
+        .from('chat_invitations')
+        .select('id, sender_id, created_at, sender:profiles!chat_invitations_sender_id_fkey(username, full_name)')
+        .eq('receiver_id', sessionUser.id)
+        .eq('status', 'pending');
+
+      if(incomingCont){
+        if(!incoming || incoming.length === 0){
+          incomingCont.innerHTML = '<div>No pending incoming requests.</div>';
+        } else {
+          incomingCont.innerHTML = incoming.map(inv => {
+            const senderName = inv.sender?.username || 'Unknown User';
+            return `
+              <div style="display:flex; justify-content:space-between; align-items:center; background:var(--surface); padding:6px 8px; border-radius:4px; margin-bottom:6px;">
+                <span><strong>@${escapeHtml(senderName)}</strong></span>
+                <div style="display:flex; gap:6px;">
+                  <button type="button" class="btn" style="padding:2px 8px; font-size:0.75rem;" onclick="window.respondChatInvite('${inv.id}', 'accepted')">Accept</button>
+                  <button type="button" class="btn-subtle" style="padding:2px 8px; font-size:0.75rem; border:1px solid var(--border-solid);" onclick="window.respondChatInvite('${inv.id}', 'declined')">Decline</button>
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+      }
+
+      // Outgoing pending
+      const { data: outgoing } = await supabase
+        .from('chat_invitations')
+        .select('id, receiver_id, created_at, receiver:profiles!chat_invitations_receiver_id_fkey(username, full_name)')
+        .eq('sender_id', sessionUser.id)
+        .eq('status', 'pending');
+
+      if(outgoingCont){
+        if(!outgoing || outgoing.length === 0){
+          outgoingCont.innerHTML = '<div>No outgoing requests.</div>';
+        } else {
+          outgoingCont.innerHTML = outgoing.map(inv => {
+            const recName = inv.receiver?.username || 'user';
+            return `<div style="background:var(--surface); padding:6px 8px; border-radius:4px; margin-bottom:6px;">Invited <strong>@${escapeHtml(recName)}</strong> (Pending)</div>`;
+          }).join('');
+        }
+      }
+    } catch(err){
+      console.warn("Notice loading invitations:", err);
+    }
+  }
+
+  window.respondChatInvite = async function(inviteId, newStatus){
+    if(!supabase) return;
+    try {
+      await supabase.from('chat_invitations').update({ status: newStatus, updated_at: new Date().toISOString() }).eq('id', inviteId);
+      loadChatInvitations();
+      loadAcceptedContacts();
+    } catch(err){
+      alert("Failed to update invitation: " + err.message);
+    }
+  };
+
+  async function loadAcceptedContacts(){
+    const cont = document.getElementById('acceptedContactsList');
+    if(!cont || !supabase || !sessionUser) return;
+
+    try {
+      const { data: accepted } = await supabase
+        .from('chat_invitations')
+        .select('id, sender_id, receiver_id')
+        .eq('status', 'accepted')
+        .or(`sender_id.eq.${sessionUser.id},receiver_id.eq.${sessionUser.id}`);
+
+      if(!accepted || accepted.length === 0){
+        cont.innerHTML = '<div style="color:var(--muted); font-size:0.8rem;">No accepted contacts yet.</div>';
+        return;
+      }
+
+      const otherUserIds = accepted.map(a => a.sender_id === sessionUser.id ? a.receiver_id : a.sender_id);
+      const { data: profiles } = await supabase.from('profiles').select('id, username, full_name, chat_nickname').in('id', otherUserIds);
+      const profMap = {};
+      (profiles || []).forEach(p => profMap[p.id] = p);
+
+      cont.innerHTML = otherUserIds.map(uid => {
+        const p = profMap[uid] || { username: 'user', full_name: 'Contact' };
+        const displayName = p.chat_nickname || ('@' + p.username);
+        const isSel = (uid === activeChatContactId);
+        return `
+          <div onclick="window.selectChatContact('${uid}', '${escapeHtml(p.username)}', '${escapeHtml(p.chat_nickname || '')}')" style="cursor:pointer; padding:6px 8px; border-radius:6px; margin-bottom:4px; background:${isSel?'rgba(34,211,238,0.15)':'transparent'}; border:${isSel?'1px solid var(--cyan)':'1px solid transparent'};">
+            <div style="font-weight:600; font-size:0.85rem; color:${isSel?'var(--cyan)':'var(--text)'};">${escapeHtml(displayName)}</div>
+            <div style="font-size:0.75rem; color:var(--muted);">${p.chat_nickname ? '@' + escapeHtml(p.username) : escapeHtml(p.full_name || '')}</div>
+          </div>
+        `;
+      }).join('');
+    } catch(err){
+      cont.innerHTML = '<div style="color:var(--muted); font-size:0.75rem;">Requires chat_invitations table — run the provided SQL fix.</div>';
+    }
+  }
+
+  window.selectChatContact = function(userId, username, nickname){
+    activeChatContactId = userId;
+    activeChatContactName = username;
+    document.getElementById('chatHeader').textContent = "Chatting with " + (nickname || ("@" + username));
+    document.getElementById('chatInputBar').style.display = 'flex';
+    loadAcceptedContacts();
+    loadActiveConversation(userId, username, false);
+  };
+
+  async function loadActiveConversation(contactId, username, isPoll){
+    const box = document.getElementById('chatMessagesBox');
+    if(!box || !supabase || !sessionUser) return;
+
+    try {
+      const { data: msgs, error } = await supabase
+        .from('chat_messages')
+        .select('*')
+        .or(`and(sender_id.eq.${sessionUser.id},receiver_id.eq.${contactId}),and(sender_id.eq.${contactId},receiver_id.eq.${sessionUser.id})`)
+        .order('created_at', { ascending: true });
+
+      if(error) throw error;
+      if(!msgs || msgs.length === 0){
+        box.innerHTML = `<div style="color:var(--muted); font-size:0.8rem; text-align:center; margin-top:40px;">No messages yet. Say hi to @${escapeHtml(username)}!</div>`;
+        return;
+      }
+
+      const shouldScroll = (!isPoll || box.scrollTop + box.clientHeight >= box.scrollHeight - 50);
+
+      const rendered = await Promise.all(msgs.map(async (m) => {
+        const isMe = (m.sender_id === sessionUser.id);
+        const bubbleStyle = `max-width:75%; padding:6px 12px; border-radius:12px; font-size:0.85rem; background:${isMe?'var(--cyan)':'var(--surface)'}; color:${isMe?'#0f172a':'var(--text)'}; border:${isMe?'none':'1px solid var(--border-solid)'};`;
+        let inner = '';
+
+        if(m.message_type === 'image' && m.attachment_path){
+          const { data: signed } = await supabase.storage.from('chat-attachments').createSignedUrl(m.attachment_path, 3600);
+          inner = signed
+            ? `<img src="${signed.signedUrl}" style="max-width:220px; max-height:220px; border-radius:8px; display:block;">`
+            : `<span>[image unavailable]</span>`;
+        } else if(m.message_type === 'audio' && m.attachment_path){
+          const { data: signed } = await supabase.storage.from('chat-attachments').createSignedUrl(m.attachment_path, 3600);
+          inner = signed
+            ? `<audio controls src="${signed.signedUrl}" style="max-width:220px; height:34px;"></audio>`
+            : `<span>[voice message unavailable]</span>`;
+        } else if(m.message_type === 'file' && m.attachment_path){
+          const { data: signed } = await supabase.storage.from('chat-attachments').createSignedUrl(m.attachment_path, 3600);
+          inner = signed
+            ? `<a href="${signed.signedUrl}" target="_blank" style="color:inherit; text-decoration:underline;">📄 ${escapeHtml(m.attachment_name || 'file')}</a>`
+            : `<span>[file unavailable]</span>`;
+        } else {
+          inner = escapeHtml(m.message);
+        }
+
+        return `
+          <div style="display:flex; flex-direction:column; align-items:${isMe?'flex-end':'flex-start'};">
+            <div style="${bubbleStyle}">${inner}</div>
+            <span style="font-size:0.65rem; color:var(--muted); margin-top:2px;">${new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+          </div>
+        `;
+      }));
+
+      box.innerHTML = rendered.join('');
+
+      if(shouldScroll){
+        box.scrollTop = box.scrollHeight;
+      }
+    } catch(err){
+      if(!isPoll){
+        box.innerHTML = `<div style="color:var(--danger); font-size:0.8rem; text-align:center; margin-top:40px;">Failed to load messages: ${escapeHtml(err.message)}</div>`;
+      }
+    }
+  }
+
+
+  // Chat attachments: photos, audio clips, and common documents.
+  const chatAttachInput = document.getElementById('chatAttachInput');
+  const btnChatAttach = document.getElementById('btnChatAttach');
+  const btnChatVoice = document.getElementById('btnChatVoice');
+  const chatUploadStatus = document.getElementById('chatUploadStatus');
+
+  btnChatAttach?.addEventListener('click', () => chatAttachInput?.click());
+
+  chatAttachInput?.addEventListener('change', async () => {
+    const file = chatAttachInput.files && chatAttachInput.files[0];
+    if(!file) return;
+    if(!supabase || !sessionUser || !activeChatContactId){
+      alert("Choose a conversation before attaching a file.");
+      chatAttachInput.value = "";
+      return;
+    }
+    const maxBytes = 20 * 1024 * 1024;
+    if(file.size > maxBytes){
+      alert("Files must be 20 MB or smaller.");
+      chatAttachInput.value = "";
+      return;
+    }
+    const isImage = file.type.startsWith('image/');
+    const isAudio = file.type.startsWith('audio/');
+    const allowed = isImage || isAudio || /\.(pdf|doc|docx|zip|txt)$/i.test(file.name);
+    if(!allowed){
+      alert("Choose an image, audio file, PDF, DOC/DOCX, ZIP, or TXT file.");
+      chatAttachInput.value = "";
+      return;
+    }
+
+    const messageType = isImage ? 'image' : (isAudio ? 'audio' : 'file');
+    const safeName = file.name.replace(/[^\w.\- ()]/g, '_').slice(0, 150) || 'attachment';
+    const storagePath = `${sessionUser.id}/${activeChatContactId}/${Date.now()}_${safeName}`;
+    chatUploadStatus.textContent = "Uploading attachment…";
+    try{
+      const { error: uploadError } = await supabase.storage
+        .from('chat-attachments')
+        .upload(storagePath, file, { upsert: false, contentType: file.type || 'application/octet-stream' });
+      if(uploadError) throw uploadError;
+
+      const { error: messageError } = await supabase.from('chat_messages').insert({
+        sender_id: sessionUser.id,
+        receiver_id: activeChatContactId,
+        message: '',
+        message_type: messageType,
+        attachment_path: storagePath,
+        attachment_name: safeName
+      });
+      if(messageError) throw messageError;
+      chatUploadStatus.textContent = "Attachment sent.";
+      await loadActiveConversation(activeChatContactId, activeChatContactName, false);
+    }catch(err){
+      chatUploadStatus.textContent = "Upload failed: " + err.message;
+    }finally{
+      chatAttachInput.value = "";
+    }
+  });
+
+  // Voice message recording using the browser's microphone permission.
+  let voiceRecorder = null;
+  let voiceChunks = [];
+  let voiceStream = null;
+
+  btnChatVoice?.addEventListener('click', async () => {
+    if(voiceRecorder && voiceRecorder.state === 'recording'){
+      voiceRecorder.stop();
+      btnChatVoice.textContent = '🎤';
+      btnChatVoice.title = 'Record voice message';
+      chatUploadStatus.textContent = "Finishing voice message…";
+      return;
+    }
+    if(!supabase || !sessionUser || !activeChatContactId){
+      alert("Choose a conversation before recording a voice message.");
+      return;
+    }
+    if(!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder){
+      alert("Voice recording is not supported in this browser.");
+      return;
+    }
+    try{
+      voiceStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const options = {};
+      if(MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) options.mimeType = 'audio/webm;codecs=opus';
+      voiceRecorder = new MediaRecorder(voiceStream, options);
+      voiceChunks = [];
+      voiceRecorder.ondataavailable = e => { if(e.data && e.data.size) voiceChunks.push(e.data); };
+      voiceRecorder.onstop = async () => {
+        try{
+          const blob = new Blob(voiceChunks, { type: voiceRecorder.mimeType || 'audio/webm' });
+          if(blob.size > 20 * 1024 * 1024) throw new Error("Voice message exceeds 20 MB.");
+          const ext = blob.type.includes('ogg') ? 'ogg' : (blob.type.includes('mp4') ? 'm4a' : 'webm');
+          const path = `${sessionUser.id}/${activeChatContactId}/${Date.now()}_voice.${ext}`;
+          chatUploadStatus.textContent = "Uploading voice message…";
+          const { error: uploadError } = await supabase.storage.from('chat-attachments')
+            .upload(path, blob, { upsert: false, contentType: blob.type || 'audio/webm' });
+          if(uploadError) throw uploadError;
+          const { error: messageError } = await supabase.from('chat_messages').insert({
+            sender_id: sessionUser.id,
+            receiver_id: activeChatContactId,
+            message: '',
+            message_type: 'audio',
+            attachment_path: path,
+            attachment_name: `Voice message.${ext}`
+          });
+          if(messageError) throw messageError;
+          chatUploadStatus.textContent = "Voice message sent.";
+          await loadActiveConversation(activeChatContactId, activeChatContactName, false);
+        }catch(err){
+          chatUploadStatus.textContent = "Voice message failed: " + err.message;
+        }finally{
+          voiceStream?.getTracks().forEach(track => track.stop());
+          voiceStream = null;
+          voiceRecorder = null;
+          voiceChunks = [];
+        }
+      };
+      voiceRecorder.start();
+      btnChatVoice.textContent = '⏹';
+      btnChatVoice.title = 'Stop and send voice message';
+      chatUploadStatus.textContent = "Recording… click ⏹ to stop and send.";
+    }catch(err){
+      chatUploadStatus.textContent = "Microphone unavailable: " + err.message;
+      voiceStream?.getTracks().forEach(track => track.stop());
+      voiceStream = null;
+    }
+  });
+
+  // Send message
+  document.getElementById('btnSendChatMessage')?.addEventListener('click', sendActiveMessage);
+  document.getElementById('chatMessageInput')?.addEventListener('keydown', (e) => {
+    if(e.key === 'Enter') sendActiveMessage();
+  });
+
+  async function sendActiveMessage(){
+    const input = document.getElementById('chatMessageInput');
+    if(!input || !supabase || !sessionUser || !activeChatContactId) return;
+    const txt = input.value.trim();
+    if(!txt) return;
+
+    input.value = "";
+    try {
+      const { error } = await supabase.from('chat_messages').insert({
+        sender_id: sessionUser.id,
+        receiver_id: activeChatContactId,
+        message: txt
+      });
+      if(error) throw error;
+      loadActiveConversation(activeChatContactId, activeChatContactName, false);
+    } catch(err){
+      alert("Message could not be sent: " + err.message);
+    }
+  }
+
+
+
+  // Delete a user through a server-side, admin-only Supabase RPC.
+  // The database function must verify the caller's admin role and delete the Auth user.
+  window.adminDeleteUser = async function(userId, username){
+    if(!supabase || !sessionUser) return;
+    if(userId === sessionUser.id){
+      alert("You cannot delete your own account from this panel.");
+      return;
+    }
+    if(!confirm(`Delete @${username} and their account? This cannot be undone.`)) return;
+    try{
+      const { error } = await supabase.rpc('admin_delete_user', { target_user_id: userId });
+      if(error) throw error;
+      alert(`@${username} was deleted.`);
+      await loadAdminDashboard(true);
+    }catch(err){
+      alert("User deletion failed. Make sure the secure admin_delete_user database function is installed. " + err.message);
+    }
+  };
+
+  // Admin Provisioning: Add User Handler
+  const adminAddUserForm = document.getElementById('adminAddUserForm');
+  if(adminAddUserForm){
+    adminAddUserForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if(!supabase) return;
+      const fn = document.getElementById('adminNewFullName').value.trim();
+      const un = document.getElementById('adminNewUsername').value.trim().toLowerCase();
+      const em = document.getElementById('adminNewEmail').value.trim().toLowerCase();
+      const pw = document.getElementById('adminNewPassword').value;
+      const notice = document.getElementById('adminAddUserNotice');
+
+      notice.textContent = "Creating user...";
+      notice.style.color = "var(--muted)";
+
+      try {
+        // Sign up through Supabase Auth
+        const { data: upData, error: upErr } = await supabase.auth.signUp({
+          email: em,
+          password: pw,
+          options: {
+            data: { full_name: fn, username: un }
+          }
+        });
+
+        if(upErr) throw upErr;
+
+        // Try inserting profile if trigger did not auto-insert
+        if(upData && upData.user){
+          await supabase.from('profiles').upsert({
+            id: upData.user.id,
+            full_name: fn,
+            username: un,
+            email: em,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'id' });
+        }
+
+        notice.textContent = "User created successfully!";
+        notice.style.color = "var(--good)";
+        adminAddUserForm.reset();
+        
+        // Refresh registered users table
+        loadAdminDashboard(true);
+      } catch(err){
+        notice.textContent = "Error: " + err.message;
+        notice.style.color = "var(--danger)";
+      }
+    });
+  }
+
+})();
+</scripts>
+</body>
+</html>
