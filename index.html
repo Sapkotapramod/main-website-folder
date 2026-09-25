@@ -7,6 +7,7 @@
 <meta name="description" content="Portfolio and development services by Pramod Sapkota.">
 <meta name="author" content="Pramod Sapkota">
 <link rel="icon" type="image/jpeg" href="favicon.jpg">
+
 <!-- Classic Serif & Sans Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -334,7 +335,7 @@ footer {
             <li><a href="#about">About</a></li>
             <li><a href="#services">Services</a></li>
             <li><a href="#contact">Contact</a></li>
-            <li><a href="page0001.html" target="_blank"> GET STARTED</a></li>
+            <li><a href="/page0001/" target="_blank">GET STARTED</a></li>
         </ul>
         <button class="toggle-theme" onclick="toggleTheme()">Theme</button>
     </nav>
@@ -427,7 +428,7 @@ footer {
 
                 <div class="link-container">
                     <p>Looking for additional work?</p>
-                    <a href="page0001.html" target="_blank" class="btn-classic" style="width: 100%;">GET STARTED</a>
+                    <a href="/page0001/" target="_blank" class="btn-classic" style="width: 100%;">GET STARTED</a>
                 </div>
             </form>
         </div>
@@ -447,7 +448,7 @@ function toggleTheme() {
 // Contact Form with EmailJS & Mailto Fallback
 function handleContactSubmit(e) {
     e.preventDefault();
-    
+
     const statusDiv = document.getElementById("form-status");
     statusDiv.style.color = "var(--accent-gold)";
     statusDiv.innerText = "Transmitting message...";
@@ -468,9 +469,9 @@ function handleContactSubmit(e) {
         // Fallback to mailto protocol
         const subject = encodeURIComponent("Inquiry from " + name);
         const body = encodeURIComponent(message + "\n\n---\nFrom: " + name + "\nEmail: " + email);
-        
+
         window.location.href = `mailto:origincircle5@gmail.com?subject=${subject}&body=${body}`;
-        
+
         statusDiv.innerText = "Opening mail client...";
         document.getElementById("contact-form").reset();
     });
