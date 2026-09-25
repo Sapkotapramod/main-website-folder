@@ -582,9 +582,11 @@
             <div style="color:var(--muted); font-size:0.8rem; text-align:center; margin-top:40px;">No conversation selected.</div>
           </div>
           <div id="chatInputBar" style="display:none; gap:8px; margin-top:8px; align-items:center;">
-            <button type="button" id="btnChatAttach" title="Attach photo or file" style="background:var(--surface-2); border:1px solid var(--border-solid); color:var(--text); border-radius:8px; width:38px; height:38px; cursor:pointer; font-size:1rem;">📎</button>
-            <button type="button" id="btnChatVoice" title="Record voice message" style="background:var(--surface-2); border:1px solid var(--border-solid); color:var(--text); border-radius:8px; width:38px; height:38px; cursor:pointer; font-size:1rem;">🎤</button>
-            <input type="file" id="chatAttachInput" accept="image/*,audio/*,.pdf,.doc,.docx,.zip" style="display:none;">
+            <button type="button" id="btnChatAttach" title="Attach files or photos" aria-label="Attach files" style="background:var(--surface-2); border:1px solid var(--border-solid); color:var(--text); border-radius:8px; width:38px; height:38px; cursor:pointer; font-size:1rem;">📎</button>
+            <button type="button" id="btnChatCamera" title="Take a photo" aria-label="Take a photo" style="background:var(--surface-2); border:1px solid var(--border-solid); color:var(--text); border-radius:8px; width:38px; height:38px; cursor:pointer; font-size:1rem;">📷</button>
+            <button type="button" id="btnChatVoice" title="Record voice message" aria-label="Record voice message" style="background:var(--surface-2); border:1px solid var(--border-solid); color:var(--text); border-radius:8px; width:38px; height:38px; cursor:pointer; font-size:1rem;">🎤</button>
+            <input type="file" id="chatAttachInput" accept="image/*,audio/*,.pdf,.doc,.docx,.zip,.txt" multiple style="display:none;">
+            <input type="file" id="chatCameraInput" accept="image/*" capture="environment" style="display:none;">
             <input type="text" id="chatMessageInput" class="field" style="margin:0; flex:1;" placeholder="Type your message...">
             <button type="button" class="btn" id="btnSendChatMessage" style="width:auto; padding:0 16px;">Send</button>
           </div>
@@ -2196,28 +2198,31 @@
         let inner = '';
 
         if(m.message_type === 'image' && m.attachment_path){
-          const { data: signed } = await supabase.storage.from('chat-attachments').createSignedUrl(m.attachment_path, 3600);
-          inner = signed
-            ? `<img src="${signed.signedUrl}" style="max-width:220px; max-height:220px; border-radius:8px; display:block;">`
-            : `<span>[image unavailable]</span>`;
+          const { data: signed, error: signError } = await supabase.storage.from('chat-attachments').createSignedUrl(m.attachment_path, 3600);
+          inner = signed?.signedUrl
+            ? `<img src="${escapeHtml(signed.signedUrl)}" alt="Shared image" style="max-width:220px; max-height:220px; border-radius:8px; display:block;">`
+            : `<span title="${escapeHtml(signError?.message || 'File missing or access denied')}">[image unavailable — check chat storage access]</span>`;
         } else if(m.message_type === 'audio' && m.attachment_path){
-          const { data: signed } = await supabase.storage.from('chat-attachments').createSignedUrl(m.attachment_path, 3600);
-          inner = signed
-            ? `<audio controls src="${signed.signedUrl}" style="max-width:220px; height:34px;"></audio>`
-            : `<span>[voice message unavailable]</span>`;
+          const { data: signed, error: signError } = await supabase.storage.from('chat-attachments').createSignedUrl(m.attachment_path, 3600);
+          inner = signed?.signedUrl
+            ? `<audio controls preload="metadata" src="${escapeHtml(signed.signedUrl)}" style="max-width:220px; height:34px;"></audio>`
+            : `<span title="${escapeHtml(signError?.message || 'File missing or access denied')}">[voice message unavailable — check chat storage access]</span>`;
         } else if(m.message_type === 'file' && m.attachment_path){
-          const { data: signed } = await supabase.storage.from('chat-attachments').createSignedUrl(m.attachment_path, 3600);
-          inner = signed
-            ? `<a href="${signed.signedUrl}" target="_blank" style="color:inherit; text-decoration:underline;">📄 ${escapeHtml(m.attachment_name || 'file')}</a>`
-            : `<span>[file unavailable]</span>`;
+          const { data: signed, error: signError } = await supabase.storage.from('chat-attachments').createSignedUrl(m.attachment_path, 3600);
+          inner = signed?.signedUrl
+            ? `<a href="${escapeHtml(signed.signedUrl)}" target="_blank" rel="noopener noreferrer" style="color:inherit; text-decoration:underline;">📄 ${escapeHtml(m.attachment_name || 'file')}</a>`
+            : `<span title="${escapeHtml(signError?.message || 'File missing or access denied')}">[file unavailable — check chat storage access]</span>`;
         } else {
           inner = escapeHtml(m.message);
         }
 
         return `
-          <div style="display:flex; flex-direction:column; align-items:${isMe?'flex-end':'flex-start'};">
+          <div style="display:flex; flex-direction:column; align-items:${isMe?'flex-end':'flex-start'};" data-chat-message="${escapeHtml(String(m.id))}">
             <div style="${bubbleStyle}">${inner}</div>
-            <span style="font-size:0.65rem; color:var(--muted); margin-top:2px;">${new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+            <div style="display:flex; align-items:center; gap:8px; margin-top:2px;">
+              <span style="font-size:0.65rem; color:var(--muted);">${new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+              ${isMe ? `<button type="button" onclick="window.deleteChatMessage('${escapeHtml(String(m.id))}')" style="border:0; background:transparent; color:var(--danger); cursor:pointer; font-size:0.68rem; padding:2px 4px;" title="Delete this message and its attachment">Delete</button>` : ''}
+            </div>
           </div>
         `;
       }));
@@ -2235,133 +2240,213 @@
   }
 
 
-  // Chat attachments: photos, audio clips, and common documents.
+  // Chat attachments: camera photos, selected files, audio clips, and common documents.
   const chatAttachInput = document.getElementById('chatAttachInput');
+  const chatCameraInput = document.getElementById('chatCameraInput');
   const btnChatAttach = document.getElementById('btnChatAttach');
+  const btnChatCamera = document.getElementById('btnChatCamera');
   const btnChatVoice = document.getElementById('btnChatVoice');
   const chatUploadStatus = document.getElementById('chatUploadStatus');
 
   btnChatAttach?.addEventListener('click', () => chatAttachInput?.click());
+  btnChatCamera?.addEventListener('click', () => chatCameraInput?.click());
 
-  chatAttachInput?.addEventListener('change', async () => {
-    const file = chatAttachInput.files && chatAttachInput.files[0];
+  async function uploadChatFile(file, targetContactId = activeChatContactId){
     if(!file) return;
-    if(!supabase || !sessionUser || !activeChatContactId){
-      alert("Choose a conversation before attaching a file.");
-      chatAttachInput.value = "";
-      return;
+    if(!supabase || !sessionUser || !targetContactId){
+      throw new Error('Choose an accepted conversation before attaching a file.');
     }
     const maxBytes = 20 * 1024 * 1024;
-    if(file.size > maxBytes){
-      alert("Files must be 20 MB or smaller.");
-      chatAttachInput.value = "";
-      return;
-    }
+    if(file.size > maxBytes) throw new Error('Files must be 20 MB or smaller.');
+
     const isImage = file.type.startsWith('image/');
     const isAudio = file.type.startsWith('audio/');
     const allowed = isImage || isAudio || /\.(pdf|doc|docx|zip|txt)$/i.test(file.name);
-    if(!allowed){
-      alert("Choose an image, audio file, PDF, DOC/DOCX, ZIP, or TXT file.");
-      chatAttachInput.value = "";
-      return;
-    }
+    if(!allowed) throw new Error('Choose an image, audio file, PDF, DOC/DOCX, ZIP, or TXT file.');
 
     const messageType = isImage ? 'image' : (isAudio ? 'audio' : 'file');
     const safeName = file.name.replace(/[^\w.\- ()]/g, '_').slice(0, 150) || 'attachment';
-    const storagePath = `${sessionUser.id}/${activeChatContactId}/${Date.now()}_${safeName}`;
-    chatUploadStatus.textContent = "Uploading attachment…";
-    try{
-      const { error: uploadError } = await supabase.storage
-        .from('chat-attachments')
-        .upload(storagePath, file, { upsert: false, contentType: file.type || 'application/octet-stream' });
-      if(uploadError) throw uploadError;
+    const storagePath = `${sessionUser.id}/${targetContactId}/${Date.now()}_${Math.random().toString(36).slice(2,8)}_${safeName}`;
 
-      const { error: messageError } = await supabase.from('chat_messages').insert({
-        sender_id: sessionUser.id,
-        receiver_id: activeChatContactId,
-        message: '',
-        message_type: messageType,
-        attachment_path: storagePath,
-        attachment_name: safeName
-      });
-      if(messageError) throw messageError;
-      chatUploadStatus.textContent = "Attachment sent.";
-      await loadActiveConversation(activeChatContactId, activeChatContactName, false);
-    }catch(err){
-      chatUploadStatus.textContent = "Upload failed: " + err.message;
-    }finally{
-      chatAttachInput.value = "";
+    const { error: uploadError } = await supabase.storage
+      .from('chat-attachments')
+      .upload(storagePath, file, { upsert: false, contentType: file.type || 'application/octet-stream' });
+    if(uploadError) throw uploadError;
+
+    const { error: messageError } = await supabase.from('chat_messages').insert({
+      sender_id: sessionUser.id,
+      receiver_id: targetContactId,
+      message: '',
+      message_type: messageType,
+      attachment_path: storagePath,
+      attachment_name: safeName
+    });
+    if(messageError) throw messageError;
+  }
+
+  async function handleChatFileSelection(inputEl){
+    const files = Array.from(inputEl?.files || []);
+    if(!files.length) return;
+    const targetContactId = activeChatContactId;
+    let sent = 0;
+    const failures = [];
+    for(const file of files){
+      try{
+        chatUploadStatus.textContent = `Uploading ${file.name}…`;
+        await uploadChatFile(file, targetContactId);
+        sent++;
+      }catch(err){
+        failures.push(`${file.name}: ${err.message || 'Upload failed'}`);
+      }
     }
-  });
+    if(failures.length){
+      chatUploadStatus.textContent = `${sent} sent; ${failures.length} failed. ${failures.join(' | ')}`;
+    } else {
+      chatUploadStatus.textContent = sent === 1 ? 'Attachment sent.' : `${sent} attachments sent.`;
+    }
+    if(targetContactId && activeChatContactId === targetContactId){
+      await loadActiveConversation(targetContactId, activeChatContactName, false);
+    }
+    if(inputEl) inputEl.value = '';
+  }
 
-  // Voice message recording using the browser's microphone permission.
+  chatAttachInput?.addEventListener('change', () => handleChatFileSelection(chatAttachInput));
+  chatCameraInput?.addEventListener('change', () => handleChatFileSelection(chatCameraInput));
+
+  // Voice-message recording. Microphone access requires HTTPS and user permission.
   let voiceRecorder = null;
   let voiceChunks = [];
   let voiceStream = null;
+
+  function stopVoiceTracks(){
+    voiceStream?.getTracks().forEach(track => track.stop());
+    voiceStream = null;
+  }
 
   btnChatVoice?.addEventListener('click', async () => {
     if(voiceRecorder && voiceRecorder.state === 'recording'){
       voiceRecorder.stop();
       btnChatVoice.textContent = '🎤';
       btnChatVoice.title = 'Record voice message';
-      chatUploadStatus.textContent = "Finishing voice message…";
+      chatUploadStatus.textContent = 'Finishing voice message…';
       return;
     }
     if(!supabase || !sessionUser || !activeChatContactId){
-      alert("Choose a conversation before recording a voice message.");
+      chatUploadStatus.textContent = 'Choose an accepted conversation before recording.';
       return;
     }
     if(!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder){
-      alert("Voice recording is not supported in this browser.");
+      chatUploadStatus.textContent = 'Voice recording is not supported here. Use HTTPS and a supported browser, or attach an audio file.';
       return;
     }
+
+    const targetContactId = activeChatContactId;
     try{
       voiceStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const options = {};
-      if(MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) options.mimeType = 'audio/webm;codecs=opus';
-      voiceRecorder = new MediaRecorder(voiceStream, options);
+      const mimeCandidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4'];
+      const supportedMime = mimeCandidates.find(type => MediaRecorder.isTypeSupported?.(type));
+      const recorderOptions = supportedMime ? { mimeType: supportedMime } : undefined;
+      const recorder = new MediaRecorder(voiceStream, recorderOptions);
+      voiceRecorder = recorder;
       voiceChunks = [];
-      voiceRecorder.ondataavailable = e => { if(e.data && e.data.size) voiceChunks.push(e.data); };
-      voiceRecorder.onstop = async () => {
+      recorder.ondataavailable = event => {
+        if(event.data && event.data.size > 0) voiceChunks.push(event.data);
+      };
+      recorder.onerror = event => {
+        chatUploadStatus.textContent = 'Recording error: ' + (event.error?.message || 'The browser could not record audio.');
+      };
+      recorder.onstop = async () => {
         try{
-          const blob = new Blob(voiceChunks, { type: voiceRecorder.mimeType || 'audio/webm' });
-          if(blob.size > 20 * 1024 * 1024) throw new Error("Voice message exceeds 20 MB.");
-          const ext = blob.type.includes('ogg') ? 'ogg' : (blob.type.includes('mp4') ? 'm4a' : 'webm');
-          const path = `${sessionUser.id}/${activeChatContactId}/${Date.now()}_voice.${ext}`;
-          chatUploadStatus.textContent = "Uploading voice message…";
+          const mimeType = recorder.mimeType || voiceChunks[0]?.type || 'audio/webm';
+          const blob = new Blob(voiceChunks, { type: mimeType });
+          if(!blob.size) throw new Error('No audio was recorded. Check microphone permission and try again.');
+          if(blob.size > 20 * 1024 * 1024) throw new Error('Voice message exceeds 20 MB.');
+          const ext = mimeType.includes('ogg') ? 'ogg' : (mimeType.includes('mp4') ? 'm4a' : 'webm');
+          const path = `${sessionUser.id}/${targetContactId}/${Date.now()}_voice_${Math.random().toString(36).slice(2,7)}.${ext}`;
+          chatUploadStatus.textContent = 'Uploading voice message…';
           const { error: uploadError } = await supabase.storage.from('chat-attachments')
-            .upload(path, blob, { upsert: false, contentType: blob.type || 'audio/webm' });
+            .upload(path, blob, { upsert: false, contentType: mimeType });
           if(uploadError) throw uploadError;
           const { error: messageError } = await supabase.from('chat_messages').insert({
             sender_id: sessionUser.id,
-            receiver_id: activeChatContactId,
+            receiver_id: targetContactId,
             message: '',
             message_type: 'audio',
             attachment_path: path,
             attachment_name: `Voice message.${ext}`
           });
           if(messageError) throw messageError;
-          chatUploadStatus.textContent = "Voice message sent.";
-          await loadActiveConversation(activeChatContactId, activeChatContactName, false);
+          chatUploadStatus.textContent = 'Voice message sent.';
+          if(activeChatContactId === targetContactId){
+            await loadActiveConversation(targetContactId, activeChatContactName, false);
+          }
         }catch(err){
-          chatUploadStatus.textContent = "Voice message failed: " + err.message;
+          chatUploadStatus.textContent = 'Voice message failed: ' + (err.message || 'Check the chat storage bucket and access policies.');
         }finally{
-          voiceStream?.getTracks().forEach(track => track.stop());
-          voiceStream = null;
+          stopVoiceTracks();
           voiceRecorder = null;
           voiceChunks = [];
+          btnChatVoice.textContent = '🎤';
+          btnChatVoice.title = 'Record voice message';
         }
       };
-      voiceRecorder.start();
+      recorder.start(250);
       btnChatVoice.textContent = '⏹';
       btnChatVoice.title = 'Stop and send voice message';
-      chatUploadStatus.textContent = "Recording… click ⏹ to stop and send.";
+      chatUploadStatus.textContent = 'Recording… click ⏹ to stop and send.';
     }catch(err){
-      chatUploadStatus.textContent = "Microphone unavailable: " + err.message;
-      voiceStream?.getTracks().forEach(track => track.stop());
-      voiceStream = null;
+      stopVoiceTracks();
+      voiceRecorder = null;
+      btnChatVoice.textContent = '🎤';
+      btnChatVoice.title = 'Record voice message';
+      const message = err.name === 'NotAllowedError'
+        ? 'Microphone permission was blocked. Allow microphone access in your browser settings and try again.'
+        : (err.message || 'Microphone unavailable.');
+      chatUploadStatus.textContent = message;
     }
   });
+
+  // Delete a message sent by the current user. If it has an attachment, remove
+  // the private Storage object first, then delete the message row.
+  window.deleteChatMessage = async function(messageId){
+    if(!supabase || !sessionUser || !messageId) return;
+    if(!confirm('Delete this message and its attached file, if any? This cannot be undone.')) return;
+
+    try{
+      const { data: message, error: fetchError } = await supabase
+        .from('chat_messages')
+        .select('id, sender_id, attachment_path')
+        .eq('id', messageId)
+        .eq('sender_id', sessionUser.id)
+        .maybeSingle();
+      if(fetchError) throw fetchError;
+      if(!message){
+        alert('Message not found or you do not have permission to delete it.');
+        return;
+      }
+
+      if(message.attachment_path){
+        const { error: storageError } = await supabase.storage
+          .from('chat-attachments')
+          .remove([message.attachment_path]);
+        if(storageError) throw new Error('Could not delete the attached file: ' + storageError.message);
+      }
+
+      const { error: deleteError } = await supabase
+        .from('chat_messages')
+        .delete()
+        .eq('id', messageId)
+        .eq('sender_id', sessionUser.id);
+      if(deleteError) throw deleteError;
+
+      if(activeChatContactId){
+        await loadActiveConversation(activeChatContactId, activeChatContactName, false);
+      }
+      if(chatUploadStatus) chatUploadStatus.textContent = 'Message deleted.';
+    }catch(err){
+      alert('Could not delete message: ' + (err.message || 'Check your Supabase delete policies.'));
+    }
+  };
 
   // Send message
   document.getElementById('btnSendChatMessage')?.addEventListener('click', sendActiveMessage);
