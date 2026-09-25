@@ -243,6 +243,54 @@
     text-align:center; color:var(--muted); font-size:.75rem;
     padding:18px; font-family:'JetBrains Mono',monospace;
   }
+
+/* REACT-TIER DASHBOARD ENHANCEMENTS */
+#dashboardWrap {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 30px 24px;
+}
+.react-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  border-bottom: 1px solid var(--border-solid);
+  padding-bottom: 20px;
+  margin-bottom: 24px;
+}
+.react-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+  margin-bottom: 28px;
+}
+.react-stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border-solid);
+  border-radius: 12px;
+  padding: 22px;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+.react-stat-card .label {
+  font-size: 0.75rem;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.react-stat-card .value {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: var(--cyan);
+}
+.react-stat-card .value.active-green {
+  color: #10b981;
+}
+
 </style>
 </head>
 <body data-theme="dark">
