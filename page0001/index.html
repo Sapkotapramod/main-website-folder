@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -316,6 +317,22 @@
 .queue-chip.done .qmeta { color:var(--good); }
 .queue-chip.failed .qmeta { color:var(--danger); }
 
+
+  /* Community + AI chat */
+  .chat-shell{display:grid;grid-template-columns:1fr;gap:12px;background:var(--surface-2);border:1px solid var(--border-solid);border-radius:10px;padding:14px;}
+  .chat-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  .chat-toolbar input{flex:1;min-width:180px;padding:9px 11px;border-radius:8px;background:var(--bg);border:1px solid var(--border-solid);color:var(--text);}
+  .community-messages,.ai-messages{height:360px;overflow-y:auto;padding:10px;background:var(--bg);border:1px solid var(--border-solid);border-radius:9px;display:flex;flex-direction:column;gap:8px;}
+  .community-msg,.ai-msg{max-width:88%;padding:9px 11px;border-radius:10px;border:1px solid var(--border-solid);background:var(--surface);white-space:pre-wrap;word-break:break-word;}
+  .community-msg .meta,.ai-msg .meta{font-size:.68rem;color:var(--muted);margin-bottom:4px;}
+  .community-msg.mine{align-self:flex-end;border-color:rgba(34,211,238,.45);}
+  .ai-msg.user{align-self:flex-end;background:rgba(34,211,238,.12);border-color:rgba(34,211,238,.35);}
+  .ai-msg.assistant{align-self:flex-start;}
+  .chat-compose{display:flex;gap:8px;align-items:flex-end;}
+  .chat-compose textarea{flex:1;min-height:46px;max-height:130px;resize:vertical;padding:10px;border-radius:8px;background:var(--bg);border:1px solid var(--border-solid);color:var(--text);font-family:inherit;}
+  .small-note{font-size:.72rem;color:var(--muted);line-height:1.5;}
+  @media(max-width:700px){.community-messages,.ai-messages{height:300px}.chat-compose{flex-direction:column}.chat-compose .btn{width:100%}}
+
 </style>
 </head>
 <body data-theme="dark">
@@ -517,6 +534,8 @@
       <button type="button" class="btn-subtle active" id="tabBtnFiles" style="padding:6px 14px; font-size:0.85rem; cursor:pointer; background:var(--surface-2); border:1px solid var(--border-solid); color:var(--text); border-radius:6px;">My Files</button>
       <button type="button" class="btn-subtle" id="tabBtnChat" style="padding:6px 14px; font-size:0.85rem; cursor:pointer; background:transparent; border:1px solid var(--border-solid); color:var(--muted); border-radius:6px;">Direct Chat</button>
       <button type="button" class="btn-subtle" id="tabBtnSupport" style="padding:6px 14px; font-size:0.85rem; cursor:pointer; background:transparent; border:1px solid var(--border-solid); color:var(--muted); border-radius:6px;">Message Admin</button>
+      <button type="button" class="btn-subtle" id="tabBtnCommunity" style="padding:6px 14px; font-size:0.85rem; cursor:pointer; background:transparent; border:1px solid var(--border-solid); color:var(--muted); border-radius:6px;">Community</button>
+      <button type="button" class="btn-subtle" id="tabBtnAI" style="padding:6px 14px; font-size:0.85rem; cursor:pointer; background:transparent; border:1px solid var(--violet); color:var(--violet); border-radius:6px;">AI Help</button>
       <button type="button" class="btn-subtle" id="tabBtnAdmin" style="display:none; padding:6px 14px; font-size:0.85rem; cursor:pointer; background:transparent; border:1px solid var(--violet); color:var(--violet); border-radius:6px;">Admin Console</button>
     </div>
 
@@ -595,7 +614,40 @@
       </div>
     </div>
 
-    <!-- TAB 3: MESSAGE ADMIN / SUPPORT -->
+    <!-- TAB 3: COMMUNITY CHAT -->
+    <div id="tabContentCommunity" style="display:none; margin-top:20px;">
+      <h3 style="font-family:'Space Grotesk',sans-serif; color:var(--cyan); margin-bottom:6px;">Community Chat</h3>
+      <p class="small-note">Public discussion for signed-in members. Your real account name/email is not displayed here; use an anonymous nickname.</p>
+      <div class="chat-shell">
+        <div class="chat-toolbar">
+          <input id="communityNicknameInput" maxlength="32" placeholder="Anonymous name (e.g. BlueFox42)">
+          <button type="button" class="btn-outline" id="btnSaveCommunityNickname" style="width:auto;padding:8px 14px;margin:0;">Save name</button>
+          <span id="communityNicknameNotice" class="small-note"></span>
+        </div>
+        <div id="communityMessages" class="community-messages"><div class="small-note" style="text-align:center;margin-top:80px;">Loading community chat…</div></div>
+        <div class="chat-compose">
+          <textarea id="communityMessageInput" maxlength="2000" placeholder="Discuss anything appropriate for the community…"></textarea>
+          <button type="button" class="btn" id="btnSendCommunityMessage" style="width:auto;padding:10px 18px;">Send</button>
+        </div>
+        <div id="communityNotice" class="small-note"></div>
+      </div>
+    </div>
+
+    <!-- TAB 4: AI HELP -->
+    <div id="tabContentAI" style="display:none; margin-top:20px;">
+      <h3 style="font-family:'Space Grotesk',sans-serif; color:var(--violet); margin-bottom:6px;">AI Help Desk</h3>
+      <p class="small-note">Ask for help with PC troubleshooting, software, coding, study, everyday technology, and other real-world questions. The AI can explain steps, but verify important decisions with a qualified person.</p>
+      <div class="chat-shell">
+        <div id="aiMessages" class="ai-messages"><div class="ai-msg assistant"><div class="meta">AI Help</div>Hello! Describe your problem or question and I’ll help you work through it step by step.</div></div>
+        <div class="chat-compose">
+          <textarea id="aiMessageInput" maxlength="8000" placeholder="Ask a question…"></textarea>
+          <button type="button" class="btn" id="btnSendAIMessage" style="width:auto;padding:10px 18px;">Ask AI</button>
+        </div>
+        <div id="aiNotice" class="small-note"></div>
+      </div>
+    </div>
+
+    <!-- TAB 5: MESSAGE ADMIN / SUPPORT -->
     <div id="tabContentSupport" style="display:none; margin-top:20px;">
       <h3 style="font-family:'Space Grotesk',sans-serif; color:var(--cyan); margin-bottom:6px;">Contact Admin & Support</h3>
       <p style="font-size:0.8rem; color:var(--muted); margin-bottom:14px;">Have an issue, account question, or bug to report? Send a direct private message to the administration team.</p>
@@ -685,6 +737,7 @@
           <div style="background:var(--surface-2); border:1px solid var(--border-solid); border-radius:10px; padding:16px;">
             <h4 style="margin:0 0 10px 0; font-size:0.9rem; color:var(--cyan);">Send Secure Files to User</h4>
             <select id="adminUserSelect" class="field" style="margin:0 0 10px;"><option value="">Select target user...</option></select>
+            <label style="display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--text);margin-bottom:10px;"><input type="checkbox" id="adminSendEveryone"> Send a copy to every registered user</label>
 
             <div id="adminDropzone" style="border:2px dashed var(--border-solid); border-radius:10px; padding:20px; text-align:center; cursor:pointer; transition:border-color .18s, background .18s;">
               <div style="font-size:1.6rem; margin-bottom:4px;">📁</div>
@@ -1153,9 +1206,11 @@
     }
 
 
-    const opts = { redirectTo: window.location.origin + window.location.pathname };
-
-    const { error } = await supabase.auth.resetPasswordForEmail(email, opts);
+    // Always return to the actual auth page. This prevents the site/root URL from being used
+    // when the user started recovery from /page0001/. Add this exact URL to Supabase
+    // Authentication -> URL Configuration -> Redirect URLs.
+    const recoveryRedirect = 'https://sapkotap.com.np/page0001/';
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: recoveryRedirect });
 
     if(error){
       showStatus(error.message, "bad");
@@ -1212,7 +1267,7 @@
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: provider,
         options: {
-          redirectTo: window.location.origin + window.location.pathname
+          redirectTo: 'https://sapkotap.com.np/page0001/'
         }
       });
       if(error){
@@ -1235,6 +1290,27 @@
 
   const btnOutlook = document.getElementById('btnAuthOutlook');
   if(btnOutlook) btnOutlook.addEventListener('click', () => signInWithProvider('azure'));
+
+  // Recovery links may arrive using the implicit hash or the PKCE ?code= form.
+  // If the host redirects recovery to the site root, bring it back to the auth page.
+  (async function bootstrapRecovery(){
+    const isRecoveryHash = window.location.hash.includes('type=recovery');
+    const hasRecoveryCode = new URLSearchParams(window.location.search).has('code');
+    const targetPath = '/page0001/';
+    if((isRecoveryHash || hasRecoveryCode) && window.location.pathname !== targetPath){
+      const suffix = window.location.search + window.location.hash;
+      window.location.replace(targetPath + suffix);
+      return;
+    }
+    if(supabase && hasRecoveryCode){
+      try{
+        const code = new URLSearchParams(window.location.search).get('code');
+        if(code) await supabase.auth.exchangeCodeForSession(code);
+      }catch(err){
+        console.warn('Recovery code exchange:', err);
+      }
+    }
+  })();
 
   if(supabase){
     supabase.auth.onAuthStateChange((event) => {
@@ -1641,9 +1717,10 @@
   };
 
   uploadBtn?.addEventListener('click', async function(){
+    const sendEveryone = document.getElementById('adminSendEveryone')?.checked;
     const targetUid = document.getElementById('adminUserSelect').value;
-    if(!targetUid){
-      alert("Please select a target user first.");
+    if(!sendEveryone && !targetUid){
+      alert("Select a target user or choose 'Send a copy to every registered user'.");
       return;
     }
     if(uploadQueue.length === 0) return;
@@ -1664,42 +1741,31 @@
         continue;
       }
 
-      // Preserve folder structure in the stored name; strip unsafe characters
-      // from each path segment so it can't be used to escape the storage path.
-      const safeRelPath = item.relPath.split('/').map(seg =>
-        seg.replace(/[^a-zA-Z0-9._-]/g, "_")
-      ).join('/').slice(0, 200);
-      const path = `${targetUid}/${Date.now()}_${Math.random().toString(36).slice(2,7)}_${safeRelPath}`;
-
+      // Preserve folder structure and optionally fan the same upload out to every user.
+      const targets = sendEveryone
+        ? Array.from(document.getElementById('adminUserSelect').options).map(o=>o.value).filter(Boolean)
+        : [targetUid];
       try{
-        const { error: upErr } = await supabase.storage.from("secure-user-files").upload(path, item.file);
-        if(upErr) throw upErr;
-
         const { data: { user } } = await supabase.auth.getUser();
-        const { error: insErr } = await supabase.from("user_files").insert({
-          target_user_id: targetUid,
-          uploaded_by: user.id,
-          file_name: item.relPath,
-          storage_path: path,
-          file_size: item.file.size,
-          mime_type: item.file.type
-        });
-        if(insErr) throw insErr;
-
-        item.status = 'done';
-        sent++;
+        const safeRelPath = item.relPath.split('/').map(seg => seg.replace(/[^a-zA-Z0-9._-]/g, "_")).join('/').slice(0, 200);
+        for(const uid of targets){
+          const path = `${uid}/${Date.now()}_${Math.random().toString(36).slice(2,7)}_${safeRelPath}`;
+          const { error: upErr } = await supabase.storage.from("secure-user-files").upload(path, item.file);
+          if(upErr) throw upErr;
+          const { error: insErr } = await supabase.from("user_files").insert({target_user_id:uid,uploaded_by:user.id,file_name:item.relPath,storage_path:path,file_size:item.file.size,mime_type:item.file.type});
+          if(insErr) throw insErr;
+        }
+        item.status = 'done'; sent++;
       }catch(err){
-        item.status = 'failed';
-        failedCount++;
-        console.error("Upload failed for", item.relPath, err);
+        item.status = 'failed'; failedCount++; console.error("Upload failed for", item.relPath, err);
       }
       renderQueue();
     }
 
-    await logAudit("ADMIN_FILE_SENT", { target: targetUid, count: sent });
+    await logAudit("ADMIN_FILE_SENT", { target: sendEveryone ? 'EVERYONE' : targetUid, count: sent });
 
     if(failedCount === 0){
-      uploadNotice.textContent = `${sent} file(s) sent successfully.`;
+      uploadNotice.textContent = `${sent} file(s) ${sendEveryone ? 'broadcast to all users' : 'sent successfully'}.`;
       uploadNotice.style.color = "var(--good)";
       uploadQueue = [];
       fileInput.value = ''; folderInput.value = '';
@@ -1766,7 +1832,7 @@
   let chatPollInterval = null;
 
   function switchDashboardTab(tabName){
-    const tabs = ['Files', 'Chat', 'Support', 'Admin'];
+    const tabs = ['Files', 'Chat', 'Support', 'Community', 'AI', 'Admin'];
     tabs.forEach(t => {
       const btn = document.getElementById('tabBtn' + t);
       const content = document.getElementById(t === 'Admin' ? 'adminArea' : 'tabContent' + t);
@@ -1798,6 +1864,17 @@
       }
     }
 
+    if(tabName.toLowerCase() === 'community'){
+      loadCommunityChat();
+      if(!communityPollInterval) communityPollInterval = setInterval(loadCommunityChat, 5000);
+    } else if(communityPollInterval){
+      clearInterval(communityPollInterval); communityPollInterval = null;
+    }
+
+    if(tabName.toLowerCase() === 'ai'){
+      loadAISession();
+    }
+
     if(tabName.toLowerCase() === 'support'){
       loadUserSupportTickets();
     }
@@ -1806,7 +1883,69 @@
   document.getElementById('tabBtnFiles')?.addEventListener('click', () => switchDashboardTab('Files'));
   document.getElementById('tabBtnChat')?.addEventListener('click', () => switchDashboardTab('Chat'));
   document.getElementById('tabBtnSupport')?.addEventListener('click', () => switchDashboardTab('Support'));
+  document.getElementById('tabBtnCommunity')?.addEventListener('click', () => switchDashboardTab('Community'));
+  document.getElementById('tabBtnAI')?.addEventListener('click', () => switchDashboardTab('AI'));
   document.getElementById('tabBtnAdmin')?.addEventListener('click', () => switchDashboardTab('Admin'));
+
+  /* --- COMMUNITY CHAT + AI HELP --- */
+  let communityPollInterval = null;
+  const COMMUNITY_NAME_KEY = 'sapkotap_community_name';
+  let aiHistory = [];
+
+  function getCommunityName(){
+    let n = localStorage.getItem(COMMUNITY_NAME_KEY);
+    if(!n){ n = 'Guest-' + Math.random().toString(36).slice(2,7).toUpperCase(); localStorage.setItem(COMMUNITY_NAME_KEY,n); }
+    return n;
+  }
+  function loadCommunityName(){
+    const input=document.getElementById('communityNicknameInput'); if(input) input.value=getCommunityName();
+  }
+  document.getElementById('btnSaveCommunityNickname')?.addEventListener('click',()=>{
+    const input=document.getElementById('communityNicknameInput'), notice=document.getElementById('communityNicknameNotice');
+    const n=(input?.value||'').trim().replace(/[^a-zA-Z0-9 _-]/g,'').slice(0,32);
+    if(!n){ notice.textContent='Choose a nickname.'; notice.style.color='var(--danger)'; return; }
+    localStorage.setItem(COMMUNITY_NAME_KEY,n); notice.textContent='Saved.'; notice.style.color='var(--good)'; loadCommunityChat();
+  });
+
+  async function loadCommunityChat(){
+    const box=document.getElementById('communityMessages'); if(!box||!supabase||!sessionUser) return;
+    loadCommunityName();
+    try{
+      const {data,error}=await supabase.from('community_messages').select('id, user_id, anonymous_name, message, created_at').order('created_at',{ascending:true}).limit(200);
+      if(error) throw error;
+      box.innerHTML=(data||[]).map(m=>`<div class="community-msg ${m.user_id===sessionUser.id?'mine':''}"><div class="meta">${escapeHtml(m.anonymous_name||'Anonymous')} · ${new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</div>${escapeHtml(m.message)}</div>`).join('')||'<div class="small-note" style="text-align:center;margin-top:80px;">No messages yet. Start the conversation.</div>';
+      box.scrollTop=box.scrollHeight;
+    }catch(err){ box.innerHTML=`<div class="small-note">Community chat needs the supplied Supabase SQL setup. ${escapeHtml(err.message||'')}</div>`; }
+  }
+  async function sendCommunityMessage(){
+    const input=document.getElementById('communityMessageInput'), notice=document.getElementById('communityNotice');
+    const msg=(input?.value||'').trim(); if(!msg||!supabase||!sessionUser) return;
+    const name=getCommunityName();
+    try{ const {error}=await supabase.from('community_messages').insert({user_id:sessionUser.id,anonymous_name:name,message:msg}); if(error) throw error; input.value=''; notice.textContent=''; await loadCommunityChat(); }
+    catch(err){ notice.textContent='Could not send: '+err.message; notice.style.color='var(--danger)'; }
+  }
+  document.getElementById('btnSendCommunityMessage')?.addEventListener('click',sendCommunityMessage);
+  document.getElementById('communityMessageInput')?.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendCommunityMessage();}});
+
+  function loadAISession(){
+    const box=document.getElementById('aiMessages'); if(!box) return;
+    if(!aiHistory.length) return;
+    box.innerHTML=aiHistory.map(m=>`<div class="ai-msg ${m.role==='user'?'user':'assistant'}"><div class="meta">${m.role==='user'?'You':'AI Help'}</div>${escapeHtml(m.content)}</div>`).join('');
+    box.scrollTop=box.scrollHeight;
+  }
+  async function sendAIMessage(){
+    const input=document.getElementById('aiMessageInput'), notice=document.getElementById('aiNotice'), btn=document.getElementById('btnSendAIMessage');
+    const content=(input?.value||'').trim(); if(!content||!supabase||!sessionUser) return;
+    aiHistory.push({role:'user',content}); input.value=''; loadAISession(); if(btn) btn.disabled=true; notice.textContent='Thinking…';
+    try{
+      const {data,error}=await supabase.functions.invoke('ai-help',{body:{messages:aiHistory.slice(-12)}});
+      if(error) throw error;
+      const reply=data?.reply||'I could not generate a response.'; aiHistory.push({role:'assistant',content:reply}); notice.textContent=''; loadAISession();
+    }catch(err){ notice.textContent='AI help is not connected yet. Deploy the ai-help Edge Function and set its OPENAI_API_KEY secret. '+(err.message||''); notice.style.color='var(--danger)'; }
+    finally{if(btn) btn.disabled=false;}
+  }
+  document.getElementById('btnSendAIMessage')?.addEventListener('click',sendAIMessage);
+  document.getElementById('aiMessageInput')?.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendAIMessage();}});
 
   /* --- SUPPORT INQUIRIES (USER & ADMIN) --- */
   const supportForm = document.getElementById('supportForm');
