@@ -325,6 +325,64 @@
 .queue-chip.done .qmeta { color:var(--good); }
 .queue-chip.failed .qmeta { color:var(--danger); }
 
+
+  /* Community + AI + upgraded admin/support UI */
+  .community-shell,.ai-shell{
+    border:1px solid var(--border-solid); border-radius:18px; overflow:hidden;
+    background:
+      radial-gradient(circle at 10% 0%, rgba(139,92,246,.10), transparent 35%),
+      radial-gradient(circle at 90% 100%, rgba(34,211,238,.08), transparent 40%),
+      var(--surface);
+    box-shadow:var(--shadow);
+  }
+  .feature-hero{padding:20px 22px;border-bottom:1px solid var(--border-solid);display:flex;justify-content:space-between;gap:18px;align-items:flex-start;flex-wrap:wrap}
+  .feature-kicker{font:700 .68rem 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--cyan)}
+  .feature-title{font:700 1.25rem 'Space Grotesk',sans-serif;margin:5px 0}
+  .feature-copy{font-size:.82rem;color:var(--muted);line-height:1.55;max-width:680px}
+  .live-pill{display:inline-flex;align-items:center;gap:7px;padding:7px 10px;border:1px solid rgba(52,211,153,.3);border-radius:999px;color:var(--good);background:rgba(52,211,153,.07);font-size:.72rem;font-weight:700}
+  .live-pill i{width:7px;height:7px;border-radius:50%;background:var(--good);box-shadow:0 0 10px var(--good)}
+  .community-body,.ai-body{padding:16px}
+  .community-messages,.ai-messages{
+    min-height:390px;max-height:52vh;overflow:auto;padding:8px;
+    display:flex;flex-direction:column;gap:10px;
+    background:rgba(0,0,0,.10);border:1px solid var(--border-solid);border-radius:14px;
+  }
+  .community-msg{display:flex;gap:9px;align-items:flex-start}
+  .community-msg.me{justify-content:flex-end}
+  .community-avatar{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;flex:0 0 auto;background:linear-gradient(135deg,var(--violet),var(--cyan));color:#081018;font-weight:800;font-size:.72rem}
+  .community-bubble{max-width:min(720px,82%);padding:10px 12px;border:1px solid var(--border-solid);border-radius:14px;background:var(--surface-2)}
+  .community-msg.me .community-bubble{background:linear-gradient(135deg,rgba(34,211,238,.18),rgba(139,92,246,.18));border-color:rgba(34,211,238,.32)}
+  .community-meta{font-size:.66rem;color:var(--muted);margin-bottom:4px;display:flex;gap:8px;align-items:center}
+  .community-name{font-weight:800;color:var(--text)}
+  .community-time{font-family:'JetBrains Mono',monospace}
+  .feature-compose{display:flex;gap:9px;margin-top:10px;align-items:flex-end}
+  .feature-compose textarea{flex:1;min-height:46px;max-height:140px;resize:vertical;padding:11px 13px;border-radius:12px;background:var(--surface-2);border:1px solid var(--border-solid);color:var(--text);font:inherit;outline:none}
+  .feature-compose textarea:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(34,211,238,.12)}
+  .nickname-chip{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;padding:9px 11px;border:1px solid var(--border-solid);border-radius:12px;background:var(--surface-2)}
+  .nickname-chip input{flex:1;min-width:180px;padding:8px 10px;border-radius:9px;background:var(--bg);border:1px solid var(--border-solid);color:var(--text);outline:none}
+  .ai-layout{display:grid;grid-template-columns:1fr 240px;gap:12px}
+  .ai-side{border:1px solid var(--border-solid);border-radius:14px;padding:14px;background:var(--surface-2);height:max-content}
+  .ai-side h4{margin:0 0 8px;font-family:'Space Grotesk',sans-serif}
+  .ai-side p{font-size:.75rem;line-height:1.55;color:var(--muted);margin:0 0 10px}
+  .ai-status{font-size:.72rem;color:var(--muted);min-height:18px;margin-top:7px}
+  .ai-msg{display:flex;gap:9px}
+  .ai-msg.user{justify-content:flex-end}
+  .ai-avatar{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;flex:0 0 auto;font-size:.75rem;font-weight:800;background:var(--surface-2);border:1px solid var(--border-solid)}
+  .ai-msg.assistant .ai-avatar{color:var(--cyan)}
+  .ai-msg.user .ai-avatar{color:var(--violet)}
+  .ai-bubble{max-width:82%;padding:10px 12px;border-radius:13px;border:1px solid var(--border-solid);background:var(--surface-2);font-size:.84rem;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere}
+  .ai-msg.user .ai-bubble{background:rgba(139,92,246,.13);border-color:rgba(139,92,246,.3)}
+  .admin-shell{border:1px solid rgba(139,92,246,.25);border-radius:20px;padding:18px;background:linear-gradient(145deg,rgba(139,92,246,.08),rgba(34,211,238,.035) 45%,var(--surface));box-shadow:0 25px 80px -35px rgba(139,92,246,.5)}
+  .admin-shell .react-stat-card{background:rgba(18,24,33,.72);backdrop-filter:blur(8px)}
+  .support-inbox-card{border:1px solid var(--border-solid);border-radius:14px;padding:14px;background:var(--surface-2);margin-bottom:10px}
+  .support-inbox-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+  .support-ticket-title{font:700 .9rem 'Space Grotesk',sans-serif}
+  .support-ticket-meta{font:.68rem 'JetBrains Mono',monospace;color:var(--muted);margin-top:3px}
+  .support-message-bubble{margin-top:10px;padding:11px;border-radius:11px;background:var(--bg);border:1px solid var(--border-solid);font-size:.8rem;line-height:1.5;white-space:pre-wrap}
+  .support-reply-box{margin-top:10px;display:flex;gap:8px;align-items:flex-end}
+  .support-reply-box textarea{flex:1;min-height:55px;padding:9px;border-radius:10px;background:var(--bg);border:1px solid var(--border-solid);color:var(--text);resize:vertical;font:inherit}
+  @media(max-width:760px){.ai-layout{grid-template-columns:1fr}.community-messages,.ai-messages{min-height:330px}.feature-compose{flex-direction:column}.feature-compose .btn{width:100%!important}}
+
 </style>
 </head>
 <body data-theme="dark">
@@ -558,6 +616,8 @@
     <div style="display:flex; gap:10px; margin-top:20px; border-bottom:1px solid var(--border-solid); padding-bottom:12px; overflow-x:auto;">
       <button type="button" class="btn-subtle active" id="tabBtnFiles" style="padding:6px 14px; font-size:0.85rem; cursor:pointer; background:var(--surface-2); border:1px solid var(--border-solid); color:var(--text); border-radius:6px;">My Files</button>
       <button type="button" class="btn-subtle" id="tabBtnChat" style="padding:6px 14px; font-size:0.85rem; cursor:pointer; background:transparent; border:1px solid var(--border-solid); color:var(--muted); border-radius:6px;">Direct Chat</button>
+      <button type="button" class="btn-subtle" id="tabBtnCommunity" style="padding:6px 14px; font-size:0.85rem; cursor:pointer; background:transparent; border:1px solid var(--border-solid); color:var(--muted); border-radius:6px;">Community</button>
+      <button type="button" class="btn-subtle" id="tabBtnAI" style="padding:6px 14px; font-size:0.85rem; cursor:pointer; background:transparent; border:1px solid var(--border-solid); color:var(--muted); border-radius:6px;">AI Chat</button>
       <button type="button" class="btn-subtle" id="tabBtnSupport" style="padding:6px 14px; font-size:0.85rem; cursor:pointer; background:transparent; border:1px solid var(--border-solid); color:var(--muted); border-radius:6px;">Message Admin</button>
       <button type="button" class="btn-subtle" id="tabBtnAdmin" style="display:none; padding:6px 14px; font-size:0.85rem; cursor:pointer; background:transparent; border:1px solid var(--violet); color:var(--violet); border-radius:6px;">Admin Console</button>
     </div>
@@ -635,10 +695,77 @@
       </div>
     </div>
 
+
+    <!-- COMMUNITY CHAT -->
+    <div id="tabContentCommunity" style="display:none; margin-top:20px;">
+      <div class="community-shell">
+        <div class="feature-hero">
+          <div>
+            <div class="feature-kicker">Public room</div>
+            <div class="feature-title">Community Chat</div>
+            <div class="feature-copy">Talk with everyone on the site using an anonymous nickname. Your real email, username, and account ID are never shown in this room.</div>
+          </div>
+          <span class="live-pill"><i></i> Live community</span>
+        </div>
+        <div class="community-body">
+          <div class="nickname-chip">
+            <strong style="font-size:.78rem;">Chat identity</strong>
+            <input id="communityNicknameInput" maxlength="32" placeholder="Anonymous name">
+            <button type="button" class="btn btn-outline" id="btnSaveCommunityNickname" style="width:auto;padding:7px 13px;margin:0;">Save name</button>
+            <span id="communityNicknameNotice" style="font-size:.7rem;color:var(--muted);"></span>
+          </div>
+          <div id="communityMessagesBox" class="community-messages">
+            <div style="margin:auto;color:var(--muted);font-size:.8rem;">Loading community messages…</div>
+          </div>
+          <div class="feature-compose">
+            <textarea id="communityMessageInput" maxlength="2000" placeholder="Write something to the community…"></textarea>
+            <button type="button" class="btn" id="btnSendCommunityMessage" style="width:auto;padding:0 20px;min-height:46px;">Send</button>
+          </div>
+          <div id="communityStatus" style="font-size:.7rem;color:var(--muted);margin-top:6px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI CHAT -->
+    <div id="tabContentAI" style="display:none; margin-top:20px;">
+      <div class="ai-shell">
+        <div class="feature-hero">
+          <div>
+            <div class="feature-kicker">AI assistant</div>
+            <div class="feature-title">Ask AI</div>
+            <div class="feature-copy">Ask questions, get explanations, brainstorm ideas, or ask for help while staying inside your account dashboard.</div>
+          </div>
+          <span class="live-pill" style="color:var(--violet);border-color:rgba(139,92,246,.3);background:rgba(139,92,246,.08);"><i style="background:var(--violet);box-shadow:0 0 10px var(--violet)"></i> AI ready</span>
+        </div>
+        <div class="ai-body">
+          <div class="ai-layout">
+            <div>
+              <div id="aiMessagesBox" class="ai-messages">
+                <div class="ai-msg assistant">
+                  <div class="ai-avatar">AI</div>
+                  <div class="ai-bubble">Hi! Ask me anything. Your AI conversation is private to your account.</div>
+                </div>
+              </div>
+              <div class="feature-compose">
+                <textarea id="aiMessageInput" maxlength="8000" placeholder="Ask your AI assistant…"></textarea>
+                <button type="button" class="btn" id="btnSendAIMessage" style="width:auto;padding:0 20px;min-height:46px;">Ask AI</button>
+              </div>
+              <div id="aiStatus" class="ai-status"></div>
+            </div>
+            <aside class="ai-side">
+              <h4>AI chat</h4>
+              <p>Only your authenticated account can read its saved AI messages. Never put an API key in this HTML file.</p>
+              <button type="button" class="btn btn-outline" id="btnClearAIChat" style="margin:0;">Clear local view</button>
+            </aside>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- TAB 3: MESSAGE ADMIN / SUPPORT -->
     <div id="tabContentSupport" style="display:none; margin-top:20px;">
       <h3 style="font-family:'Space Grotesk',sans-serif; color:var(--cyan); margin-bottom:6px;">Contact Admin & Support</h3>
-      <p style="font-size:0.8rem; color:var(--muted); margin-bottom:14px;">Have an issue, account question, or bug to report? Send a direct private message to the administration team.</p>
+      <p style="font-size:0.8rem; color:var(--muted); margin-bottom:14px;">Have an issue, account question, or bug to report? Send a private support message. The main admin and authorized support admins can read and reply to your query.</p>
 
       <form id="supportForm" style="background:var(--surface-2); border:1px solid var(--border-solid); border-radius:8px; padding:14px; margin-bottom:16px;">
         <label style="font-size:0.75rem; color:var(--muted); text-transform:uppercase;">Subject</label>
@@ -647,7 +774,7 @@
         <label style="font-size:0.75rem; color:var(--muted); text-transform:uppercase;">Message</label>
         <textarea id="supportMessage" class="field" style="margin-top:4px; margin-bottom:12px; min-height:80px; resize:vertical;" placeholder="Describe what went wrong or what you need help with..." required></textarea>
 
-        <button type="submit" class="btn" id="btnSendSupport" style="width:auto; padding:8px 24px;">Send to Admin</button>
+        <button type="submit" class="btn" id="btnSendSupport" style="width:auto; padding:8px 24px;">Open Support Chat</button>
         <span id="supportNotice" style="font-size:0.8rem; margin-left:12px;"></span>
       </form>
 
@@ -656,7 +783,7 @@
     </div>
 
     <!-- ADMIN PANEL: "Control room" -->
-    <div id="adminArea" style="display:none; margin-top:36px; border-top:1px solid var(--border-solid); padding-top:24px;">
+    <div id="adminArea" class="admin-shell" style="display:none; margin-top:36px;">
 
       <div class="react-topbar" style="border-bottom:none; margin-bottom:12px; padding-bottom:0;">
         <div>
@@ -744,6 +871,9 @@
             <div id="adminUploadNotice" style="font-size:0.78rem; margin-top:8px;"></div>
           </div>
         </div>
+        <div id="adminRestrictedNotice" style="display:none;margin-bottom:12px;padding:10px 12px;border:1px solid rgba(139,92,246,.25);border-radius:10px;background:rgba(139,92,246,.06);color:var(--muted);font-size:.78rem;">
+          Support-admin access: you can review and reply to user queries, but user creation, deletion, role changes, file distribution, activity logs, IP addresses, and threat data are restricted to the main administrator.
+        </div>
 
         <h4 style="margin-bottom:8px;">Registered Users</h4>
         <table>
@@ -757,18 +887,11 @@
       <!-- ACTIVITY -->
       <div class="admin-tabpane" id="adminTab-activity">
         <h4 style="margin-bottom:8px;">User Support Inquiries & Messages</h4>
-        <div style="width:100%; overflow-x:auto; margin-bottom:24px;">
-          <table>
-            <thead>
-              <tr><th>Date</th><th>User Email</th><th>Subject</th><th>Message</th><th>Status</th><th>Action</th></tr>
-            </thead>
-            <tbody id="adminSupportTbody">
-              <tr><td colspan="6" style="text-align:center; color:var(--muted);">No support inquiries found.</td></tr>
-            </tbody>
-          </table>
+        <div id="adminSupportTbody" style="margin-bottom:24px;">
+          <div style="text-align:center;color:var(--muted);padding:20px;">No support inquiries found.</div>
         </div>
 
-        <h4 style="margin-bottom:8px;">All Logged Activity <span style="font-size:0.75rem; color:var(--cyan); font-weight:normal;">(Main Admin Only)</span></h4>
+        <h4 id="mainAdminActivityLog" style="margin-bottom:8px;">All Logged Activity <span style="font-size:0.75rem; color:var(--cyan); font-weight:normal;">(Main Admin Only)</span></h4>
         <div style="width:100%; overflow-x:auto;">
           <table>
             <thead>
@@ -1453,6 +1576,10 @@
   });
 
   async function loadAdminDashboard(isMainAdmin){
+    const mainTools = document.getElementById('mainAdminTools');
+    const restrictedNotice = document.getElementById('adminRestrictedNotice');
+    if(mainTools) mainTools.style.display = isMainAdmin ? 'grid' : 'none';
+    if(restrictedNotice) restrictedNotice.style.display = isMainAdmin ? 'none' : 'block';
     const thActions = document.getElementById('thActions');
     if(thActions) thActions.style.display = isMainAdmin ? 'table-cell' : 'none';
 
@@ -1516,11 +1643,21 @@
 
     // 2. Threats & Incoming IP Activity — RESTRICTED TO MAIN ADMIN ONLY
     if(!isMainAdmin){
+      document.querySelectorAll('[data-admintab="overview"],[data-admintab="attacks"],[data-admintab="files"]').forEach(el=>el.style.display='none');
+      const mainLogTitle=document.getElementById('mainAdminActivityLog');
+      if(mainLogTitle) mainLogTitle.style.display='none';
+      if(mainLogTitle?.nextElementSibling) mainLogTitle.nextElementSibling.style.display='none';
+      document.querySelector('[data-admintab="activity"]')?.style && (document.querySelector('[data-admintab="activity"]').style.display='inline-block');
       document.getElementById('statActions').textContent = '–';
       document.getElementById('statSuspicious').textContent = '–';
       document.getElementById('statThreats').textContent = '–';
       return;
     }
+
+    document.querySelectorAll('[data-admintab="overview"],[data-admintab="activity"],[data-admintab="attacks"],[data-admintab="files"]').forEach(el=>el.style.display='inline-block');
+    const mainLogTitle=document.getElementById('mainAdminActivityLog');
+    if(mainLogTitle) mainLogTitle.style.display='block';
+    if(mainLogTitle?.nextElementSibling) mainLogTitle.nextElementSibling.style.display='block';
 
     // Total logged actions (real count, not just the page of 25)
     try{
@@ -1873,7 +2010,7 @@
   let chatPollInterval = null;
 
   function switchDashboardTab(tabName){
-    const tabs = ['Files', 'Chat', 'Support', 'Admin'];
+    const tabs = ['Files', 'Chat', 'Community', 'AI', 'Support', 'Admin'];
     tabs.forEach(t => {
       const btn = document.getElementById('tabBtn' + t);
       const content = document.getElementById(t === 'Admin' ? 'adminArea' : 'tabContent' + t);
@@ -1905,6 +2042,17 @@
       }
     }
 
+    if(tabName.toLowerCase() === 'community'){
+      const n=document.getElementById('communityNicknameInput');
+      if(n) n.value=getCommunityNickname();
+      loadCommunityMessages();
+      if(!communityPollInterval) communityPollInterval=setInterval(loadCommunityMessages,5000);
+    } else if(tabName.toLowerCase() === 'ai'){
+      loadAIHistory();
+      const input=document.getElementById('aiMessageInput'); if(input) input.focus();
+    } else {
+      if(communityPollInterval){clearInterval(communityPollInterval);communityPollInterval=null;}
+    }
     if(tabName.toLowerCase() === 'support'){
       loadUserSupportTickets();
     }
@@ -1912,8 +2060,164 @@
 
   document.getElementById('tabBtnFiles')?.addEventListener('click', () => switchDashboardTab('Files'));
   document.getElementById('tabBtnChat')?.addEventListener('click', () => switchDashboardTab('Chat'));
+  document.getElementById('tabBtnCommunity')?.addEventListener('click', () => switchDashboardTab('Community'));
+  document.getElementById('tabBtnAI')?.addEventListener('click', () => switchDashboardTab('AI'));
   document.getElementById('tabBtnSupport')?.addEventListener('click', () => switchDashboardTab('Support'));
   document.getElementById('tabBtnAdmin')?.addEventListener('click', () => switchDashboardTab('Admin'));
+
+
+  /* --- COMMUNITY CHAT + AI CHAT --- */
+  let communityPollInterval = null;
+  let aiHistory = [];
+
+  function getCommunityNickname(){
+    return (localStorage.getItem('sapkotap_community_nickname') || '').trim();
+  }
+
+  function setCommunityNickname(name){
+    const clean = String(name || '').replace(/\s+/g,' ').trim().slice(0,32);
+    if(clean) localStorage.setItem('sapkotap_community_nickname', clean);
+    else localStorage.removeItem('sapkotap_community_nickname');
+    return clean || 'Anonymous';
+  }
+
+  function renderCommunityMessage(m){
+    const name = m.nickname || 'Anonymous';
+    const isMe = sessionUser && m.user_id === sessionUser.id;
+    const initial = escapeHtml(name.slice(0,1).toUpperCase());
+    return `<div class="community-msg ${isMe?'me':''}">
+      ${isMe ? '' : `<div class="community-avatar">${initial}</div>`}
+      <div class="community-bubble">
+        <div class="community-meta"><span class="community-name">${escapeHtml(name)}</span><span class="community-time">${new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span></div>
+        <div style="font-size:.84rem;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere;">${escapeHtml(m.message)}</div>
+      </div>
+      ${isMe ? `<div class="community-avatar">${initial}</div>` : ''}
+    </div>`;
+  }
+
+  async function loadCommunityMessages(){
+    const box = document.getElementById('communityMessagesBox');
+    if(!box || !supabase || !sessionUser) return;
+    try{
+      const {data,error} = await supabase.from('community_messages')
+        .select('id,user_id,nickname,message,created_at')
+        .order('created_at',{ascending:false}).limit(100);
+      if(error) throw error;
+      const messages = (data||[]).reverse();
+      if(!messages.length){
+        box.innerHTML = '<div style="margin:auto;color:var(--muted);font-size:.8rem;">No messages yet. Start the conversation.</div>';
+        return;
+      }
+      const shouldScroll = box.scrollTop + box.clientHeight >= box.scrollHeight - 80;
+      box.innerHTML = messages.map(renderCommunityMessage).join('');
+      if(shouldScroll) box.scrollTop = box.scrollHeight;
+    }catch(err){
+      box.innerHTML = `<div style="margin:auto;color:var(--danger);font-size:.78rem;text-align:center;">Community chat is not configured yet.<br>${escapeHtml(err.message)}</div>`;
+    }
+  }
+
+  async function sendCommunityMessage(){
+    const input = document.getElementById('communityMessageInput');
+    const status = document.getElementById('communityStatus');
+    if(!input || !supabase || !sessionUser) return;
+    const message = input.value.trim();
+    if(!message) return;
+    const nickname = getCommunityNickname() || setCommunityNickname('');
+    status.textContent = 'Sending…';
+    try{
+      const {error} = await supabase.from('community_messages').insert({
+        user_id: sessionUser.id, nickname, message
+      });
+      if(error) throw error;
+      input.value = '';
+      status.textContent = '';
+      await loadCommunityMessages();
+      const box = document.getElementById('communityMessagesBox');
+      if(box) box.scrollTop = box.scrollHeight;
+    }catch(err){
+      status.textContent = 'Could not send: ' + err.message;
+      status.style.color = 'var(--danger)';
+    }
+  }
+
+  async function loadAIHistory(){
+    if(!supabase || !sessionUser) return;
+    try{
+      const {data,error} = await supabase.from('ai_chat_messages').select('role,content,created_at')
+        .eq('user_id',sessionUser.id).order('created_at',{ascending:true}).limit(100);
+      if(error) throw error;
+      aiHistory = data || [];
+      renderAIHistory();
+    }catch(err){
+      console.warn('AI history unavailable:',err);
+    }
+  }
+
+  function renderAIHistory(){
+    const box=document.getElementById('aiMessagesBox');
+    if(!box) return;
+    if(!aiHistory.length){
+      box.innerHTML='<div class="ai-msg assistant"><div class="ai-avatar">AI</div><div class="ai-bubble">Hi! Ask me anything. Your AI conversation is private to your account.</div></div>';
+      return;
+    }
+    box.innerHTML=aiHistory.map(m=>`<div class="ai-msg ${m.role==='user'?'user':'assistant'}">
+      ${m.role==='user' ? '' : '<div class="ai-avatar">AI</div>'}
+      <div class="ai-bubble">${escapeHtml(m.content)}</div>
+      ${m.role==='user' ? '<div class="ai-avatar">You</div>' : ''}
+    </div>`).join('');
+    box.scrollTop=box.scrollHeight;
+  }
+
+  async function sendAIMessage(){
+    const input=document.getElementById('aiMessageInput');
+    const status=document.getElementById('aiStatus');
+    const btn=document.getElementById('btnSendAIMessage');
+    if(!input || !supabase || !sessionUser) return;
+    const message=input.value.trim();
+    if(!message) return;
+    input.value='';
+    btn.disabled=true;
+    status.textContent='Thinking…';
+    status.style.color='var(--muted)';
+    try{
+      const {error:saveErr}=await supabase.from('ai_chat_messages').insert({user_id:sessionUser.id,role:'user',content:message});
+      if(saveErr) throw saveErr;
+
+      const history = [...aiHistory,{role:'user',content:message}].slice(-20);
+      const {data,error}=await supabase.functions.invoke('ai-chat',{body:{message,history}});
+      if(error) throw error;
+      const answer = data?.answer || 'I could not generate a response.';
+      const {error:assistantErr}=await supabase.from('ai_chat_messages').insert({user_id:sessionUser.id,role:'assistant',content:answer});
+      if(assistantErr) throw assistantErr;
+      status.textContent='';
+      await loadAIHistory();
+    }catch(err){
+      status.textContent='AI chat is unavailable: ' + (err.message || 'Unknown error');
+      status.style.color='var(--danger)';
+      await loadAIHistory();
+    }finally{
+      btn.disabled=false;
+      input.focus();
+    }
+  }
+
+  async function clearAIView(){
+    aiHistory=[];
+    renderAIHistory();
+  }
+
+  document.getElementById('btnSaveCommunityNickname')?.addEventListener('click',()=>{
+    const input=document.getElementById('communityNicknameInput');
+    const notice=document.getElementById('communityNicknameNotice');
+    const name=setCommunityNickname(input?.value || '');
+    if(input) input.value=name==='Anonymous'?'':name;
+    if(notice){notice.textContent=`Community name: ${name}`;notice.style.color='var(--good)';}
+  });
+  document.getElementById('btnSendCommunityMessage')?.addEventListener('click',sendCommunityMessage);
+  document.getElementById('communityMessageInput')?.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendCommunityMessage();}});
+  document.getElementById('btnSendAIMessage')?.addEventListener('click',sendAIMessage);
+  document.getElementById('aiMessageInput')?.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendAIMessage();}});
+  document.getElementById('btnClearAIChat')?.addEventListener('click',clearAIView);
 
   /* --- SUPPORT INQUIRIES (USER & ADMIN) --- */
   const supportForm = document.getElementById('supportForm');
@@ -1990,8 +2294,8 @@
   }
 
   async function loadAdminSupportInquiries(){
-    const tbody = document.getElementById('adminSupportTbody');
-    if(!tbody || !supabase) return;
+    const container = document.getElementById('adminSupportTbody');
+    if(!container || !supabase) return;
 
     try {
       const { data, error } = await supabase
@@ -2001,32 +2305,35 @@
 
       if(error) throw error;
       if(!data || data.length === 0){
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--muted);">No support inquiries found.</td></tr>';
+        container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px;">No support inquiries found.</div>';
         return;
       }
 
-      tbody.innerHTML = data.map(m => `
-        <tr>
-          <td style="white-space:nowrap;">${new Date(m.created_at).toLocaleString()}</td>
-          <td>${escapeHtml(m.user_email || 'Anonymous')}</td>
-          <td><strong>${escapeHtml(m.subject)}</strong></td>
-          <td style="max-width:220px; word-break:break-word;">${escapeHtml(m.message)}</td>
-          <td><span style="padding:2px 6px; border-radius:4px; font-size:0.7rem; color:${m.status==='resolved'?'var(--good)':'#eab308'};">${m.status}</span></td>
-          <td style="min-width:220px;">
-            ${m.admin_reply ? `
-              <div style="font-size:0.75rem; color:var(--violet); font-weight:700; margin-bottom:4px;">Replied:</div>
-              <div style="font-size:0.78rem; color:var(--muted); margin-bottom:6px; white-space:pre-wrap;">${escapeHtml(m.admin_reply)}</div>
-            ` : ''}
-            <textarea id="replyBox-${m.id}" placeholder="Write a reply to ${escapeHtml(m.user_email || 'this user')}..." style="width:100%; min-height:50px; font-size:0.78rem; padding:6px; border-radius:6px; background:var(--bg); border:1px solid var(--border-solid); color:var(--text); resize:vertical;"></textarea>
-            <div style="display:flex; gap:6px; margin-top:6px;">
-              <button type="button" class="btn" style="padding:4px 10px; font-size:0.72rem; width:auto;" onclick="window.sendAdminReply('${m.id}')">Send Reply</button>
-              ${m.status !== 'resolved' ? `<button type="button" class="btn-outline" style="padding:4px 10px; font-size:0.72rem; width:auto; border:1px solid var(--border-solid);" onclick="window.resolveSupportMessage('${m.id}')">Mark Resolved</button>` : ''}
+      container.innerHTML = data.map(m => `
+        <article class="support-inbox-card">
+          <div class="support-inbox-head">
+            <div>
+              <div class="support-ticket-title">${escapeHtml(m.subject)}</div>
+              <div class="support-ticket-meta">${escapeHtml(m.user_email || 'Anonymous')} · ${new Date(m.created_at).toLocaleString()}</div>
             </div>
-          </td>
-        </tr>
+            <span style="padding:4px 9px;border-radius:999px;font-size:.68rem;font-weight:700;background:${m.status==='resolved'?'rgba(52,211,153,.10)':'rgba(234,179,8,.10)'};color:${m.status==='resolved'?'var(--good)':'#eab308'};">${escapeHtml((m.status||'open').toUpperCase())}</span>
+          </div>
+          <div class="support-message-bubble">${escapeHtml(m.message)}</div>
+          ${m.admin_reply ? `
+            <div style="margin-top:10px;padding:10px;border-left:3px solid var(--violet);background:rgba(139,92,246,.07);border-radius:8px;">
+              <div style="font-size:.68rem;color:var(--violet);font-weight:800;margin-bottom:4px;">ADMIN REPLY</div>
+              <div style="font-size:.8rem;white-space:pre-wrap;">${escapeHtml(m.admin_reply)}</div>
+              <div class="support-ticket-meta">${m.replied_at ? new Date(m.replied_at).toLocaleString() : ''}</div>
+            </div>` : ''}
+          <div class="support-reply-box">
+            <textarea id="replyBox-${m.id}" placeholder="Reply to this user…"></textarea>
+            <button type="button" class="btn" style="width:auto;padding:9px 14px;" onclick="window.sendAdminReply('${m.id}')">Reply</button>
+            ${m.status !== 'resolved' ? `<button type="button" class="btn-outline" style="width:auto;padding:9px 14px;margin:0;" onclick="window.resolveSupportMessage('${m.id}')">Resolve</button>` : ''}
+          </div>
+        </article>
       `).join('');
     } catch(err){
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--muted); font-size:0.75rem;">Requires support_messages table & RLS policies in Supabase — run the provided SQL fix.</td></tr>';
+      container.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:.75rem;padding:20px;">Support inbox requires the support_messages table and its RLS policies.</div>';
     }
   }
 
