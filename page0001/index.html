@@ -185,6 +185,15 @@
   .field.invalid input{border-color:var(--danger);}
   .field.invalid .err{display:block;}
 
+  .pw-wrap{ position:relative; }
+  .pw-wrap input{ padding-right:42px; }
+  .pw-toggle{
+    position:absolute; right:10px; top:50%; transform:translateY(-50%);
+    background:none; border:none; cursor:pointer; padding:4px; color:var(--muted);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .pw-toggle:hover{ color:var(--text); }
+
   .row-between{display:flex; align-items:center; justify-content:space-between; margin:2px 0 20px; font-size:.85rem; color:var(--muted);}
   .row-between label{display:flex; align-items:center; gap:7px; cursor:pointer;}
   .row-between a{color:var(--cyan); text-decoration:none; font-weight:500;}
@@ -389,7 +398,10 @@
           </div>
           <div class="field" id="loginPassField">
             <label for="loginPass">Password</label>
-            <input type="password" id="loginPass" autocomplete="current-password" placeholder="••••••••" required>
+            <div class="pw-wrap">
+              <input type="password" id="loginPass" autocomplete="current-password" placeholder="••••••••" required>
+              <button type="button" class="pw-toggle" data-target="loginPass" aria-label="Show password">👁</button>
+            </div>
             <div class="err">Password is required.</div>
           </div>
           <div class="row-between">
@@ -465,13 +477,19 @@
 
           <div class="field" id="updatePassField">
             <label for="updatePassInput">New Password</label>
-            <input type="password" id="updatePassInput" placeholder="••••••••" required>
-            <div class="err">Must be 8+ chars with upper, lower, number & symbol.</div>
+            <div class="pw-wrap">
+              <input type="password" id="updatePassInput" placeholder="••••••••" required>
+              <button type="button" class="pw-toggle" data-target="updatePassInput" aria-label="Show password">👁</button>
+            </div>
+            <div class="err">Must contain uppercase, lowercase, a number and a symbol — 8+ characters.</div>
           </div>
 
           <div class="field" id="updateConfirmField">
             <label for="updateConfirmInput">Confirm New Password</label>
-            <input type="password" id="updateConfirmInput" placeholder="••••••••" required>
+            <div class="pw-wrap">
+              <input type="password" id="updateConfirmInput" placeholder="••••••••" required>
+              <button type="button" class="pw-toggle" data-target="updateConfirmInput" aria-label="Show password">👁</button>
+            </div>
             <div class="err">Passwords do not match.</div>
           </div>
 
@@ -503,13 +521,19 @@
 
           <div class="field" id="regPassField">
             <label for="regPass">Password</label>
-            <input type="password" id="regPass" autocomplete="new-password" placeholder="••••••••" required>
-            <div class="err">Min 8 chars, 1 uppercase, 1 number, 1 special character.</div>
+            <div class="pw-wrap">
+              <input type="password" id="regPass" autocomplete="new-password" placeholder="••••••••" required>
+              <button type="button" class="pw-toggle" data-target="regPass" aria-label="Show password">👁</button>
+            </div>
+            <div class="err">Must contain uppercase, lowercase, a number and a symbol — 8+ characters.</div>
           </div>
 
           <div class="field" id="regConfirmField">
             <label for="regConfirm">Confirm password</label>
-            <input type="password" id="regConfirm" autocomplete="new-password" placeholder="••••••••" required>
+            <div class="pw-wrap">
+              <input type="password" id="regConfirm" autocomplete="new-password" placeholder="••••••••" required>
+              <button type="button" class="pw-toggle" data-target="regConfirm" aria-label="Show password">👁</button>
+            </div>
             <div class="err">Passwords do not match.</div>
           </div>
 
@@ -916,6 +940,28 @@
     if(fieldEl) fieldEl.classList.toggle('invalid', !!invalid);
   }
 
+  // Show/hide password toggles — works for every password field on the page
+  document.querySelectorAll('.pw-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const input = document.getElementById(btn.dataset.target);
+      if(!input) return;
+      const showing = input.type === 'text';
+      input.type = showing ? 'password' : 'text';
+      btn.textContent = showing ? '👁' : '🙈';
+      btn.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+    });
+  });
+
+  // Supabase's own weak-password error is a long, ugly wall of raw character
+  // sets ("Password should contain at least one character of each: abc...").
+  // Swap it for something a person can actually read.
+  function friendlyAuthError(message){
+    if(message && message.toLowerCase().includes('password should contain at least one character of each')){
+      return 'Password must include at least one uppercase letter, one lowercase letter, one number, and one special character (e.g. ! @ # $ %).';
+    }
+    return message;
+  }
+
   function getDeviceFingerprint(){
     const raw = [navigator.userAgent, screen.width, screen.height, navigator.language].join("|");
     let h = 0;
@@ -1036,7 +1082,7 @@
     const { error } = await supabase.auth.signUp({ email, password: pass, options: opts });
 
     if(error){
-      showStatus(error.message.includes("User already registered") ? "Account already exists, please sign in." : error.message, "bad");
+      showStatus(error.message.includes("User already registered") ? "Account already exists, please sign in." : friendlyAuthError(error.message), "bad");
       logAudit("REGISTRATION_FAILED", { reason: error.message }, email);
       return;
     }
@@ -1237,7 +1283,7 @@
 
     const { error } = await supabase.auth.updateUser({ password: newPass });
     if(error){
-      showStatus(error.message, "bad");
+      showStatus(friendlyAuthError(error.message), "bad");
       return;
     }
 
