@@ -443,16 +443,16 @@
         <!-- 4a.5 VERIFY PASSWORD-RESET CODE -->
         <form class="form" id="recoveryCodeForm" novalidate>
           <div class="form-title">Verify Recovery Code</div>
-          <p class="form-hint">Enter the 6-digit code from your password-reset email and the email address you requested it for.</p>
+          <p class="form-hint">Enter the code from your password-reset email and the email address you requested it for. The code length can vary — type it exactly as shown.</p>
           <div class="field" id="recoveryEmailField">
             <label for="recoveryEmailInput">Email</label>
             <input type="email" id="recoveryEmailInput" autocomplete="email" placeholder="you@example.com" required>
             <div class="err">Enter a valid email address.</div>
           </div>
           <div class="field" id="recoveryCodeField">
-            <label for="recoveryCodeInput">6-digit recovery code</label>
-            <input type="text" id="recoveryCodeInput" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="123456" required>
-            <div class="err">Enter the 6-digit code from the email.</div>
+            <label for="recoveryCodeInput">Recovery code</label>
+            <input type="text" id="recoveryCodeInput" inputmode="numeric" autocomplete="one-time-code" maxlength="10" pattern="[0-9]{6,10}" placeholder="e.g. 07663412" required>
+            <div class="err">Enter the numeric code exactly as shown in the email (6–10 digits).</div>
           </div>
           <button type="submit" class="btn">Verify Code</button>
           <button type="button" class="btn btn-outline" id="btnBackToForgot">Back</button>
@@ -1180,7 +1180,7 @@
     tabLogin.classList.remove('active');
     tabRegister.classList.remove('active');
     showOnlyForm(recoveryCodeForm);
-    showStatus("Recovery code sent. Check your email, including spam/junk, then enter the 6-digit code.", "good");
+    showStatus("Recovery code sent. Check your email, including spam/junk, then enter the code exactly as shown.", "good");
   });
 
   // ---------- Verify password recovery code ----------
@@ -1190,7 +1190,10 @@
     const email = document.getElementById('recoveryEmailInput').value.trim();
     const token = document.getElementById('recoveryCodeInput').value.trim();
     const emailValid = isEmail(email);
-    const tokenValid = /^[0-9]{6}$/.test(token);
+    // Accept the code as Supabase actually sends it — length can vary (commonly
+    // 6 digits, but this project's template has been observed sending 8), so
+    // validate against a range rather than a fixed 6-digit pattern.
+    const tokenValid = /^[0-9]{6,10}$/.test(token);
     setInvalid(document.getElementById('recoveryEmailField'), !emailValid);
     setInvalid(document.getElementById('recoveryCodeField'), !tokenValid);
     if(!emailValid || !tokenValid) return;
@@ -1968,7 +1971,7 @@
               <div style="font-size:0.75rem; color:var(--violet); font-weight:700; margin-bottom:4px;">Replied:</div>
               <div style="font-size:0.78rem; color:var(--muted); margin-bottom:6px; white-space:pre-wrap;">${escapeHtml(m.admin_reply)}</div>
             ` : ''}
-            <textarea id="replyBox-${m.id}" placeholder="Write a reply to ${escapeHtml(m.user_email || 'this user')}..." style="width:100%; min-height:50px; font-size:0.78rem; padding:6px; border-radius:6px; background:var(--bg); border:1px solid var(--border-solid); color:var(--text); resize:vertical;">${m.admin_reply ? '' : ''}</textarea>
+            <textarea id="replyBox-${m.id}" placeholder="Write a reply to ${escapeHtml(m.user_email || 'this user')}..." style="width:100%; min-height:50px; font-size:0.78rem; padding:6px; border-radius:6px; background:var(--bg); border:1px solid var(--border-solid); color:var(--text); resize:vertical;"></textarea>
             <div style="display:flex; gap:6px; margin-top:6px;">
               <button type="button" class="btn" style="padding:4px 10px; font-size:0.72rem; width:auto;" onclick="window.sendAdminReply('${m.id}')">Send Reply</button>
               ${m.status !== 'resolved' ? `<button type="button" class="btn-outline" style="padding:4px 10px; font-size:0.72rem; width:auto; border:1px solid var(--border-solid);" onclick="window.resolveSupportMessage('${m.id}')">Mark Resolved</button>` : ''}
