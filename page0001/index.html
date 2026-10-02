@@ -558,6 +558,7 @@
     <div style="display:flex; gap:10px; margin-top:20px; border-bottom:1px solid var(--border-solid); padding-bottom:12px; overflow-x:auto;">
       <button type="button" class="btn-subtle active" id="tabBtnFiles" style="padding:6px 14px; font-size:0.85rem; cursor:pointer; background:var(--surface-2); border:1px solid var(--border-solid); color:var(--text); border-radius:6px;">My Files</button>
       <button type="button" class="btn-subtle" id="tabBtnChat" style="padding:6px 14px; font-size:0.85rem; cursor:pointer; background:transparent; border:1px solid var(--border-solid); color:var(--muted); border-radius:6px;">Direct Chat</button>
+      <button type="button" class="btn-subtle" id="tabBtnCommunity" style="padding:6px 14px; font-size:0.85rem; cursor:pointer; background:transparent; border:1px solid var(--border-solid); color:var(--muted); border-radius:6px;">Community</button>
       <button type="button" class="btn-subtle" id="tabBtnSupport" style="padding:6px 14px; font-size:0.85rem; cursor:pointer; background:transparent; border:1px solid var(--border-solid); color:var(--muted); border-radius:6px;">Message Admin</button>
       <button type="button" class="btn-subtle" id="tabBtnAdmin" style="display:none; padding:6px 14px; font-size:0.85rem; cursor:pointer; background:transparent; border:1px solid var(--violet); color:var(--violet); border-radius:6px;">Admin Console</button>
     </div>
@@ -635,6 +636,34 @@
       </div>
     </div>
 
+    <!-- TAB: COMMUNITY CHAT (public room, anonymous names) -->
+    <div id="tabContentCommunity" style="display:none; margin-top:20px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:10px;">
+        <h3 style="font-family:'Space Grotesk',sans-serif; color:var(--cyan); margin:0;">Community Chat</h3>
+        <span style="font-size:0.75rem; color:var(--muted);">Open to everyone — post under any name you like</span>
+      </div>
+
+      <div style="background:var(--surface-2); border:1px solid var(--border-solid); border-radius:8px; padding:10px 12px; margin-bottom:14px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+        <span style="font-size:0.78rem; color:var(--muted); white-space:nowrap;">Posting as:</span>
+        <input type="text" id="communityNameInput" placeholder="Anonymous name (e.g. NightOwl42)" style="flex:1; min-width:160px; padding:7px 10px; border-radius:7px; background:var(--bg); border:1px solid var(--border-solid); color:var(--text); font-size:0.82rem;">
+        <span style="font-size:0.7rem; color:var(--muted);">Changeable any time, per message</span>
+      </div>
+
+      <div id="communitySuspendedNotice" style="display:none; background:rgba(248,113,113,0.1); border:1px solid rgba(248,113,113,0.3); color:var(--danger); border-radius:8px; padding:10px 12px; margin-bottom:14px; font-size:0.82rem;">
+        You've been suspended from posting in Community Chat.
+      </div>
+
+      <div style="background:var(--surface-2); border:1px solid var(--border-solid); border-radius:8px; min-height:360px; display:flex; flex-direction:column;">
+        <div id="communityMessagesBox" style="flex:1; overflow-y:auto; max-height:420px; padding:12px; display:flex; flex-direction:column; gap:10px;">
+          <div style="color:var(--muted); font-size:0.8rem; text-align:center; margin-top:20px;">Loading community chat…</div>
+        </div>
+        <div style="display:flex; gap:8px; padding:12px; border-top:1px solid var(--border-solid);">
+          <input type="text" id="communityMessageInput" class="field" style="margin:0; flex:1;" placeholder="Say something to the community...">
+          <button type="button" class="btn" id="btnSendCommunityMessage" style="width:auto; padding:0 16px;">Send</button>
+        </div>
+      </div>
+    </div>
+
     <!-- TAB 3: MESSAGE ADMIN / SUPPORT -->
     <div id="tabContentSupport" style="display:none; margin-top:20px;">
       <h3 style="font-family:'Space Grotesk',sans-serif; color:var(--cyan); margin-bottom:6px;">Contact Admin & Support</h3>
@@ -690,6 +719,7 @@
         <button type="button" class="admin-pill" data-admintab="activity">activity</button>
         <button type="button" class="admin-pill" data-admintab="attacks">attacks</button>
         <button type="button" class="admin-pill" data-admintab="files">files</button>
+        <button type="button" class="admin-pill" data-admintab="community">community</button>
       </div>
 
       <!-- OVERVIEW -->
@@ -855,6 +885,7 @@
   let pendingLoginEmail = null;
   let otpRequestedAt = null;
   let otpResendTimer = null;
+  let isAdminGlobal = false; // lets non-admin-specific UI (like Community) quietly check admin status
 
   // Geo Detection
   let clientIP = "detecting...";
@@ -1390,6 +1421,7 @@
       }
     }
 
+    isAdminGlobal = isAdmin;
     const displayName = profile?.full_name || user.user_metadata?.full_name || user.email;
     const displayUsername = profile?.username || user.email.split('@')[0];
     const roleBadge = isMainAdmin ? " [MAIN ADMINISTRATOR]" : (isAdmin ? " [ADMINISTRATOR]" : " [MEMBER]");
@@ -1432,10 +1464,16 @@
 
     let html = '<ul style="list-style:none; padding:0;">';
     for(const f of files){
-      const { data: signed } = await supabase.storage.from("secure-user-files").createSignedUrl(f.storage_path, 3600);
-      html += `<li style="padding:8px 0; border-bottom:1px solid var(--border-solid); display:flex; justify-content:space-between;">
-        <span><strong>${sanitize(f.file_name)}</strong> <small style="color:var(--muted)">(${(f.file_size/1024).toFixed(1)} KB)</small></span>
-        <a href="${signed ? signed.signedUrl : '#'}" target="_blank" style="color:var(--cyan); text-decoration:none; font-weight:600;">Download</a>
+      // The { download: ... } option tells Supabase to send
+      // Content-Disposition: attachment, so the browser saves the file
+      // instead of trying (and failing) to render it inline — this matters
+      // for any file type the browser itself can't display (.exe, .zip, etc.)
+      const justName = (f.file_name || '').split('/').pop();
+      const { data: signed } = await supabase.storage.from("secure-user-files").createSignedUrl(f.storage_path, 3600, { download: justName });
+      const icon = typeof fileIcon === 'function' ? fileIcon(justName) : '📄';
+      html += `<li style="padding:8px 0; border-bottom:1px solid var(--border-solid); display:flex; justify-content:space-between; align-items:center;">
+        <span>${icon} <strong>${sanitize(f.file_name)}</strong> <small style="color:var(--muted)">(${(f.file_size/1024).toFixed(1)} KB)</small></span>
+        <a href="${signed ? signed.signedUrl : '#'}" download="${sanitize(justName)}" style="color:var(--cyan); text-decoration:none; font-weight:600;">Download</a>
       </li>`;
     }
     html += '</ul>';
@@ -1611,8 +1649,9 @@
       body.innerHTML = files.map(f => {
         const target = f.profiles ? `@${escapeHtml(f.profiles.username)}` : escapeHtml(f.target_user_id);
         const sizeKb = f.file_size ? (f.file_size / 1024).toFixed(1) + ' KB' : '–';
+        const icon = typeof fileIcon === 'function' ? fileIcon(f.file_name) : '📄';
         return `<tr>
-          <td>${escapeHtml(f.file_name)}</td>
+          <td>${icon} ${escapeHtml(f.file_name)}</td>
           <td>${target}</td>
           <td>${sizeKb}</td>
           <td>${new Date(f.created_at).toLocaleString()}</td>
@@ -1872,8 +1911,10 @@
   let activeChatContactName = "";
   let chatPollInterval = null;
 
+  let communityPollInterval = null;
+
   function switchDashboardTab(tabName){
-    const tabs = ['Files', 'Chat', 'Support', 'Admin'];
+    const tabs = ['Files', 'Chat', 'Community', 'Support', 'Admin'];
     tabs.forEach(t => {
       const btn = document.getElementById('tabBtn' + t);
       const content = document.getElementById(t === 'Admin' ? 'adminArea' : 'tabContent' + t);
@@ -1905,6 +1946,18 @@
       }
     }
 
+    if(tabName.toLowerCase() === 'community'){
+      loadCommunityChat();
+      if(!communityPollInterval){
+        communityPollInterval = setInterval(() => loadCommunityMessages(true), 4000);
+      }
+    } else {
+      if(communityPollInterval){
+        clearInterval(communityPollInterval);
+        communityPollInterval = null;
+      }
+    }
+
     if(tabName.toLowerCase() === 'support'){
       loadUserSupportTickets();
     }
@@ -1912,6 +1965,7 @@
 
   document.getElementById('tabBtnFiles')?.addEventListener('click', () => switchDashboardTab('Files'));
   document.getElementById('tabBtnChat')?.addEventListener('click', () => switchDashboardTab('Chat'));
+  document.getElementById('tabBtnCommunity')?.addEventListener('click', () => switchDashboardTab('Community'));
   document.getElementById('tabBtnSupport')?.addEventListener('click', () => switchDashboardTab('Support'));
   document.getElementById('tabBtnAdmin')?.addEventListener('click', () => switchDashboardTab('Admin'));
 
@@ -2315,9 +2369,9 @@
             ? `<audio controls src="${signed.signedUrl}" style="max-width:220px; height:34px;"></audio>`
             : `<span>[voice message unavailable]</span>`;
         } else if(m.message_type === 'file' && m.attachment_path){
-          const { data: signed } = await supabase.storage.from('chat-attachments').createSignedUrl(m.attachment_path, 3600);
+          const { data: signed } = await supabase.storage.from('chat-attachments').createSignedUrl(m.attachment_path, 3600, { download: m.attachment_name || 'file' });
           inner = signed
-            ? `<a href="${signed.signedUrl}" target="_blank" style="color:inherit; text-decoration:underline;">📄 ${escapeHtml(m.attachment_name || 'file')}</a>`
+            ? `<a href="${signed.signedUrl}" download="${escapeHtml(m.attachment_name || 'file')}" style="color:inherit; text-decoration:underline;">📄 ${escapeHtml(m.attachment_name || 'file')}</a>`
             : `<span>[file unavailable]</span>`;
         } else {
           inner = escapeHtml(m.message);
@@ -2499,6 +2553,166 @@
   }
 
 
+
+  /* --- COMMUNITY CHAT (public room, anonymous per-message names) --- */
+  let communitySuspended = false;
+
+  async function loadCommunityChat(){
+    if(!supabase || !sessionUser) return;
+
+    // Pre-fill the name box with a saved nickname/username if the person has one,
+    // but it stays fully editable — they can post under a different name each time.
+    const nameInput = document.getElementById('communityNameInput');
+    if(nameInput && !nameInput.value){
+      try{
+        const { data } = await supabase.from('profiles').select('chat_nickname, username').eq('id', sessionUser.id).maybeSingle();
+        nameInput.value = (data && (data.chat_nickname || data.username)) || 'Anonymous';
+      }catch(e){
+        nameInput.value = 'Anonymous';
+      }
+    }
+
+    // Check suspension quietly via the RPC (never reveals to the user *why*
+    // beyond the notice — no detail on who suspended them or when).
+    try{
+      const { data: suspended } = await supabase.rpc('am_i_suspended');
+      communitySuspended = !!suspended;
+    }catch(e){
+      communitySuspended = false;
+    }
+    const notice = document.getElementById('communitySuspendedNotice');
+    const input = document.getElementById('communityMessageInput');
+    const sendBtn = document.getElementById('btnSendCommunityMessage');
+    if(notice) notice.style.display = communitySuspended ? 'block' : 'none';
+    if(input) input.disabled = communitySuspended;
+    if(sendBtn) sendBtn.disabled = communitySuspended;
+
+    loadCommunityMessages(false);
+  }
+
+  async function loadCommunityMessages(isPoll){
+    const box = document.getElementById('communityMessagesBox');
+    if(!box || !supabase || !sessionUser) return;
+
+    try{
+      const { data: msgs, error } = await supabase
+        .from('community_messages')
+        .select('*')
+        .is('deleted_at', null)
+        .order('created_at', { ascending: true })
+        .limit(200);
+
+      if(error) throw error;
+
+      if(!msgs || msgs.length === 0){
+        box.innerHTML = '<div style="color:var(--muted); font-size:0.8rem; text-align:center; margin-top:20px;">No messages yet — be the first to say hello.</div>';
+        return;
+      }
+
+      const shouldScroll = (!isPoll || box.scrollTop + box.clientHeight >= box.scrollHeight - 50);
+
+      box.innerHTML = msgs.map(m => {
+        const isMine = (m.sender_id === sessionUser.id);
+        // Admin can delete any message for moderation; everyone else only their own.
+        // This button never reveals *why* it's visible — it looks identical either way.
+        const canDelete = isMine || isAdminGlobal;
+        const canSuspend = isAdminGlobal && !isMine;
+
+        return `
+          <div style="display:flex; flex-direction:column; align-items:${isMine?'flex-end':'flex-start'};">
+            <div style="display:flex; align-items:center; gap:6px; margin-bottom:2px;">
+              <span style="font-size:0.7rem; font-weight:700; color:${isMine?'var(--cyan)':'var(--violet)'};">${escapeHtml(m.display_name)}</span>
+              <span style="font-size:0.63rem; color:var(--muted);">${new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+            </div>
+            <div style="max-width:75%; padding:7px 12px; border-radius:12px; font-size:0.85rem; background:${isMine?'var(--cyan)':'var(--surface)'}; color:${isMine?'#0f172a':'var(--text)'}; border:${isMine?'none':'1px solid var(--border-solid)'};">
+              ${escapeHtml(m.message)}
+            </div>
+            <div style="display:flex; gap:10px; margin-top:3px;">
+              ${canDelete ? `<span style="font-size:0.68rem; color:var(--muted); cursor:pointer;" onclick="window.deleteCommunityMessage('${m.id}')">Delete</span>` : ''}
+              ${canSuspend ? `<span style="font-size:0.68rem; color:var(--danger); cursor:pointer;" onclick="window.suspendCommunityUser('${m.sender_id}')">Suspend user</span>` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      if(shouldScroll){
+        box.scrollTop = box.scrollHeight;
+      }
+    }catch(err){
+      if(!isPoll){
+        box.innerHTML = `<div style="color:var(--danger); font-size:0.8rem; text-align:center; margin-top:20px;">Could not load community chat: ${escapeHtml(err.message)} — run the provided SQL fix if this table doesn't exist yet.</div>`;
+      }
+    }
+  }
+
+  document.getElementById('btnSendCommunityMessage')?.addEventListener('click', sendCommunityMessage);
+  document.getElementById('communityMessageInput')?.addEventListener('keydown', (e) => {
+    if(e.key === 'Enter') sendCommunityMessage();
+  });
+
+  async function sendCommunityMessage(){
+    const input = document.getElementById('communityMessageInput');
+    const nameInput = document.getElementById('communityNameInput');
+    if(!input || !supabase || !sessionUser) return;
+    const txt = input.value.trim();
+    if(!txt) return;
+    if(communitySuspended){
+      alert("You're suspended from posting in Community Chat.");
+      return;
+    }
+
+    const displayName = (nameInput?.value || '').trim().slice(0, 40) || 'Anonymous';
+    input.value = "";
+
+    try{
+      const { error } = await supabase.from('community_messages').insert({
+        sender_id: sessionUser.id,
+        display_name: displayName,
+        message: txt
+      });
+      if(error) throw error;
+      loadCommunityMessages(false);
+    }catch(err){
+      alert("Message could not be posted: " + err.message);
+    }
+  }
+
+  window.deleteCommunityMessage = async function(id){
+    if(!supabase) return;
+    if(!confirm("Delete this message?")) return;
+    try{
+      // Soft-delete: the message is hidden from the public room but stays on
+      // record so admin can still review it later if a report comes in.
+      const { error } = await supabase.from('community_messages').update({ deleted_at: new Date().toISOString() }).eq('id', id);
+      if(error) throw error;
+      loadCommunityMessages(false);
+    }catch(err){
+      alert("Could not delete message: " + err.message);
+    }
+  };
+
+  // Admin-only action — the button that triggers this is itself only ever
+  // rendered when isAdminGlobal is true, so regular users never see it.
+  // The server independently refuses to suspend any admin account, including
+  // the main admin, so this is a backstop even if misused.
+  window.suspendCommunityUser = async function(targetUserId){
+    if(!supabase) return;
+    const reason = prompt("Reason for suspending this user (shown only to admins, kept on record):");
+    if(reason === null) return; // cancelled
+    if(!reason.trim()){
+      alert("A reason is required to suspend someone.");
+      return;
+    }
+    if(!confirm("Suspend this person from posting in Community Chat?")) return;
+    try{
+      const { error } = await supabase.rpc('admin_set_user_suspended', { target_user_id: targetUserId, suspend: true, reason: reason.trim() });
+      if(error) throw error;
+      alert("User suspended from Community Chat.");
+      loadCommunityMessages(false);
+    }catch(err){
+      alert("Could not suspend user: " + err.message);
+    }
+  };
 
   // Delete a user through a server-side, admin-only Supabase RPC.
   // The database function must verify the caller's admin role and delete the Auth user.
