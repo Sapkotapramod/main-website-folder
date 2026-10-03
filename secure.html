@@ -4,33 +4,160 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SAPKOTA DEFENSE // Security Operations Center</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <meta name="description" content="Exclusive Anti-Defense SOC Console for sapkotap.com.np">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
   <style>
     :root {
       --bg: #07090e;
       --card-bg: #0d121d;
       --card-border: #1a2638;
-      --accent: #00f2fe;
-      --danger: #ff3366;
-      --warning: #ffaa00;
-      --success: #00ff88;
-      --text: #e2e8f0;
-      --text-muted: #64748b;
-      --font-mono: 'Courier New', Courier, monospace;
+      --accent: #22d3ee;
+      --accent-glow: rgba(34, 211, 238, 0.2);
+      --danger: #f87171;
+      --danger-glow: rgba(248, 113, 113, 0.2);
+      --warning: #fbbf24;
+      --good: #34d399;
+      --text: #e8edf2;
+      --text-muted: #8a97a6;
+      --font-mono: 'JetBrains Mono', monospace;
+      --font-display: 'Space Grotesk', sans-serif;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       background: var(--bg);
       color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: 'Inter', -apple-system, sans-serif;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
     }
+    a { color: inherit; text-decoration: none; }
+
+    /* Login Overlay */
+    .login-container {
+      display: flex;
+      flex: 1;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .login-box {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+      border-radius: 12px;
+      padding: 36px 32px;
+      width: 100%;
+      max-width: 440px;
+      position: relative;
+    }
+    .login-box::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--danger), var(--accent));
+      border-radius: 12px 12px 0 0;
+    }
+    .soc-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      background: var(--danger-glow);
+      color: var(--danger);
+      border: 1px solid rgba(248, 113, 113, 0.3);
+      margin-bottom: 16px;
+    }
+    .login-box h1 {
+      font-family: var(--font-display);
+      font-size: 22px;
+      margin-bottom: 8px;
+    }
+    .login-box p {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+    .form-group {
+      margin-bottom: 18px;
+    }
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+    .form-group input {
+      width: 100%;
+      background: #090e17;
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      padding: 10px 14px;
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .form-group input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+    .btn-submit {
+      width: 100%;
+      background: #ff3366;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 12px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+    .btn-submit:hover { opacity: 0.9; }
+    .btn-submit:active { transform: translateY(1px); }
+    .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .status-msg {
+      margin-top: 14px;
+      font-size: 13px;
+      font-family: var(--font-mono);
+      padding: 10px;
+      border-radius: 6px;
+      display: none;
+    }
+    .status-msg.error {
+      display: block;
+      background: rgba(248, 113, 113, 0.1);
+      border: 1px solid rgba(248, 113, 113, 0.3);
+      color: var(--danger);
+    }
+
+    /* Dashboard Shell */
+    #dashboardView {
+      display: none;
+      flex-direction: column;
+      min-height: 100vh;
+    }
     header {
       background: rgba(13, 18, 29, 0.95);
+      backdrop-filter: blur(8px);
       border-bottom: 1px solid var(--card-border);
-      padding: 16px 24px;
+      padding: 14px 24px;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -43,27 +170,23 @@
       align-items: center;
       gap: 12px;
     }
-    .badge-soc {
-      background: rgba(255, 51, 102, 0.15);
-      color: var(--danger);
-      border: 1px solid var(--danger);
-      padding: 4px 10px;
-      font-size: 11px;
-      font-family: var(--font-mono);
-      font-weight: bold;
-      border-radius: 4px;
-      letter-spacing: 1.5px;
-    }
-    .brand h1 {
-      font-size: 18px;
+    .brand-title {
+      font-family: var(--font-display);
+      font-size: 17px;
+      font-weight: 700;
       letter-spacing: 0.5px;
+    }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
     .admin-pill {
       font-family: var(--font-mono);
       font-size: 12px;
       color: var(--accent);
-      background: rgba(0, 242, 254, 0.1);
-      border: 1px solid rgba(0, 242, 254, 0.3);
+      background: var(--accent-glow);
+      border: 1px solid rgba(34, 211, 238, 0.3);
       padding: 6px 14px;
       border-radius: 20px;
       display: flex;
@@ -74,12 +197,37 @@
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      background: var(--success);
-      box-shadow: 0 0 8px var(--success);
+      background: var(--good);
+      box-shadow: 0 0 8px var(--good);
       animation: pulse 2s infinite;
     }
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-    .container {
+
+    .btn-action {
+      background: #141b26;
+      border: 1px solid var(--card-border);
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      padding: 6px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-action:hover {
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .btn-danger {
+      border-color: rgba(248, 113, 113, 0.4);
+      color: var(--danger);
+    }
+    .btn-danger:hover {
+      background: rgba(248, 113, 113, 0.15);
+      color: #fff;
+    }
+
+    .main-content {
       max-width: 1400px;
       margin: 0 auto;
       padding: 24px;
@@ -88,7 +236,7 @@
     }
     .grid-stats {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
       gap: 16px;
       margin-bottom: 24px;
     }
@@ -96,47 +244,40 @@
       background: var(--card-bg);
       border: 1px solid var(--card-border);
       border-radius: 8px;
-      padding: 20px;
+      padding: 18px 20px;
     }
     .stat-title {
-      color: var(--text-muted);
-      font-size: 12px;
+      font-family: var(--font-mono);
+      font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 1px;
-      font-family: var(--font-mono);
-      margin-bottom: 8px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
     }
-    .stat-value {
-      font-size: 32px;
-      font-weight: 800;
+    .stat-val {
       font-family: var(--font-mono);
+      font-size: 30px;
+      font-weight: 700;
     }
-    .stat-danger { color: var(--danger); }
-    .stat-warning { color: var(--warning); }
-    .stat-success { color: var(--success); }
-    .stat-accent { color: var(--accent); }
+    .color-accent { color: var(--accent); }
+    .color-danger { color: var(--danger); }
+    .color-warning { color: var(--warning); }
+    .color-good { color: var(--good); }
 
-    .controls-bar {
+    .toolbar {
       display: flex;
       justify-content: space-between;
+      align-items: center;
       gap: 12px;
       margin-bottom: 16px;
       flex-wrap: wrap;
     }
-    .btn {
-      background: var(--card-border);
-      color: var(--text);
-      border: 1px solid #2d3f58;
-      padding: 8px 16px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-family: var(--font-mono);
-      font-size: 13px;
-      transition: all 0.2s;
+    .table-container {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      overflow-x: auto;
     }
-    .btn:hover { background: #223247; border-color: var(--accent); }
-    .btn-primary { background: rgba(0, 242, 254, 0.15); border-color: var(--accent); color: var(--accent); }
-
     table {
       width: 100%;
       border-collapse: collapse;
@@ -144,14 +285,14 @@
       text-align: left;
     }
     th {
-      background: #090d15;
+      background: #090e17;
       padding: 12px 16px;
       font-family: var(--font-mono);
-      color: var(--text-muted);
-      border-bottom: 1px solid var(--card-border);
-      font-weight: 600;
-      text-transform: uppercase;
       font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid var(--card-border);
     }
     td {
       padding: 14px 16px;
@@ -159,150 +300,222 @@
       vertical-align: top;
     }
     tr:hover td { background: rgba(255, 255, 255, 0.02); }
+
     .badge {
       display: inline-block;
       padding: 3px 8px;
       border-radius: 4px;
       font-family: var(--font-mono);
-      font-size: 10px;
-      font-weight: 700;
-    }
-    .badge-critical { background: rgba(255, 51, 102, 0.2); color: #ff3366; border: 1px solid rgba(255, 51, 102, 0.4); }
-    .badge-high { background: rgba(255, 170, 0, 0.2); color: #ffaa00; border: 1px solid rgba(255, 170, 0, 0.4); }
-    .badge-medium { background: rgba(0, 242, 254, 0.15); color: #00f2fe; border: 1px solid rgba(0, 242, 254, 0.3); }
-    .badge-blocked { background: rgba(0, 255, 136, 0.15); color: #00ff88; border: 1px solid rgba(0, 255, 136, 0.3); }
-    .payload-box {
-      font-family: var(--font-mono);
-      background: #06080d;
-      border: 1px solid #1a2638;
-      padding: 4px 8px;
-      border-radius: 4px;
-      color: #ff99aa;
-      word-break: break-all;
-      max-width: 450px;
       font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
     }
-    .access-denied-screen {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: #06080d;
-      z-index: 9999;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding: 24px;
-    }
-    .access-denied-box {
-      border: 1px solid var(--danger);
-      background: rgba(255, 51, 102, 0.05);
-      padding: 40px;
-      border-radius: 8px;
-      max-width: 500px;
+    .badge-critical { background: rgba(248, 113, 113, 0.15); color: var(--danger); border: 1px solid rgba(248, 113, 113, 0.4); }
+    .badge-high { background: rgba(251, 191, 36, 0.15); color: var(--warning); border: 1px solid rgba(251, 191, 36, 0.4); }
+    .badge-medium { background: var(--accent-glow); color: var(--accent); border: 1px solid rgba(34, 211, 238, 0.4); }
+    .badge-blocked { background: rgba(52, 211, 153, 0.15); color: var(--good); border: 1px solid rgba(52, 211, 153, 0.4); }
+
+    .payload-snippet {
+      font-family: var(--font-mono);
+      background: #05070a;
+      border: 1px solid #1a2638;
+      border-radius: 4px;
+      padding: 4px 8px;
+      color: #fca5a5;
+      font-size: 11px;
+      max-width: 480px;
+      word-break: break-all;
     }
   </style>
 </head>
 <body>
 
-  <!-- Access Denied Modal -->
-  <div id="deniedScreen" class="access-denied-screen">
-    <div class="access-denied-box">
-      <div class="badge-soc" style="margin-bottom: 16px;">SECURITY BARRIER</div>
-      <h2 style="color: var(--danger); margin-bottom: 12px; font-family: var(--font-mono);">ACCESS TERMINATED</h2>
-      <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px;">
-        Only authorized Main Admin (<span style="color: #fff;">pramodsapkota132@gmail.com</span>) can access the Security Operations Console.
-      </p>
-      <button class="btn btn-primary" onclick="window.location.href='page0001.html'">Return to Login</button>
+  <!-- 1. EXCLUSIVE LOGIN SCREEN -->
+  <div id="loginView" class="login-container">
+    <div class="login-box">
+      <div class="soc-badge">RESTRICTED // LEVEL 0 ACCESS</div>
+      <h1>Main Admin Verification</h1>
+      <p>Security Operations Center for <strong>sapkotap.com.np</strong>. Unauthorized access attempts are monitored and recorded.</p>
+
+      <form id="socLoginForm">
+        <div class="form-group">
+          <label>Authorized Admin Email</label>
+          <input type="email" id="socEmail" value="pramodsapkota132@gmail.com" required readonly style="opacity: 0.8; cursor: not-allowed;">
+        </div>
+        <div class="form-group">
+          <label>Master Password</label>
+          <input type="password" id="socPassword" placeholder="••••••••••••" required autofocus>
+        </div>
+        <button type="submit" class="btn-submit" id="socBtn">AUTHENTICATE & UNLOCK</button>
+        <div id="socStatus" class="status-msg"></div>
+      </form>
     </div>
   </div>
 
-  <header>
-    <div class="brand">
-      <div class="badge-soc">DEFENSE SYSTEM</div>
-      <h1>SAPKOTA THREAT MONITOR // SOC</h1>
-    </div>
-    <div class="admin-pill">
-      <span class="status-dot"></span>
-      <span id="adminDisplay">AUTHENTICATING...</span>
-    </div>
-  </header>
+  <!-- 2. ANTI-DEFENSE DASHBOARD -->
+  <div id="dashboardView">
+    <header>
+      <div class="brand">
+        <div class="soc-badge" style="margin-bottom: 0;">SOC ACTIVE</div>
+        <div class="brand-title">SAPKOTA DEFENSIVE PERIMETER</div>
+      </div>
+      <div class="header-actions">
+        <div class="admin-pill">
+          <span class="status-dot"></span>
+          <span id="activeUserLabel">pramodsapkota132@gmail.com</span>
+        </div>
+        <button class="btn-action" onclick="window.location.href='page0001.html'">Back to Main Site</button>
+        <button class="btn-action btn-danger" onclick="handleLogout()">Sign Out</button>
+      </div>
+    </header>
 
-  <div class="container">
-    <div class="grid-stats">
-      <div class="card">
-        <div class="stat-title">Total Intercepts</div>
-        <div class="stat-value stat-accent" id="statTotal">0</div>
+    <div class="main-content">
+      <div class="grid-stats">
+        <div class="card">
+          <div class="stat-title">Total Intercepts</div>
+          <div class="stat-val color-accent" id="cntTotal">0</div>
+        </div>
+        <div class="card">
+          <div class="stat-title">Critical / SQLi Injections</div>
+          <div class="stat-val color-danger" id="cntCritical">0</div>
+        </div>
+        <div class="card">
+          <div class="stat-title">XSS Injections Intercepted</div>
+          <div class="stat-val color-warning" id="cntXss">0</div>
+        </div>
+        <div class="card">
+          <div class="stat-title">Failed Passwords / Brute-Force</div>
+          <div class="stat-val color-danger" id="cntAuth">0</div>
+        </div>
       </div>
-      <div class="card">
-        <div class="stat-title">Critical / SQLi Attacks</div>
-        <div class="stat-value stat-danger" id="statCritical">0</div>
-      </div>
-      <div class="card">
-        <div class="stat-title">XSS Intercepted</div>
-        <div class="stat-value stat-warning" id="statXss">0</div>
-      </div>
-      <div class="card">
-        <div class="stat-title">Brute Force / Bad Passwords</div>
-        <div class="stat-value stat-danger" id="statAuth">0</div>
-      </div>
-    </div>
 
-    <div class="controls-bar">
-      <div style="display: flex; gap: 8px;">
-        <button class="btn btn-primary" onclick="fetchSecurityEvents()">↻ Refresh Threats</button>
-        <button class="btn" onclick="runRlsAudit()">🛡 Verify Database RLS</button>
+      <div class="toolbar">
+        <div style="display: flex; gap: 8px;">
+          <button class="btn-action" onclick="fetchSecurityFeed()">↻ Refresh Threat Feed</button>
+          <button class="btn-action" onclick="runLiveRlsAudit()">🛡 Test RLS Defense</button>
+        </div>
+        <div style="font-family: var(--font-mono); font-size: 12px; color: var(--text-muted);" id="feedTimestamp">
+          Connecting...
+        </div>
       </div>
-      <div style="font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); align-self: center;" id="lastCheckedTime">
-        Standby
-      </div>
-    </div>
 
-    <div class="card" style="padding: 0; overflow-x: auto;">
-      <table>
-        <thead>
-          <tr>
-            <th>Time (UTC)</th>
-            <th>Type</th>
-            <th>Severity</th>
-            <th>Attacker IP</th>
-            <th>Target & Payload Sample</th>
-            <th>Action Taken</th>
-          </tr>
-        </thead>
-        <tbody id="eventsTableBody">
-          <tr>
-            <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 32px;">
-              Connecting to secure audit stream...
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Incident Type</th>
+              <th>Severity</th>
+              <th>Source IP</th>
+              <th>Target & Intercepted Payload</th>
+              <th>Defensive Action</th>
+            </tr>
+          </thead>
+          <tbody id="feedTableBody">
+            <tr>
+              <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 36px;">
+                Querying security events log...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 
   <script>
     const SUPABASE_URL = "https://hkwjnzohrzydmdyigwjr.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhrd2puem9ocnp5ZG1keWlnd2pyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5NzQxMDAsImV4cCI6MjA4NjU1MDEwMH0.5h1w6kR5b-e9X3sW6g9wG6nO2eI9xX9b7kU9k0sF9-I";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhrd2puem9ocnp5ZG1keWlnd2pyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAyMzUxMzUsImV4cCI6MjEwNTgxMTEzNX0.K4L4LrewJ_xHqsg2jCYE3H9AOMcDCqSBPuujM7ujH8k";
     const MAIN_ADMIN = "pramodsapkota132@gmail.com";
 
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    async function initConsole() {
-      const { data: { session } } = await supabase.auth.getSession();
+    const loginView = document.getElementById('loginView');
+    const dashboardView = document.getElementById('dashboardView');
+    const socForm = document.getElementById('socLoginForm');
+    const socStatus = document.getElementById('socStatus');
+    const socBtn = document.getElementById('socBtn');
 
-      if (!session || !session.user || session.user.email !== MAIN_ADMIN) {
-        document.getElementById("deniedScreen").style.display = "flex";
+    // Safe string escape
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    // Check existing session
+    async function checkCurrentSession() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session && session.user && session.user.email.toLowerCase() === MAIN_ADMIN.toLowerCase()) {
+        showDashboard();
+      } else {
+        loginView.style.display = 'flex';
+        dashboardView.style.display = 'none';
+      }
+    }
+
+    // Login Form Handler
+    socForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      socStatus.className = 'status-msg';
+      socStatus.style.display = 'none';
+      socBtn.disabled = true;
+      socBtn.textContent = 'VERIFYING CREDENTIALS...';
+
+      const email = document.getElementById('socEmail').value.trim();
+      const password = document.getElementById('socPassword').value;
+
+      if (email.toLowerCase() !== MAIN_ADMIN.toLowerCase()) {
+        socStatus.textContent = 'ACCESS DENIED: Unauthorized identity.';
+        socStatus.className = 'status-msg error';
+        socBtn.disabled = false;
+        socBtn.textContent = 'AUTHENTICATE & UNLOCK';
         return;
       }
 
-      document.getElementById("adminDisplay").textContent = "MAIN ADMIN: " + session.user.email;
-      await fetchSecurityEvents();
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: password
+      });
+
+      if (error) {
+        socStatus.textContent = error.message;
+        socStatus.className = 'status-msg error';
+        socBtn.disabled = false;
+        socBtn.textContent = 'AUTHENTICATE & UNLOCK';
+        return;
+      }
+
+      if (data.user.email.toLowerCase() !== MAIN_ADMIN.toLowerCase()) {
+        await supabase.auth.signOut();
+        socStatus.textContent = 'ACCESS DENIED: Only the designated Main Admin can view this console.';
+        socStatus.className = 'status-msg error';
+        socBtn.disabled = false;
+        socBtn.textContent = 'AUTHENTICATE & UNLOCK';
+        return;
+      }
+
+      showDashboard();
+    });
+
+    function showDashboard() {
+      loginView.style.display = 'none';
+      dashboardView.style.display = 'flex';
+      fetchSecurityFeed();
     }
 
-    async function fetchSecurityEvents() {
-      const tbody = document.getElementById("eventsTableBody");
-      document.getElementById("lastCheckedTime").textContent = "Last updated: " + new Date().toLocaleTimeString();
+    async function handleLogout() {
+      await supabase.auth.signOut();
+      window.location.reload();
+    }
+
+    async function fetchSecurityFeed() {
+      const tbody = document.getElementById('feedTableBody');
+      document.getElementById('feedTimestamp').textContent = 'Updated: ' + new Date().toLocaleTimeString();
 
       const { data, error } = await supabase
         .from('security_events')
@@ -311,69 +524,59 @@
         .limit(100);
 
       if (error) {
-        tbody.innerHTML = `<tr><td colspan="6" style="color: var(--danger); text-align: center; padding: 24px;">Failed to load logs: ${error.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" style="color: var(--danger); text-align: center; padding: 24px;">Failed to read security events: ${escapeHtml(error.message)}</td></tr>`;
         return;
       }
 
       if (!data || data.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--success); padding: 32px;">No attack incidents recorded yet. Defensive perimeters normal.</td></tr>`;
-        updateStats([]);
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--good); padding: 36px;">No threats or intercept alerts recorded yet. Perimeter secure.</td></tr>`;
+        renderStats([]);
         return;
       }
 
-      updateStats(data);
+      renderStats(data);
 
-      tbody.innerHTML = data.map(ev => {
-        const severityClass = ev.severity === 'CRITICAL' ? 'badge-critical' : ev.severity === 'HIGH' ? 'badge-high' : 'badge-medium';
+      tbody.innerHTML = data.map(item => {
+        const sevClass = item.severity === 'CRITICAL' ? 'badge-critical' : item.severity === 'HIGH' ? 'badge-high' : 'badge-medium';
         return `
           <tr>
-            <td style="font-family: var(--font-mono); color: var(--text-muted);">${new Date(ev.created_at).toLocaleTimeString()}</td>
-            <td><strong>${escapeHtml(ev.event_type)}</strong></td>
-            <td><span class="badge ${severityClass}">${escapeHtml(ev.severity)}</span></td>
-            <td style="font-family: var(--font-mono); color: var(--accent);">${escapeHtml(ev.ip_address || 'Hidden/Proxy')}</td>
+            <td style="font-family: var(--font-mono); color: var(--text-muted);">${new Date(item.created_at).toLocaleTimeString()}</td>
+            <td><strong>${escapeHtml(item.event_type)}</strong></td>
+            <td><span class="badge ${sevClass}">${escapeHtml(item.severity)}</span></td>
+            <td style="font-family: var(--font-mono); color: var(--accent);">${escapeHtml(item.ip_address || 'Cloudflare/Masked')}</td>
             <td>
-              <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">${escapeHtml(ev.target_resource || '/')}</div>
-              <div class="payload-box">${escapeHtml(ev.payload_sample || 'No payload logged')}</div>
+              <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Target: ${escapeHtml(item.target_resource || 'Unknown')}</div>
+              <div class="payload-snippet">${escapeHtml(item.payload_sample || 'No payload')}</div>
             </td>
-            <td><span class="badge badge-blocked">BLOCKED BY RLS</span></td>
+            <td><span class="badge badge-blocked">${item.blocked ? 'BLOCKED' : 'LOGGED'}</span></td>
           </tr>
         `;
       }).join('');
     }
 
-    function updateStats(events) {
-      document.getElementById("statTotal").textContent = events.length;
-      document.getElementById("statCritical").textContent = events.filter(e => e.event_type === 'SQL_INJECTION' || e.severity === 'CRITICAL').length;
-      document.getElementById("statXss").textContent = events.filter(e => e.event_type === 'XSS_ATTEMPT').length;
-      document.getElementById("statAuth").textContent = events.filter(e => e.event_type === 'FAILED_LOGIN').length;
+    function renderStats(list) {
+      document.getElementById('cntTotal').textContent = list.length;
+      document.getElementById('cntCritical').textContent = list.filter(e => e.severity === 'CRITICAL' || e.event_type === 'SQL_INJECTION').length;
+      document.getElementById('cntXss').textContent = list.filter(e => e.event_type === 'XSS_ATTEMPT').length;
+      document.getElementById('cntAuth').textContent = list.filter(e => e.event_type === 'FAILED_LOGIN').length;
     }
 
-    async function runRlsAudit() {
-      alert("Running live RLS check against user_roles and audit_logs...");
+    // Live test to verify PostgreSQL Row-Level Security blocks unauthorized attacks
+    async function runLiveRlsAudit() {
       try {
-        const unauth = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        const { error } = await unauth.from('user_roles').insert({ role: 'admin' });
+        const testClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const { error } = await testClient.from('user_roles').insert({ role: 'admin' });
         if (error && error.code === '42501') {
-          alert("PERFECT: Anonymous insertion was BLOCKED by PostgreSQL RLS (Code 42501).");
+          alert('VERIFIED: Database RLS blocked unauthorized insertion with error 42501 (insufficient_privilege). Perimeter is secure.');
         } else {
-          alert("WARNING: Insertion did not trigger expected 42501 code. Check RLS policies!");
+          alert('ALERT: Insertion did not return expected 42501. Check your database policies.');
         }
       } catch (err) {
-        alert("Check completed: " + err.message);
+        alert('Check finished: ' + err.message);
       }
     }
 
-    function escapeHtml(str) {
-      if (!str) return '';
-      return String(str)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-    }
-
-    initConsole();
+    checkCurrentSession();
   </script>
 </body>
 </html>
