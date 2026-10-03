@@ -737,7 +737,7 @@
       <div class="admin-tabpane" id="adminTab-users">
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:10px;">
           <!-- Add New User Directly -->
-          <div style="background:var(--surface-2); border:1px solid var(--border-solid); border-radius:10px; padding:16px;">
+          <div class="main-admin-only" style="background:var(--surface-2); border:1px solid var(--border-solid); border-radius:10px; padding:16px;">
             <h4 style="margin:0 0 10px 0; font-size:0.9rem; color:var(--violet);">Add New User (Admin Provisioning)</h4>
             <form id="adminAddUserForm" style="display:flex; flex-direction:column; gap:8px;">
               <input type="text" id="adminNewFullName" class="field" style="margin:0;" placeholder="Full Name" required>
@@ -775,8 +775,8 @@
           </div>
         </div>
 
-        <h4 style="margin-bottom:8px;">Registered Users</h4>
-        <table>
+        <h4 class="main-admin-only" style="margin-bottom:8px;">Registered Users</h4>
+        <table class="main-admin-only">
           <thead>
             <tr><th>Name</th><th>Username</th><th>Email</th><th>Role</th><th>Created</th><th id="thActions">Actions</th></tr>
           </thead>
@@ -1167,7 +1167,7 @@
           loginEmail = resolvedEmail;
         } else {
           // Direct fallback query if RPC not yet created
-          const { data: prof } = await supabase.from("profiles").select("email").ilike("username", identifier).maybeSingle();
+          const { data: prof } = await supabase.from("profiles").select("email").eq("username", identifier.toLowerCase()).maybeSingle();
           if(prof && prof.email) loginEmail = prof.email;
           else {
             showStatus("No account found with username @" + identifier, "bad");
@@ -1437,6 +1437,7 @@
     }
 
     isAdminGlobal = isAdmin;
+    document.querySelectorAll('.main-admin-only').forEach(el => { el.style.display = isMainAdmin ? '' : 'none'; });
     const displayName = profile?.full_name || user.user_metadata?.full_name || user.email;
     const displayUsername = profile?.username || user.email.split('@')[0];
     const roleBadge = isMainAdmin ? " [MAIN ADMINISTRATOR]" : (isAdmin ? " [ADMINISTRATOR]" : " [MEMBER]");
@@ -1552,7 +1553,7 @@
             const roleButton = r === 'admin'
               ? `<button type="button" class="btn btn-outline" style="padding:4px 10px; font-size:0.75rem; border-color:var(--danger); color:var(--danger);" onclick="window.changeUserRole('${u.id}', 'user')">Demote to User</button>`
               : `<button type="button" class="btn btn-outline" style="padding:4px 10px; font-size:0.75rem; border-color:var(--violet); color:var(--violet);" onclick="window.changeUserRole('${u.id}', 'admin')">Make Admin</button>`;
-            actionHtml = `${roleButton} <button type="button" class="btn btn-outline" style="padding:4px 10px; font-size:0.75rem; border-color:var(--danger); color:var(--danger);" onclick="window.adminDeleteUser('${u.id}', '${sanitize(u.username)}')">Delete User</button>`;
+            actionHtml = `${roleButton} <button type="button" class="btn btn-outline" style="padding:4px 10px; font-size:0.75rem; border-color:var(--danger); color:var(--danger);" data-act="delete-user" data-uid="${escapeHtml(u.id)}" data-username="${escapeHtml(u.username)}">Delete User</button>`;
           }
         }
 
@@ -1699,17 +1700,9 @@
   window.changeUserRole = async function(targetUserId, newRole){
     if(!confirm("Are you sure you want to change this user's role to " + newRole.toUpperCase() + "?")) return;
     try {
-      const { error: delErr } = await supabase.from("user_roles").delete().eq("user_id", targetUserId);
-      if(delErr){
-        alert("Failed to update role (delete step): " + delErr.message);
-        return;
-      }
-      const { error: insErr } = await supabase.from("user_roles").insert({
-        user_id: targetUserId,
-        role: newRole
-      });
-      if(insErr){
-        alert("Failed to update role (insert step): " + insErr.message);
+      const { error } = await supabase.rpc('admin_set_user_role', { target_user_id: targetUserId, new_role: newRole });
+      if(error){
+        alert("Failed to update role: " + error.message);
         return;
       }
       alert("Role updated successfully to " + newRole.toUpperCase());
@@ -2043,7 +2036,7 @@
         <div style="background:var(--surface); border:1px solid var(--border-solid); border-radius:6px; padding:10px; margin-bottom:8px;">
           <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
             <strong style="color:var(--text);">${escapeHtml(m.subject)}</strong>
-            <span style="padding:2px 8px; border-radius:4px; font-size:0.7rem; background:${m.status==='resolved'?'rgba(34,197,94,0.15)':'rgba(234,179,8,0.15)'}; color:${m.status==='resolved'?'var(--good)':'#eab308'};">${m.status.toUpperCase()}</span>
+            <span style="padding:2px 8px; border-radius:4px; font-size:0.7rem; background:${m.status==='resolved'?'rgba(34,197,94,0.15)':'rgba(234,179,8,0.15)'}; color:${m.status==='resolved'?'var(--good)':'#eab308'};">${escapeHtml(String(m.status).toUpperCase())}</span>
           </div>
           <div style="color:var(--muted); font-size:0.8rem; white-space:pre-wrap;">${escapeHtml(m.message)}</div>
           <div style="font-size:0.7rem; color:var(--muted); margin-top:6px;">${new Date(m.created_at).toLocaleString()}</div>
@@ -2083,7 +2076,7 @@
           <td>${escapeHtml(m.user_email || 'Anonymous')}</td>
           <td><strong>${escapeHtml(m.subject)}</strong></td>
           <td style="max-width:220px; word-break:break-word;">${escapeHtml(m.message)}</td>
-          <td><span style="padding:2px 6px; border-radius:4px; font-size:0.7rem; color:${m.status==='resolved'?'var(--good)':'#eab308'};">${m.status}</span></td>
+          <td><span style="padding:2px 6px; border-radius:4px; font-size:0.7rem; color:${m.status==='resolved'?'var(--good)':'#eab308'};">${escapeHtml(m.status)}</span></td>
           <td style="min-width:220px;">
             ${m.admin_reply ? `
               <div style="font-size:0.75rem; color:var(--violet); font-weight:700; margin-bottom:4px;">Replied:</div>
@@ -2188,7 +2181,7 @@
       const { data: targetProfile, error: profErr } = await supabase
         .from('profiles')
         .select('id, username, full_name')
-        .ilike('username', targetUsername)
+        .eq('username', targetUsername)
         .maybeSingle();
 
       if(profErr || !targetProfile){
@@ -2332,7 +2325,7 @@
         const displayName = p.chat_nickname || ('@' + p.username);
         const isSel = (uid === activeChatContactId);
         return `
-          <div onclick="window.selectChatContact('${uid}', '${escapeHtml(p.username)}', '${escapeHtml(p.chat_nickname || '')}')" style="cursor:pointer; padding:6px 8px; border-radius:6px; margin-bottom:4px; background:${isSel?'rgba(34,211,238,0.15)':'transparent'}; border:${isSel?'1px solid var(--cyan)':'1px solid transparent'};">
+          <div class="chat-contact" data-uid="${escapeHtml(uid)}" data-username="${escapeHtml(p.username)}" data-nick="${escapeHtml(p.chat_nickname || '')}" style="cursor:pointer; padding:6px 8px; border-radius:6px; margin-bottom:4px; background:${isSel?'rgba(34,211,238,0.15)':'transparent'}; border:${isSel?'1px solid var(--cyan)':'1px solid transparent'};">
             <div style="font-weight:600; font-size:0.85rem; color:${isSel?'var(--cyan)':'var(--text)'};">${escapeHtml(displayName)}</div>
             <div style="font-size:0.75rem; color:var(--muted);">${p.chat_nickname ? '@' + escapeHtml(p.username) : escapeHtml(p.full_name || '')}</div>
           </div>
@@ -2342,6 +2335,12 @@
       cont.innerHTML = '<div style="color:var(--muted); font-size:0.75rem;">Requires chat_invitations table — run the provided SQL fix.</div>';
     }
   }
+
+  document.getElementById('acceptedContactsList')?.addEventListener('click', (e) => {
+    const el = e.target.closest('.chat-contact');
+    if(!el) return;
+    window.selectChatContact(el.dataset.uid, el.dataset.username, el.dataset.nick);
+  });
 
   window.selectChatContact = function(userId, username, nickname){
     activeChatContactId = userId;
@@ -2449,7 +2448,8 @@
 
     const messageType = isImage ? 'image' : (isAudio ? 'audio' : 'file');
     const safeName = file.name.replace(/[^\w.\- ()]/g, '_').slice(0, 150) || 'attachment';
-    const storagePath = `${sessionUser.id}/${activeChatContactId}/${Date.now()}_${safeName}`;
+    const chatFolder = [sessionUser.id, activeChatContactId].sort().join('_');
+    const storagePath = `${chatFolder}/${Date.now()}_${safeName}`;
     chatUploadStatus.textContent = "Uploading attachment…";
     try{
       const { error: uploadError } = await supabase.storage
@@ -2508,7 +2508,8 @@
           const blob = new Blob(voiceChunks, { type: voiceRecorder.mimeType || 'audio/webm' });
           if(blob.size > 20 * 1024 * 1024) throw new Error("Voice message exceeds 20 MB.");
           const ext = blob.type.includes('ogg') ? 'ogg' : (blob.type.includes('mp4') ? 'm4a' : 'webm');
-          const path = `${sessionUser.id}/${activeChatContactId}/${Date.now()}_voice.${ext}`;
+          const chatFolder = [sessionUser.id, activeChatContactId].sort().join('_');
+          const path = `${chatFolder}/${Date.now()}_voice.${ext}`;
           chatUploadStatus.textContent = "Uploading voice message…";
           const { error: uploadError } = await supabase.storage.from('chat-attachments')
             .upload(path, blob, { upsert: false, contentType: blob.type || 'audio/webm' });
@@ -2827,6 +2828,11 @@
 
   // Delete a user through a server-side, admin-only Supabase RPC.
   // The database function must verify the caller's admin role and delete the Auth user.
+  document.getElementById('adminUsersTbody')?.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-act="delete-user"]');
+    if(b) window.adminDeleteUser(b.dataset.uid, b.dataset.username);
+  });
+
   window.adminDeleteUser = async function(userId, username){
     if(!supabase || !sessionUser) return;
     if(userId === sessionUser.id){
