@@ -422,13 +422,14 @@
       </div>
     </div>
   </div>
-
   <script>
+  (function() {
     const SUPABASE_URL = "https://hkwjnzohrzydmdyigwjr.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhrd2puem9ocnp5ZG1keWlnd2pyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAyMzUxMzUsImV4cCI6MjEwNTgxMTEzNX0.K4L4LrewJ_xHqsg2jCYE3H9AOMcDCqSBPuujM7ujH8k";
     const MAIN_ADMIN = "pramodsapkota132@gmail.com";
 
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // Use window.supabase library to create the isolated client 'sb'
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const loginView = document.getElementById('loginView');
     const dashboardView = document.getElementById('dashboardView');
@@ -436,7 +437,6 @@
     const socStatus = document.getElementById('socStatus');
     const socBtn = document.getElementById('socBtn');
 
-    // Safe string escape
     function escapeHtml(str) {
       if (str === null || str === undefined) return '';
       return String(str)
@@ -447,18 +447,20 @@
         .replace(/'/g, '&#39;');
     }
 
-    // Check existing session
     async function checkCurrentSession() {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session && session.user && session.user.email.toLowerCase() === MAIN_ADMIN.toLowerCase()) {
-        showDashboard();
-      } else {
+      try {
+        const { data: { session } } = await sb.auth.getSession();
+        if (session && session.user && session.user.email.toLowerCase() === MAIN_ADMIN.toLowerCase()) {
+          showDashboard();
+        } else {
+          loginView.style.display = 'flex';
+          dashboardView.style.display = 'none';
+        }
+      } catch (e) {
         loginView.style.display = 'flex';
-        dashboardView.style.display = 'none';
       }
     }
 
-    // Login Form Handler
     socForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       socStatus.className = 'status-msg';
@@ -477,7 +479,7 @@
         return;
       }
 
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await sb.auth.signInWithPassword({
         email: email,
         password: password
       });
@@ -491,7 +493,7 @@
       }
 
       if (data.user.email.toLowerCase() !== MAIN_ADMIN.toLowerCase()) {
-        await supabase.auth.signOut();
+        await sb.auth.signOut();
         socStatus.textContent = 'ACCESS DENIED: Only the designated Main Admin can view this console.';
         socStatus.className = 'status-msg error';
         socBtn.disabled = false;
@@ -508,16 +510,17 @@
       fetchSecurityFeed();
     }
 
-    async function handleLogout() {
-      await supabase.auth.signOut();
+    window.handleLogout = async function() {
+      await sb.auth.signOut();
       window.location.reload();
-    }
+    };
 
-    async function fetchSecurityFeed() {
+    window.fetchSecurityFeed = async function() {
       const tbody = document.getElementById('feedTableBody');
-      document.getElementById('feedTimestamp').textContent = 'Updated: ' + new Date().toLocaleTimeString();
+      const timeEl = document.getElementById('feedTimestamp');
+      if (timeEl) timeEl.textContent = 'Updated: ' + new Date().toLocaleTimeString();
 
-      const { data, error } = await supabase
+      const { data, error } = await sb
         .from('security_events')
         .select('*')
         .order('created_at', { ascending: false })
@@ -552,7 +555,7 @@
           </tr>
         `;
       }).join('');
-    }
+    };
 
     function renderStats(list) {
       document.getElementById('cntTotal').textContent = list.length;
@@ -561,8 +564,7 @@
       document.getElementById('cntAuth').textContent = list.filter(e => e.event_type === 'FAILED_LOGIN').length;
     }
 
-    // Live test to verify PostgreSQL Row-Level Security blocks unauthorized attacks
-    async function runLiveRlsAudit() {
+    window.runLiveRlsAudit = async function() {
       try {
         const testClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         const { error } = await testClient.from('user_roles').insert({ role: 'admin' });
@@ -574,9 +576,11 @@
       } catch (err) {
         alert('Check finished: ' + err.message);
       }
-    }
+    };
 
     checkCurrentSession();
+  })();
   </script>
+
 </body>
 </html>
