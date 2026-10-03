@@ -719,7 +719,7 @@
         <button type="button" class="admin-pill" data-admintab="activity">activity</button>
         <button type="button" class="admin-pill" data-admintab="attacks">attacks</button>
         <button type="button" class="admin-pill" data-admintab="files">files</button>
-        <button type="button" class="admin-pill" data-admintab="community">community</button>
+        <button type="button" class="admin-pill" data-admintab="community">moderation</button>
       </div>
 
       <!-- OVERVIEW -->
@@ -832,6 +832,21 @@
             </thead>
             <tbody id="adminFilesTbody"><tr><td colspan="4" style="text-align:center; color:var(--muted);">No files sent yet.</td></tr></tbody>
           </table>
+        </div>
+      </div>
+
+      <!-- MODERATION: per-user chat history for investigating reports -->
+      <div class="admin-tabpane" id="adminTab-community">
+        <h4 style="margin-bottom:4px;">User Chat History Lookup</h4>
+        <p style="font-size:0.78rem; color:var(--muted); margin-bottom:12px;">Pull a specific person's full history — community chat (including anything they deleted), direct messages, and support tickets — in one timeline. Use this when reviewing a report, not for casual browsing.</p>
+
+        <div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
+          <select id="modUserSelect" class="field" style="margin:0; max-width:320px;"><option value="">Select a user to review...</option></select>
+          <button type="button" class="btn" id="btnLoadModHistory" style="width:auto; padding:8px 18px;">Load History</button>
+        </div>
+
+        <div id="modHistoryBox" style="font-size:0.84rem;">
+          <div style="color:var(--muted); font-size:0.8rem;">Select a user above to load their history.</div>
         </div>
       </div>
 
@@ -1629,6 +1644,9 @@
 
     // 3. Files tab — every file ever sent, across all users
     loadAdminFilesList();
+
+    // 4. Moderation tab — user picker for chat-history lookups
+    populateModUserSelect();
   }
 
   async function loadAdminFilesList(){
@@ -2556,6 +2574,15 @@
 
   /* --- COMMUNITY CHAT (public room, anonymous per-message names) --- */
   let communitySuspended = false;
+  let adminUserIds = new Set(); // refreshed each time Community loads — hides the suspend action on any admin's message
+
+  async function refreshAdminIdSet(){
+    if(!supabase) return;
+    try{
+      const { data } = await supabase.from('user_roles').select('user_id').eq('role', 'admin');
+      adminUserIds = new Set((data || []).map(r => r.user_id));
+    }catch(e){}
+  }
 
   async function loadCommunityChat(){
     if(!supabase || !sessionUser) return;
@@ -2587,6 +2614,7 @@
     if(input) input.disabled = communitySuspended;
     if(sendBtn) sendBtn.disabled = communitySuspended;
 
+    await refreshAdminIdSet();
     loadCommunityMessages(false);
   }
 
@@ -2616,7 +2644,7 @@
         // Admin can delete any message for moderation; everyone else only their own.
         // This button never reveals *why* it's visible — it looks identical either way.
         const canDelete = isMine || isAdminGlobal;
-        const canSuspend = isAdminGlobal && !isMine;
+        const canSuspend = isAdminGlobal && !isMine && !adminUserIds.has(m.sender_id);
 
         return `
           <div style="display:flex; flex-direction:column; align-items:${isMine?'flex-end':'flex-start'};">
@@ -2695,6 +2723,89 @@
   // rendered when isAdminGlobal is true, so regular users never see it.
   // The server independently refuses to suspend any admin account, including
   // the main admin, so this is a backstop even if misused.
+  /* --- MODERATION: combined chat-history lookup for a reported user --- */
+  async function populateModUserSelect(){
+    const sel = document.getElementById('modUserSelect');
+    if(!sel || !supabase) return;
+    try{
+      const { data: users } = await supabase.from('profiles').select('id, full_name, username').order('full_name');
+      sel.innerHTML = '<option value="">Select a user to review...</option>' +
+        (users || []).map(u => `<option value="${u.id}">${escapeHtml(u.full_name)} (@${escapeHtml(u.username)})</option>`).join('');
+    }catch(e){}
+  }
+
+  document.getElementById('btnLoadModHistory')?.addEventListener('click', async () => {
+    const targetId = document.getElementById('modUserSelect').value;
+    const box = document.getElementById('modHistoryBox');
+    if(!targetId || !box || !supabase) return;
+    box.innerHTML = '<div style="color:var(--muted); font-size:0.8rem;">Loading…</div>';
+
+    const entries = [];
+
+    // Community chat — including anything the user deleted, since a deleted
+    // message is exactly the kind of thing a report is often about.
+    try{
+      const { data: comm } = await supabase.rpc('admin_get_user_community_history', { target_user_id: targetId });
+      (comm || []).forEach(m => entries.push({
+        when: m.created_at,
+        source: m.deleted_at ? 'Community (deleted)' : 'Community',
+        color: m.deleted_at ? 'var(--danger)' : 'var(--cyan)',
+        text: m.message,
+        extra: `posted as "${m.display_name}"`
+      }));
+    }catch(e){
+      entries.push({ when: new Date().toISOString(), source: 'Community', color: 'var(--muted)', text: 'Could not load — run the SQL fix if admin_get_user_community_history is missing.', extra: '' });
+    }
+
+    // Direct chat — both sides of any conversation this person was part of
+    try{
+      const { data: dm } = await supabase
+        .from('chat_messages')
+        .select('*')
+        .or(`sender_id.eq.${targetId},receiver_id.eq.${targetId}`)
+        .order('created_at', { ascending: false })
+        .limit(200);
+      (dm || []).forEach(m => entries.push({
+        when: m.created_at,
+        source: m.sender_id === targetId ? 'Direct (sent)' : 'Direct (received)',
+        color: 'var(--violet)',
+        text: m.message_type && m.message_type !== 'text' ? `[${m.message_type} attachment: ${m.attachment_name || ''}]` : m.message,
+        extra: ''
+      }));
+    }catch(e){}
+
+    // Their own support tickets, for context
+    try{
+      const { data: sup } = await supabase.from('support_messages').select('*').eq('user_id', targetId).order('created_at', { ascending: false });
+      (sup || []).forEach(m => entries.push({
+        when: m.created_at,
+        source: 'Support ticket',
+        color: 'var(--good)',
+        text: `${m.subject}: ${m.message}`,
+        extra: m.status
+      }));
+    }catch(e){}
+
+    if(entries.length === 0){
+      box.innerHTML = '<div style="color:var(--muted); font-size:0.8rem;">No history found for this user.</div>';
+      return;
+    }
+
+    entries.sort((a, b) => new Date(b.when) - new Date(a.when));
+
+    box.innerHTML = `<div style="max-height:480px; overflow-y:auto; border:1px solid var(--border-solid); border-radius:8px;">` +
+      entries.map(e => `
+        <div style="padding:10px 14px; border-bottom:1px solid var(--border-solid);">
+          <div style="display:flex; justify-content:space-between; gap:10px; margin-bottom:4px;">
+            <span style="font-size:0.72rem; font-weight:700; color:${e.color};">${escapeHtml(e.source)}</span>
+            <span style="font-size:0.7rem; color:var(--muted); white-space:nowrap;">${new Date(e.when).toLocaleString()}</span>
+          </div>
+          <div style="color:var(--text); white-space:pre-wrap;">${escapeHtml(e.text || '')}</div>
+          ${e.extra ? `<div style="font-size:0.7rem; color:var(--muted); margin-top:4px;">${escapeHtml(e.extra)}</div>` : ''}
+        </div>
+      `).join('') + `</div>`;
+  });
+
   window.suspendCommunityUser = async function(targetUserId){
     if(!supabase) return;
     const reason = prompt("Reason for suspending this user (shown only to admins, kept on record):");
