@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SAPKOTA DEFENSE // Security Operations Center</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --bg: #07090e;
+      --card-bg: #0d121d;
+      --card-border: #1a2638;
+      --accent: #00f2fe;
+      --danger: #ff3366;
+      --warning: #ffaa00;
+      --success: #00ff88;
+      --text: #e2e8f0;
+      --text-muted: #64748b;
+      --font-mono: 'Courier New', Courier, monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background: rgba(13, 18, 29, 0.95);
+      border-bottom: 1px solid var(--card-border);
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .badge-soc {
+      background: rgba(255, 51, 102, 0.15);
+      color: var(--danger);
+      border: 1px solid var(--danger);
+      padding: 4px 10px;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      font-weight: bold;
+      border-radius: 4px;
+      letter-spacing: 1.5px;
+    }
+    .brand h1 {
+      font-size: 18px;
+      letter-spacing: 0.5px;
+    }
+    .admin-pill {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--accent);
+      background: rgba(0, 242, 254, 0.1);
+      border: 1px solid rgba(0, 242, 254, 0.3);
+      padding: 6px 14px;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 8px var(--success);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 24px;
+      width: 100%;
+      flex: 1;
+    }
+    .grid-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 20px;
+    }
+    .stat-title {
+      color: var(--text-muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-family: var(--font-mono);
+      margin-bottom: 8px;
+    }
+    .stat-value {
+      font-size: 32px;
+      font-weight: 800;
+      font-family: var(--font-mono);
+    }
+    .stat-danger { color: var(--danger); }
+    .stat-warning { color: var(--warning); }
+    .stat-success { color: var(--success); }
+    .stat-accent { color: var(--accent); }
+
+    .controls-bar {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .btn {
+      background: var(--card-border);
+      color: var(--text);
+      border: 1px solid #2d3f58;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+    .btn:hover { background: #223247; border-color: var(--accent); }
+    .btn-primary { background: rgba(0, 242, 254, 0.15); border-color: var(--accent); color: var(--accent); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      text-align: left;
+    }
+    th {
+      background: #090d15;
+      padding: 12px 16px;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--card-border);
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 11px;
+    }
+    td {
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(26, 38, 56, 0.6);
+      vertical-align: top;
+    }
+    tr:hover td { background: rgba(255, 255, 255, 0.02); }
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+    }
+    .badge-critical { background: rgba(255, 51, 102, 0.2); color: #ff3366; border: 1px solid rgba(255, 51, 102, 0.4); }
+    .badge-high { background: rgba(255, 170, 0, 0.2); color: #ffaa00; border: 1px solid rgba(255, 170, 0, 0.4); }
+    .badge-medium { background: rgba(0, 242, 254, 0.15); color: #00f2fe; border: 1px solid rgba(0, 242, 254, 0.3); }
+    .badge-blocked { background: rgba(0, 255, 136, 0.15); color: #00ff88; border: 1px solid rgba(0, 255, 136, 0.3); }
+    .payload-box {
+      font-family: var(--font-mono);
+      background: #06080d;
+      border: 1px solid #1a2638;
+      padding: 4px 8px;
+      border-radius: 4px;
+      color: #ff99aa;
+      word-break: break-all;
+      max-width: 450px;
+      font-size: 11px;
+    }
+    .access-denied-screen {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: #06080d;
+      z-index: 9999;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 24px;
+    }
+    .access-denied-box {
+      border: 1px solid var(--danger);
+      background: rgba(255, 51, 102, 0.05);
+      padding: 40px;
+      border-radius: 8px;
+      max-width: 500px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Access Denied Modal -->
+  <div id="deniedScreen" class="access-denied-screen">
+    <div class="access-denied-box">
+      <div class="badge-soc" style="margin-bottom: 16px;">SECURITY BARRIER</div>
+      <h2 style="color: var(--danger); margin-bottom: 12px; font-family: var(--font-mono);">ACCESS TERMINATED</h2>
+      <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px;">
+        Only authorized Main Admin (<span style="color: #fff;">pramodsapkota132@gmail.com</span>) can access the Security Operations Console.
+      </p>
+      <button class="btn btn-primary" onclick="window.location.href='page0001.html'">Return to Login</button>
+    </div>
+  </div>
+
+  <header>
+    <div class="brand">
+      <div class="badge-soc">DEFENSE SYSTEM</div>
+      <h1>SAPKOTA THREAT MONITOR // SOC</h1>
+    </div>
+    <div class="admin-pill">
+      <span class="status-dot"></span>
+      <span id="adminDisplay">AUTHENTICATING...</span>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="grid-stats">
+      <div class="card">
+        <div class="stat-title">Total Intercepts</div>
+        <div class="stat-value stat-accent" id="statTotal">0</div>
+      </div>
+      <div class="card">
+        <div class="stat-title">Critical / SQLi Attacks</div>
+        <div class="stat-value stat-danger" id="statCritical">0</div>
+      </div>
+      <div class="card">
+        <div class="stat-title">XSS Intercepted</div>
+        <div class="stat-value stat-warning" id="statXss">0</div>
+      </div>
+      <div class="card">
+        <div class="stat-title">Brute Force / Bad Passwords</div>
+        <div class="stat-value stat-danger" id="statAuth">0</div>
+      </div>
+    </div>
+
+    <div class="controls-bar">
+      <div style="display: flex; gap: 8px;">
+        <button class="btn btn-primary" onclick="fetchSecurityEvents()">↻ Refresh Threats</button>
+        <button class="btn" onclick="runRlsAudit()">🛡 Verify Database RLS</button>
+      </div>
+      <div style="font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); align-self: center;" id="lastCheckedTime">
+        Standby
+      </div>
+    </div>
+
+    <div class="card" style="padding: 0; overflow-x: auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Time (UTC)</th>
+            <th>Type</th>
+            <th>Severity</th>
+            <th>Attacker IP</th>
+            <th>Target & Payload Sample</th>
+            <th>Action Taken</th>
+          </tr>
+        </thead>
+        <tbody id="eventsTableBody">
+          <tr>
+            <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 32px;">
+              Connecting to secure audit stream...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://hkwjnzohrzydmdyigwjr.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhrd2puem9ocnp5ZG1keWlnd2pyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5NzQxMDAsImV4cCI6MjA4NjU1MDEwMH0.5h1w6kR5b-e9X3sW6g9wG6nO2eI9xX9b7kU9k0sF9-I";
+    const MAIN_ADMIN = "pramodsapkota132@gmail.com";
+
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    async function initConsole() {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session || !session.user || session.user.email !== MAIN_ADMIN) {
+        document.getElementById("deniedScreen").style.display = "flex";
+        return;
+      }
+
+      document.getElementById("adminDisplay").textContent = "MAIN ADMIN: " + session.user.email;
+      await fetchSecurityEvents();
+    }
+
+    async function fetchSecurityEvents() {
+      const tbody = document.getElementById("eventsTableBody");
+      document.getElementById("lastCheckedTime").textContent = "Last updated: " + new Date().toLocaleTimeString();
+
+      const { data, error } = await supabase
+        .from('security_events')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      if (error) {
+        tbody.innerHTML = `<tr><td colspan="6" style="color: var(--danger); text-align: center; padding: 24px;">Failed to load logs: ${error.message}</td></tr>`;
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--success); padding: 32px;">No attack incidents recorded yet. Defensive perimeters normal.</td></tr>`;
+        updateStats([]);
+        return;
+      }
+
+      updateStats(data);
+
+      tbody.innerHTML = data.map(ev => {
+        const severityClass = ev.severity === 'CRITICAL' ? 'badge-critical' : ev.severity === 'HIGH' ? 'badge-high' : 'badge-medium';
+        return `
+          <tr>
+            <td style="font-family: var(--font-mono); color: var(--text-muted);">${new Date(ev.created_at).toLocaleTimeString()}</td>
+            <td><strong>${escapeHtml(ev.event_type)}</strong></td>
+            <td><span class="badge ${severityClass}">${escapeHtml(ev.severity)}</span></td>
+            <td style="font-family: var(--font-mono); color: var(--accent);">${escapeHtml(ev.ip_address || 'Hidden/Proxy')}</td>
+            <td>
+              <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">${escapeHtml(ev.target_resource || '/')}</div>
+              <div class="payload-box">${escapeHtml(ev.payload_sample || 'No payload logged')}</div>
+            </td>
+            <td><span class="badge badge-blocked">BLOCKED BY RLS</span></td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function updateStats(events) {
+      document.getElementById("statTotal").textContent = events.length;
+      document.getElementById("statCritical").textContent = events.filter(e => e.event_type === 'SQL_INJECTION' || e.severity === 'CRITICAL').length;
+      document.getElementById("statXss").textContent = events.filter(e => e.event_type === 'XSS_ATTEMPT').length;
+      document.getElementById("statAuth").textContent = events.filter(e => e.event_type === 'FAILED_LOGIN').length;
+    }
+
+    async function runRlsAudit() {
+      alert("Running live RLS check against user_roles and audit_logs...");
+      try {
+        const unauth = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const { error } = await unauth.from('user_roles').insert({ role: 'admin' });
+        if (error && error.code === '42501') {
+          alert("PERFECT: Anonymous insertion was BLOCKED by PostgreSQL RLS (Code 42501).");
+        } else {
+          alert("WARNING: Insertion did not trigger expected 42501 code. Check RLS policies!");
+        }
+      } catch (err) {
+        alert("Check completed: " + err.message);
+      }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    initConsole();
+  </script>
+</body>
+</html>
