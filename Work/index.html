@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Solar System Gravity Lab | sapkotap.com.np</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#05060d;color:#dfe3ff;font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:1020px;margin:0 auto;padding:20px 14px 56px}
+h1{font-size:30px;margin:0 0 4px;font-weight:600}
+h2{font-size:20px;margin:0 0 8px;font-weight:600}
+h3{font-size:18px;margin:0 0 10px;font-weight:600;display:flex;align-items:center;gap:8px}
+p{margin:0 0 10px}
+.sub{color:#8e95c4;margin:0 0 14px}
+.mu{color:#8e95c4;font-size:14px}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;margin-bottom:14px}
+.st{border:1px solid #20244a;background:#0a0c1f;border-radius:12px;padding:10px 12px;font-size:14px;color:#b7bdea}
+.st b{display:block;color:#fff;font-weight:600;margin-bottom:2px}
+.stage{position:relative;border:1px solid #20244a;border-radius:14px;overflow:hidden}
+canvas{display:block;width:100%;height:64vh;min-height:360px;touch-action:none;cursor:grab}
+canvas.launch{cursor:crosshair}
+.hud{position:absolute;top:10px;left:10px;font:12px/1.5 ui-monospace,Menlo,Consolas,monospace;color:#aab2ee;background:rgba(5,6,13,.72);border:1px solid #20244a;border-radius:8px;padding:6px 10px;pointer-events:none}
+.note{position:absolute;bottom:10px;left:10px;right:10px;text-align:center;font-size:13px;color:#fff;background:rgba(60,52,137,.9);border-radius:8px;padding:6px 10px;display:none;pointer-events:none}
+.legend{font-size:13px;color:#8e95c4;margin:8px 0 0}
+.panel{margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.lab{color:#8e95c4;font-size:13px;min-width:70px}
+button,select,input[type=number]{font:inherit;font-size:14px;color:#dfe3ff;background:#11142e;border:1px solid #2a2f63;border-radius:8px;padding:7px 12px}
+input[type=number]{width:130px}
+button{cursor:pointer}
+button:hover{border-color:#7f77dd}
+button.on{background:#3c3489;border-color:#afa9ec}
+.sl{display:flex;align-items:center;gap:10px;flex:1;min-width:260px}
+.sl input{flex:1;accent-color:#afa9ec}
+.sl b{min-width:120px;font-weight:500;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+label.ck{display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer}
+label.ck input{accent-color:#afa9ec}
+.box{margin-top:18px;border:1px solid #20244a;border-radius:14px;padding:16px;background:#0a0c1f}
+.dot{width:12px;height:12px;border-radius:50%;display:inline-block}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;margin-bottom:12px}
+.f{border:1px solid #20244a;border-radius:10px;padding:8px 10px;background:#070918}
+.f span{display:block;font-size:12px;color:#8e95c4}
+.f b{font-weight:500;font-size:15px}
+.fm{border-left:3px solid #7f77dd;padding:4px 0 4px 12px;margin:10px 0}
+.fm .t{font-size:13px;color:#afa9ec;font-weight:600}
+.eq{font:15px/1.7 ui-monospace,Menlo,Consolas,monospace;color:#fff;overflow-wrap:anywhere}
+.ex{font-size:14px;color:#b7bdea}
+.res{color:#ffd166}
+.wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:420px}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid #20244a}
+th{color:#8e95c4;font-weight:500}
+code{font-family:ui-monospace,Menlo,Consolas,monospace;background:#1b1f45;padding:2px 6px;border-radius:5px;font-size:13px}
+.plain p{color:#b7bdea;font-size:15px}
+footer{margin-top:20px;text-align:center;color:#6c73a8;font-size:13px}
+</style>
+</head>
+<body>
+<main>
+<h1>Solar System Gravity Lab</h1>
+<p class="sub">The real solar system, moved by Newton's law of gravity: F = G × M × m / (r + h)²</p>
+
+<div class="steps">
+  <div class="st"><b>1. Watch</b>The planets move only because gravity pulls them. Real masses and distances are used.</div>
+  <div class="st"><b>2. Click a planet</b>See Newton's formula filled in with real numbers, step by step.</div>
+  <div class="st"><b>3. Experiment</b>Change the Sun's or Jupiter's mass, or throw your own object into the system.</div>
+</div>
+
+<div class="stage">
+  <canvas id="cv" aria-label="Simulation of the solar system"></canvas>
+  <div class="hud" id="hud"></div>
+  <div class="note" id="note"></div>
+</div>
+<p class="legend">Planet sizes are drawn bigger than real so you can see them. Red arrow: pull of gravity. Green arrow: direction of travel. Faint dashed lines: the original orbits.</p>
+
+<div class="panel"><span class="lab">Time</span><button id="play">Pause</button><span id="speeds" class="panel" style="margin:0"></span></div>
+<div class="panel">
+  <span class="lab">View</span>
+  <button id="vIn">Inner planets</button><button id="vOut">Outer planets</button><button id="vAll">Whole system</button>
+  <button id="zin">Zoom +</button><button id="zout">Zoom -</button>
+  <label class="ck"><input type="checkbox" id="follow">Follow selected</label>
+  <label class="ck"><input type="checkbox" id="labels" checked>Names</label>
+  <label class="ck"><input type="checkbox" id="trails" checked>Trails</label>
+  <label class="ck"><input type="checkbox" id="ideal" checked>Original orbits</label>
+  <label class="ck"><input type="checkbox" id="halley">Add Halley's Comet</label>
+</div>
+<div class="panel">
+  <span class="lab">Mouse</span>
+  <button id="mSel" class="on">Select and pan</button><button id="mLaunch">Launch object</button>
+  <div class="sl"><input type="range" id="lm" min="-2" max="5.5" step="0.1" value="0"><b id="lmv"></b></div>
+  <button id="reset">Reset</button>
+</div>
+<div class="panel">
+  <span class="lab">What if?</span>
+  <div class="sl"><span class="mu">Sun mass</span><input type="range" id="ks" min="0.1" max="3" step="0.05" value="1"><b id="ksv"></b></div>
+  <div class="sl"><span class="mu">Jupiter mass</span><input type="range" id="kj" min="0" max="3" step="0.05" value="0"><b id="kjv"></b></div>
+</div>
+
+<section class="box" id="card"></section>
+
+<section class="box">
+  <h2>Gravity calculator: F = G × M × m / (r + h)²</h2>
+  <p class="mu">Here r is the radius of the big body and h is how high you are above its surface. Together, r + h is your distance from its centre.</p>
+  <div class="panel" style="margin-top:0">
+    <select id="cb" aria-label="Body"></select>
+    <label class="mu">Your mass (kg) <input type="number" id="cm" value="70" min="0"></label>
+    <label class="mu">Height h (km) <input type="number" id="ch" value="0" min="0"></label>
+  </div>
+  <div class="panel">
+    <button data-h="0">On the ground</button><button data-h="11">Airliner, 11 km</button>
+    <button data-h="408">ISS, 408 km</button><button data-h="20200">GPS satellite, 20,200 km</button>
+    <button data-h="384400">Moon distance</button>
+  </div>
+  <div id="cout" style="margin-top:12px"></div>
+  <h3 style="margin-top:14px">Surface gravity on every world</h3>
+  <div class="wrap"><table id="ctab"></table></div>
+</section>
+
+<section class="box plain">
+  <h2>The physics in plain words</h2>
+  <p>Every object with mass pulls on every other object. The pull is <code>F = G × M × m / (r + h)²</code>. G is a tiny fixed number, M and m are the two masses, and (r + h) is the distance between their centres.</p>
+  <p>Distance matters a lot. Double the distance and the pull becomes four times weaker. That is why Neptune moves slowly and Mercury races around the Sun.</p>
+  <p>Why do planets not fall into the Sun? They do fall, but they are also moving sideways very fast. The planet keeps missing the Sun, and that endless falling-and-missing is an orbit.</p>
+  <p>The simulation adds up the pull from every body on every other body, moves everything forward by one hour, and repeats. It uses the leapfrog method, which keeps energy almost constant. The "energy drift" in the top-left corner shows how accurate it is. A tiny number means the physics is behaving.</p>
+  <p class="mu">Masses, radii and orbit sizes are rounded values from NASA's planetary fact sheets. Planet starting positions are arbitrary, not today's real positions. Orbits are drawn in 2D.</p>
+</section>
+<footer>Built for sapkotap.com.np</footer>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+const G=6.6743e-11,AU=1.495978707e11,DAY=86400,YEAR=365.25*DAY,DT=3600,SOFT2=1e12;
+const MSUN=1.98847e30,MEARTH=5.9722e24,REARTH=6.371e6,VPP=300;
+const DATA=[
+{n:'Sun',m:1.98847e30,R:6.9634e8,c:'#ffd166',vis:9},
+{n:'Mercury',m:3.3011e23,R:2.4397e6,a:5.7909e10,e:0.2056,th:0.3,c:'#b8aea3',vis:2.6},
+{n:'Venus',m:4.8675e24,R:6.0518e6,a:1.08209e11,e:0.0068,th:1.9,c:'#e8c27a',vis:3.6},
+{n:'Earth',m:5.9722e24,R:6.371e6,a:1.495979e11,e:0.0167,th:3.1,c:'#4fa3ff',vis:3.8},
+{n:'Mars',m:6.4171e23,R:3.3895e6,a:2.27956e11,e:0.0934,th:4.4,c:'#e2674a',vis:3.1},
+{n:'Jupiter',m:1.8982e27,R:6.9911e7,a:7.78479e11,e:0.0484,th:5.6,c:'#d9a066',vis:7},
+{n:'Saturn',m:5.6834e26,R:5.8232e7,a:1.43353e12,e:0.0539,th:0.9,c:'#ead49a',vis:6.2},
+{n:'Uranus',m:8.681e25,R:2.5362e7,a:2.87246e12,e:0.0472,th:2.5,c:'#8fe3e8',vis:4.8},
+{n:'Neptune',m:1.02413e26,R:2.4622e7,a:4.49506e12,e:0.0086,th:4.0,c:'#5b7cff',vis:4.8}];
+const HALLEY={n:"Halley's Comet",m:2.2e14,R:5500,a:2.668e12,e:0.967,th:2.2,c:'#d6efff',vis:3,retro:true};
+const CALC=[
+{n:'Earth',M:5.9722e24,R:6.371e6},{n:'Moon',M:7.342e22,R:1.7374e6},{n:'Mars',M:6.4171e23,R:3.3895e6},
+{n:'Venus',M:4.8675e24,R:6.0518e6},{n:'Mercury',M:3.3011e23,R:2.4397e6},{n:'Jupiter',M:1.8982e27,R:6.9911e7},
+{n:'Saturn',M:5.6834e26,R:5.8232e7},{n:'Uranus',M:8.681e25,R:2.5362e7},{n:'Neptune',M:1.02413e26,R:2.4622e7},
+{n:'Sun',M:1.98847e30,R:6.9634e8}];
+const SPEEDS=[{l:'1 day/s',d:1},{l:'10 days/s',d:10},{l:'1 month/s',d:30.4},{l:'1 year/s',d:365.25},{l:'5 years/s',d:1826},{l:'20 years/s',d:7305}];
+
+function sup(x,d){
+  if(!isFinite(x)||x===0)return '0';
+  const e=Math.floor(Math.log10(Math.abs(x))),m=x/Math.pow(10,e);
+  return m.toFixed(d===undefined?2:d)+' × 10<sup>'+e+'</sup>';
+}
+function fx(x){
+  if(x===0)return '0';
+  const a=Math.abs(x);
+  if(a>=1e6||a<1e-2)return sup(x,2);
+  return x.toLocaleString('en-US',{maximumSignificantDigits:4});
+}
+function num(x){return Math.round(x).toLocaleString('en-US')}
+function fact(l,v){return '<div class="f"><span>'+l+'</span><b>'+v+'</b></div>'}
+function dur(s){
+  if(s<5400)return (s/60).toFixed(1)+' minutes';
+  if(s<172800)return (s/3600).toFixed(1)+' hours';
+  if(s<2*YEAR)return (s/DAY).toFixed(1)+' days';
+  return (s/YEAR).toFixed(1)+' years';
+}
+
+const cv=$('cv'),ctx=cv.getContext('2d');
+let W=0,H=0,dpr=1,bodies=[],sel=null,simT=0,acc=0,E0=0,paused=false,speedDays=10;
+let mode='select',ptr=null,cam={x:0,y:0,s:6e-10},frameN=0,last=performance.now(),rogueN=0,nt=null;
+const stars=[];
+for(let i=0;i<220;i++)stars.push({x:Math.random(),y:Math.random(),s:Math.random()<.8?1:1.6,a:.2+Math.random()*.6});
+
+const toS=(x,y)=>[(x-cam.x)*cam.s+W/2,(y-cam.y)*cam.s+H/2];
+const toW=(sx,sy)=>[(sx-W/2)/cam.s+cam.x,(sy-H/2)/cam.s+cam.y];
+function resize(){dpr=Math.min(window.devicePixelRatio||1,2);W=cv.clientWidth;H=cv.clientHeight;cv.width=W*dpr;cv.height=H*dpr}
+window.addEventListener('resize',resize);
+function note(t){const n=$('note');n.textContent=t;n.style.display='block';clearTimeout(nt);nt=setTimeout(function(){n.style.display='none'},6000)}
+function sunRef(){return bodies.find(b=>b.n==='Sun')||bodies[0]}
+
+function mk(d,s){
+  const T=d.a?2*Math.PI*Math.sqrt(Math.pow(d.a,3)/(G*MSUN)):YEAR;
+  return {n:d.n,m:d.m,R:d.R,c:d.c,vis:d.vis,a:d.a,e:d.e,th:d.th,x:s.x,y:s.y,vx:s.vx,vy:s.vy,ax:0,ay:0,trail:[],tNext:0,ti:Math.max(T/170,21600),base:d.m};
+}
+function orbitState(d){
+  const rp=d.a*(1-d.e),vp=Math.sqrt(G*MSUN*(1+d.e)/rp),s=d.retro?-1:1;
+  return {x:rp*Math.cos(d.th),y:rp*Math.sin(d.th),vx:-s*vp*Math.sin(d.th),vy:s*vp*Math.cos(d.th)};
+}
+function energy(){
+  let k=0,u=0;
+  for(const b of bodies)k+=0.5*b.m*(b.vx*b.vx+b.vy*b.vy);
+  for(let i=0;i<bodies.length;i++)for(let j=i+1;j<bodies.length;j++){
+    const a=bodies[i],b=bodies[j],dx=a.x-b.x,dy=a.y-b.y;
+    u-=G*a.m*b.m/Math.sqrt(dx*dx+dy*dy+SOFT2);
+  }
+  return k+u;
+}
+function rebase(){E0=energy()}
+function init(){
+  bodies=[];simT=0;acc=0;rogueN=0;
+  DATA.forEach(function(d){bodies.push(mk(d,d.n==='Sun'?{x:0,y:0,vx:0,vy:0}:orbitState(d)))});
+  if($('halley').checked)bodies.push(mk(HALLEY,orbitState(HALLEY)));
+  let px=0,py=0,mt=0;
+  for(const b of bodies){px+=b.vx*b.m;py+=b.vy*b.m;mt+=b.m}
+  for(const b of bodies){b.vx-=px/mt;b.vy-=py/mt}
+  $('ks').value=1;$('kj').value=0;whatLabels();
+  sel=bodies.find(b=>b.n==='Earth');
+  rebase();renderCard();
+}
+function setHalley(on){
+  const i=bodies.findIndex(b=>b.n===HALLEY.n);
+  if(on&&i<0){
+    const s=orbitState(HALLEY),sun=sunRef(),b=mk(HALLEY,s);
+    b.vx+=sun.vx;b.vy+=sun.vy;b.x+=sun.x;b.y+=sun.y;bodies.push(b);
+    view(36*AU);rebase();note("Halley's Comet added. It moves backwards and speeds up near the Sun.");
+  }else if(!on&&i>=0){if(sel===bodies[i])sel=null;bodies.splice(i,1);rebase()}
+}
+
+const SOFT=SOFT2;
+function accel(){
+  const n=bodies.length;
+  for(let i=0;i<n;i++){bodies[i].ax=0;bodies[i].ay=0}
+  for(let i=0;i<n;i++){
+    const a=bodies[i];
+    for(let j=i+1;j<n;j++){
+      const b=bodies[j],dx=b.x-a.x,dy=b.y-a.y,d2=dx*dx+dy*dy+SOFT,inv=1/(d2*Math.sqrt(d2));
+      const fa=G*b.m*inv,fb=G*a.m*inv;
+      a.ax+=dx*fa;a.ay+=dy*fa;b.ax-=dx*fb;b.ay-=dy*fb;
+    }
+  }
+}
+function collide(){
+  let hit=false;
+  for(let i=0;i<bodies.length;i++){
+    for(let j=i+1;j<bodies.length;j++){
+      const a=bodies[i],b=bodies[j],dx=a.x-b.x,dy=a.y-b.y,rr=a.R+b.R;
+      if(dx*dx+dy*dy<rr*rr){
+        const m=a.m+b.m,big=a.m>=b.m?a:b,gone=big===a?b:a;
+        big.x=(a.x*a.m+b.x*b.m)/m;big.y=(a.y*a.m+b.y*b.m)/m;
+        big.vx=(a.vx*a.m+b.vx*b.m)/m;big.vy=(a.vy*a.m+b.vy*b.m)/m;
+        big.R=Math.cbrt(a.R*a.R*a.R+b.R*b.R*b.R);big.m=m;big.base=m;
+        bodies.splice(bodies.indexOf(gone),1);
+        if(sel===gone)sel=big;
+        note(gone.n+' crashed into '+big.n+' and they merged.');
+        hit=true;i=-1;break;
+      }
+    }
+  }
+  return hit;
+}
+function step(){
+  accel();
+  const h=DT/2;
+  for(const b of bodies){b.vx+=b.ax*h;b.vy+=b.ay*h;b.x+=b.vx*DT;b.y+=b.vy*DT}
+  accel();
+  for(const b of bodies){b.vx+=b.ax*h;b.vy+=b.ay*h}
+  simT+=DT;
+  for(const b of bodies){
+    if(simT>=b.tNext){b.trail.push(b.x,b.y);b.tNext=simT+b.ti;if(b.trail.length>340)b.trail.splice(0,2)}
+  }
+  if(collide())rebase();
+}
+function cull(){
+  const s=sunRef();
+  for(let i=bodies.length-1;i>=0;i--){
+    const b=bodies[i];if(b===s)continue;
+    if(Math.hypot(b.x-s.x,b.y-s.y)>3e13){bodies.splice(i,1);if(sel===b)sel=null;note(b.n+' escaped the solar system.');rebase()}
+  }
+}
+
+function arrow(x1,y1,dx,dy,len,col,txt){
+  const m=Math.hypot(dx,dy)||1,ux=dx/m,uy=dy/m,x2=x1+ux*len,y2=y1+uy*len;
+  ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2-ux*9-uy*4.5,y2-uy*9+ux*4.5);ctx.lineTo(x2-ux*9+uy*4.5,y2-uy*9-ux*4.5);ctx.closePath();ctx.fill();
+  ctx.font='11px system-ui,sans-serif';ctx.fillText(txt,x2+6,y2+4);
+}
+function draw(){
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.fillStyle='#05060d';ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#fff';
+  for(const s of stars){ctx.globalAlpha=s.a;ctx.fillRect(s.x*W,s.y*H,s.s,s.s)}
+  ctx.globalAlpha=1;
+  if($('ideal').checked){
+    ctx.strokeStyle='rgba(175,185,255,0.18)';ctx.lineWidth=1;ctx.setLineDash([4,6]);
+    for(const b of bodies){
+      if(!b.a)continue;
+      ctx.beginPath();
+      for(let i=0;i<=120;i++){
+        const nu=i/120*6.2832,r=b.a*(1-b.e*b.e)/(1+b.e*Math.cos(nu));
+        const p=toS(r*Math.cos(b.th+nu),r*Math.sin(b.th+nu));
+        if(i)ctx.lineTo(p[0],p[1]);else ctx.moveTo(p[0],p[1]);
+      }
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+  }
+  if($('trails').checked){
+    ctx.lineWidth=1.4;ctx.globalAlpha=0.55;
+    for(const b of bodies){
+      const t=b.trail;if(t.length<4)continue;
+      ctx.strokeStyle=b.c;ctx.beginPath();
+      let p=toS(t[0],t[1]);ctx.moveTo(p[0],p[1]);
+      for(let i=2;i<t.length;i+=2){p=toS(t[i],t[i+1]);ctx.lineTo(p[0],p[1])}
+      ctx.lineTo(toS(b.x,b.y)[0],toS(b.x,b.y)[1]);ctx.stroke();
+    }
+    ctx.globalAlpha=1;
+  }
+  for(const b of bodies){
+    const p=toS(b.x,b.y);
+    if(p[0]<-60||p[0]>W+60||p[1]<-60||p[1]>H+60)continue;
+    if(b.n==='Sun'){
+      const g=ctx.createRadialGradient(p[0],p[1],b.vis*0.4,p[0],p[1],b.vis*3);
+      g.addColorStop(0,'rgba(255,205,100,0.55)');g.addColorStop(1,'rgba(255,205,100,0)');
+      ctx.fillStyle=g;ctx.beginPath();ctx.arc(p[0],p[1],b.vis*3,0,7);ctx.fill();
+    }
+    ctx.fillStyle=b.c;ctx.beginPath();ctx.arc(p[0],p[1],b.vis,0,7);ctx.fill();
+    if(b===sel){ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(p[0],p[1],b.vis+5,0,7);ctx.stroke()}
+    if($('labels').checked){ctx.fillStyle='#b9c0f0';ctx.font='12px system-ui,sans-serif';ctx.fillText(b.n,p[0]+b.vis+5,p[1]-b.vis-3)}
+  }
+  if(sel&&bodies.indexOf(sel)>=0){
+    const p=toS(sel.x,sel.y);let gx=0,gy=0;
+    for(const o of bodies){
+      if(o===sel)continue;
+      const dx=o.x-sel.x,dy=o.y-sel.y,d=Math.hypot(dx,dy),k=G*o.m/(d*d*d);
+      gx+=dx*k;gy+=dy*k;
+    }
+    arrow(p[0],p[1],gx,gy,46,'#ff6b6b','gravity');
+    arrow(p[0],p[1],sel.vx,sel.vy,46,'#5dcaa5','velocity');
+  }
+  if(ptr&&mode==='launch'){
+    ctx.strokeStyle='#cfd6ff';ctx.lineWidth=1.5;ctx.setLineDash([5,5]);
+    ctx.beginPath();ctx.moveTo(ptr.sx,ptr.sy);ctx.lineTo(ptr.cx,ptr.cy);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle='#cfd6ff';ctx.beginPath();ctx.arc(ptr.sx,ptr.sy,4,0,7);ctx.fill();
+    ctx.font='12px ui-monospace,Menlo,monospace';
+    ctx.fillText((Math.hypot(ptr.cx-ptr.sx,ptr.cy-ptr.sy)*VPP/1000).toFixed(1)+' km/s',ptr.cx+10,ptr.cy-8);
+  }
+}
+
+function renderCard(){
+  const box=$('card');
+  if(!sel||bodies.indexOf(sel)<0){box.innerHTML='<p class="mu" style="margin:0">Click any planet in the simulation to see the maths behind its orbit.</p>';return}
+  const L=[];
+  for(const o of bodies){
+    if(o===sel)continue;
+    const d=Math.hypot(o.x-sel.x,o.y-sel.y);
+    L.push({o:o,d:d,F:G*o.m*sel.m/(d*d)});
+  }
+  L.sort((a,b)=>b.F-a.F);
+  const P=L[0];if(!P)return;
+  const o=P.o,d=P.d,F=P.F,h=d-o.R,a=F/sel.m;
+  const rel=Math.hypot(sel.vx-o.vx,sel.vy-o.vy),vc=Math.sqrt(G*o.m/d),mu=G*(o.m+sel.m),inv=2/d-rel*rel/mu;
+  let per='Not in a closed orbit';
+  if(inv>0){const sa=1/inv;per=fx(2*Math.PI*Math.sqrt(sa*sa*sa/mu)/YEAR)+' Earth years'}
+  let rows='';
+  for(let i=0;i<Math.min(L.length,4);i++){
+    rows+='<tr><td>'+L[i].o.n+'</td><td>'+sup(L[i].F)+' N</td><td>'+fx(L[i].F/F*100)+'%</td></tr>';
+  }
+  box.innerHTML=
+  '<h3><i class="dot" style="background:'+sel.c+'"></i>'+sel.n+': the maths right now</h3>'+
+  '<div class="facts">'+fact('Mass',sup(sel.m)+' kg')+fact('Radius',num(sel.R/1000)+' km')+
+  fact('Distance from '+o.n,fx(d/AU)+' AU')+fact('Speed (vs '+o.n+')',fx(rel/1000)+' km/s')+fact('One orbit takes',per)+'</div>'+
+  '<div class="fm"><div class="t">Step 1: the formula</div><div class="eq">F = G × M × m / (r + h)²</div>'+
+  '<div class="ex">G = 6.674 × 10<sup>-11</sup> (gravity constant), M = mass of '+o.n+', m = mass of '+sel.n+'</div></div>'+
+  '<div class="fm"><div class="t">Step 2: the distance (r + h)</div><div class="ex">r = radius of '+o.n+' = '+num(o.R/1000)+' km<br>'+
+  'h = height of '+sel.n+' above its surface = '+num(h/1000)+' km<br>r + h = '+num(d/1000)+' km = '+sup(d)+' m</div></div>'+
+  '<div class="fm"><div class="t">Step 3: put the numbers in</div>'+
+  '<div class="eq">F = ('+sup(G)+' × '+sup(o.m)+' × '+sup(sel.m)+') / ('+sup(d)+')²</div>'+
+  '<div class="eq res">F = '+sup(F)+' newtons</div></div>'+
+  '<div class="fm"><div class="t">Step 4: what does it do?</div><div class="ex">Acceleration a = F / m = '+fx(a)+' m/s². '+
+  'For a perfect circle the speed would be √(GM/d) = '+fx(vc/1000)+' km/s. The actual speed is '+fx(rel/1000)+' km/s, so gravity keeps bending the path into an orbit.</div></div>'+
+  '<div class="wrap"><table><tr><th>Pulled by</th><th>Force on '+sel.n+'</th><th>Compared with strongest</th></tr>'+rows+'</table></div>';
+}
+
+function updateHud(){
+  const e=energy(),dr=E0?Math.abs((e-E0)/E0)*100:0;
+  const y=Math.floor(simT/YEAR),d=Math.floor((simT%YEAR)/DAY);
+  $('hud').innerHTML='Time elapsed: '+y+' yr '+d+' d<br>Energy drift: '+dr.toExponential(1)+'%';
+}
+function loop(t){
+  const real=Math.min((t-last)/1000,0.05);last=t;
+  if(!paused){
+    acc+=speedDays*DAY*real;
+    const n=Math.min(Math.floor(acc/DT),4000);
+    acc-=n*DT;if(acc>DT)acc=0;
+    for(let i=0;i<n;i++)step();
+    cull();
+  }
+  if($('follow').checked&&sel&&bodies.indexOf(sel)>=0){cam.x=sel.x;cam.y=sel.y}
+  draw();frameN++;
+  if(frameN%6===0)updateHud();
+  if(frameN%15===0)renderCard();
+  requestAnimationFrame(loop);
+}
+
+function view(R){$('follow').checked=false;cam.x=0;cam.y=0;cam.s=Math.min(W,H)/2/R*0.92}
+function pos(e){const r=cv.getBoundingClientRect();return [e.clientX-r.left,e.clientY-r.top]}
+function pick(sx,sy){
+  let best=null,bd=1e9;
+  for(const b of bodies){
+    const p=toS(b.x,b.y),d=Math.hypot(p[0]-sx,p[1]-sy);
+    if(d<Math.max(b.vis+8,16)&&d<bd){bd=d;best=b}
+  }
+  if(best){sel=best;renderCard()}
+}
+function launch(p){
+  const me=Math.pow(10,+$('lm').value),m=me*MEARTH,sun=sunRef();
+  const r=Math.hypot(p.wx-sun.x,p.wy-sun.y),T=2*Math.PI*Math.sqrt(r*r*r/(G*MSUN));
+  rogueN++;
+  const b={n:'Object '+rogueN,m:m,R:REARTH*Math.cbrt(me),c:'hsl('+((rogueN*67)%360)+',80%,65%)',vis:3,x:p.wx,y:p.wy,
+    vx:(p.cx-p.sx)*VPP+sun.vx,vy:(p.cy-p.sy)*VPP+sun.vy,ax:0,ay:0,trail:[],tNext:0,ti:Math.max(T/170,21600),base:m};
+  bodies.push(b);sel=b;rebase();renderCard();
+  note('Launched '+b.n+' ('+fx(me)+' Earth masses) at '+fx(Math.hypot(b.vx-sun.vx,b.vy-sun.vy)/1000)+' km/s.');
+}
+cv.addEventListener('pointerdown',function(e){
+  cv.setPointerCapture(e.pointerId);
+  const p=pos(e);ptr={sx:p[0],sy:p[1],cx:p[0],cy:p[1],lx:p[0],ly:p[1],moved:false};
+  if(mode==='launch'){const w=toW(p[0],p[1]);ptr.wx=w[0];ptr.wy=w[1]}
+});
+cv.addEventListener('pointermove',function(e){
+  if(!ptr)return;
+  const p=pos(e);ptr.cx=p[0];ptr.cy=p[1];
+  if(Math.hypot(p[0]-ptr.sx,p[1]-ptr.sy)>4)ptr.moved=true;
+  if(mode==='select'&&ptr.moved){$('follow').checked=false;cam.x-=(p[0]-ptr.lx)/cam.s;cam.y-=(p[1]-ptr.ly)/cam.s}
+  ptr.lx=p[0];ptr.ly=p[1];
+});
+cv.addEventListener('pointerup',function(){
+  if(!ptr)return;
+  if(mode==='launch')launch(ptr);else if(!ptr.moved)pick(ptr.sx,ptr.sy);
+  ptr=null;
+});
+cv.addEventListener('pointercancel',function(){ptr=null});
+cv.addEventListener('wheel',function(e){
+  e.preventDefault();
+  const p=pos(e),b4=toW(p[0],p[1]);
+  cam.s=Math.min(Math.max(cam.s*(e.deltaY<0?1.15:1/1.15),5e-12),5e-8);
+  const af=toW(p[0],p[1]);cam.x+=b4[0]-af[0];cam.y+=b4[1]-af[1];
+},{passive:false});
+
+function setMode(m){mode=m;$('mSel').className=m==='select'?'on':'';$('mLaunch').className=m==='launch'?'on':'';cv.className=m==='launch'?'launch':''}
+$('mSel').onclick=function(){setMode('select')};
+$('mLaunch').onclick=function(){setMode('launch');note('Drag on the simulation and release to throw an object. Longer drag = faster.')};
+$('vIn').onclick=function(){view(1.8*AU)};
+$('vOut').onclick=function(){view(31*AU)};
+$('vAll').onclick=function(){view(36*AU)};
+$('zin').onclick=function(){cam.s=Math.min(cam.s*1.4,5e-8)};
+$('zout').onclick=function(){cam.s=Math.max(cam.s/1.4,5e-12)};
+function togglePause(){paused=!paused;$('play').textContent=paused?'Play':'Pause'}
+$('play').onclick=togglePause;
+document.addEventListener('keydown',function(e){if(e.code==='Space'&&e.target===document.body){e.preventDefault();togglePause()}});
+$('reset').onclick=function(){init();view(1.8*AU)};
+$('halley').onchange=function(){setHalley(this.checked)};
+
+const sp=$('speeds');
+SPEEDS.forEach(function(s){
+  const b=document.createElement('button');b.textContent=s.l;if(s.d===speedDays)b.className='on';
+  b.onclick=function(){speedDays=s.d;[].forEach.call(sp.children,function(x){x.className=''});b.className='on'};
+  sp.appendChild(b);
+});
+
+function whatLabels(){
+  const me=Math.pow(10,+$('lm').value);
+  $('lmv').textContent=(me<10?me.toFixed(2):me.toFixed(0))+' Earth masses'+(me>=100?' ('+(me/317.8).toFixed(1)+' Jupiters)':'');
+  $('ksv').textContent='× '+(+$('ks').value).toFixed(2);
+  $('kjv').textContent='× '+Math.pow(10,+$('kj').value).toFixed(1);
+}
+function setMass(name,k){const b=bodies.find(x=>x.n===name);if(b){b.m=b.base*k;rebase()}}
+$('lm').oninput=whatLabels;
+$('ks').oninput=function(){whatLabels();setMass('Sun',+this.value)};
+$('kj').oninput=function(){whatLabels();setMass('Jupiter',Math.pow(10,+this.value))};
+
+CALC.forEach(function(b){const o=document.createElement('option');o.textContent=b.n;$('cb').appendChild(o)});
+function calc(){
+  const b=CALC[$('cb').selectedIndex],m=Math.max(+$('cm').value||0,0),h=Math.max(+$('ch').value||0,0)*1000;
+  const d=b.R+h,F=G*b.M*m/(d*d),g=G*b.M/(d*d),g0=G*b.M/(b.R*b.R);
+  const ve=Math.sqrt(2*G*b.M/d),vc=Math.sqrt(G*b.M/d),T=2*Math.PI*d/vc;
+  $('cout').innerHTML=
+  '<div class="fm"><div class="t">The formula</div><div class="eq">F = G × M × m / (r + h)²</div>'+
+  '<div class="ex">M = '+sup(b.M)+' kg ('+b.n+'), m = '+fx(m)+' kg (you)<br>r = '+num(b.R/1000)+' km, h = '+num(h/1000)+' km, r + h = '+num(d/1000)+' km</div></div>'+
+  '<div class="fm"><div class="t">The numbers</div><div class="eq">F = ('+sup(G)+' × '+sup(b.M)+' × '+fx(m)+') / ('+sup(d)+')²</div><div class="eq res">F = '+fx(F)+' newtons</div></div>'+
+  '<div class="facts">'+fact('Gravity at this height, g',fx(g)+' m/s²')+fact('Compared with the surface',(g/g0*100).toFixed(1)+'%')+
+  fact('Escape speed',fx(ve/1000)+' km/s')+fact('Circular orbit speed',fx(vc/1000)+' km/s')+fact('One orbit takes',dur(T))+'</div>';
+  let t='<tr><th>World</th><th>g (m/s²)</th><th>Your weight (N)</th><th>Compared with Earth</th></tr>';
+  const gE=G*CALC[0].M/(CALC[0].R*CALC[0].R);
+  CALC.forEach(function(c){
+    const gg=G*c.M/(c.R*c.R);
+    t+='<tr><td>'+c.n+'</td><td>'+fx(gg)+'</td><td>'+fx(gg*m)+'</td><td>'+(gg/gE).toFixed(2)+'×</td></tr>';
+  });
+  $('ctab').innerHTML=t;
+}
+$('cb').onchange=calc;$('cm').oninput=calc;$('ch').oninput=calc;
+[].forEach.call(document.querySelectorAll('[data-h]'),function(b){b.onclick=function(){$('ch').value=this.dataset.h;calc()}});
+
+resize();whatLabels();init();view(1.8*AU);calc();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
