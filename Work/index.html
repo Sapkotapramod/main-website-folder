@@ -12,14 +12,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Source+Sans+10:wght@300;400;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <!-- EmailJS SDK -->
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script type="text/javascript">
     (function(){
-        // Initialize EmailJS (Replace 'YOUR_PUBLIC_KEY' with your actual key if using EmailJS)
-        emailjs.init("YOUR_PUBLIC_KEY");
+        // Replace 'YOUR_PUBLIC_KEY' with your actual EmailJS key
+        if (window.emailjs) emailjs.init("YOUR_PUBLIC_KEY");
     })();
 </script>
 
@@ -139,23 +138,36 @@ nav a:hover {
     border-color: var(--accent-gold);
 }
 
-/* Hamburger button (hidden on desktop) */
+/* Hamburger button — pure CSS, no icon library needed */
 .menu-toggle {
     display: none;
     background: transparent;
-    border: 1px solid var(--border-subtle);
-    color: var(--accent-gold);
-    width: 42px;
-    height: 36px;
+    border: 1px solid var(--accent-gold);
+    width: 44px;
+    height: 38px;
+    padding: 0;
     cursor: pointer;
-    font-size: 18px;
-    line-height: 1;
-    transition: 0.3s;
+    position: relative;
+    -webkit-tap-highlight-color: transparent;
 }
 
-.menu-toggle:hover {
-    border-color: var(--accent-gold);
+.menu-toggle span {
+    position: absolute;
+    left: 10px;
+    right: 10px;
+    height: 2px;
+    background: var(--accent-gold);
+    transition: transform 0.3s ease, opacity 0.2s ease, top 0.3s ease;
 }
+
+.menu-toggle span:nth-child(1) { top: 11px; }
+.menu-toggle span:nth-child(2) { top: 17px; }
+.menu-toggle span:nth-child(3) { top: 23px; }
+
+/* Turns into an X when open */
+.menu-toggle.active span:nth-child(1) { top: 17px; transform: rotate(45deg); }
+.menu-toggle.active span:nth-child(2) { opacity: 0; }
+.menu-toggle.active span:nth-child(3) { top: 17px; transform: rotate(-45deg); }
 
 /* Hero Section */
 .hero {
@@ -193,6 +205,13 @@ nav a:hover {
     color: var(--text-muted);
     max-width: 720px;
     margin: 0 auto 40px;
+}
+
+.hero-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15px;
 }
 
 .btn-classic {
@@ -297,7 +316,7 @@ input, textarea {
     border: 1px solid var(--border-subtle);
     color: var(--text-primary);
     font-family: 'Source Sans 10', serif;
-    font-size: 16px; /* 16px prevents iOS zoom on focus */
+    font-size: 16px; /* prevents iOS zoom on focus */
     outline: none;
     transition: border-color 0.3s;
 }
@@ -333,6 +352,12 @@ textarea {
     letter-spacing: 1px;
 }
 
+.link-container .btn-classic {
+    display: block;
+    width: 100%;
+    margin-bottom: 12px;
+}
+
 footer {
     border-top: 1px solid var(--border-subtle);
     text-align: center;
@@ -346,7 +371,7 @@ footer {
 /* ---------- Mobile ---------- */
 @media (max-width: 768px) {
     nav {
-        padding: 18px 20px;
+        padding: 16px 20px;
         flex-wrap: wrap;
     }
 
@@ -356,17 +381,17 @@ footer {
     }
 
     .menu-toggle {
-        display: inline-block;
+        display: block;
     }
 
-    /* Menu is now a dropdown instead of being hidden */
+    /* Menu becomes a dropdown instead of being hidden */
     nav ul {
         display: none;
         flex-direction: column;
         gap: 0;
         width: 100%;
         order: 3;
-        margin-top: 10px;
+        margin-top: 12px;
         border-top: 1px solid var(--border-subtle);
     }
 
@@ -391,6 +416,7 @@ footer {
     .hero { margin: 60px auto 50px; }
     .hero h1 { font-size: 34px; }
     .hero p { font-size: 17px; }
+    .hero-buttons .btn-classic { width: 100%; max-width: 320px; }
 
     section { margin: 60px auto; }
     .section-header { margin-bottom: 40px; }
@@ -404,7 +430,7 @@ footer {
 }
 
 @media (max-width: 380px) {
-    .brand { font-size: 15px; }
+    .brand { font-size: 14px; }
     .toggle-theme { padding: 8px 10px; }
 }
 </style>
@@ -420,14 +446,14 @@ footer {
             <li><a href="#about">About</a></li>
             <li><a href="#services">Services</a></li>
             <li><a href="#contact">Contact</a></li>
-            <li><a href="/page0001/" class="ext-link" target="_blank" rel="noopener">GET STARTED</a></li>
-            <li><a href="/Work/" class="ext-link" target="_blank" rel="noopener">More additional work</a></li>
+            <li><a href="page0001/">GET STARTED</a></li>
+            <li><a href="Work/">More additional work</a></li>
         </ul>
 
         <div class="nav-actions">
-            <button class="toggle-theme" onclick="toggleTheme()">Theme</button>
-            <button class="menu-toggle" id="menu-toggle" aria-label="Toggle menu" aria-expanded="false" onclick="toggleMenu()">
-                <i class="fa-solid fa-bars"></i>
+            <button type="button" class="toggle-theme" id="theme-btn">Theme</button>
+            <button type="button" class="menu-toggle" id="menu-toggle" aria-label="Toggle menu" aria-expanded="false">
+                <span></span><span></span><span></span>
             </button>
         </div>
     </nav>
@@ -436,4 +462,174 @@ footer {
 <main>
     <!-- Hero Section -->
     <div class="hero">
-        <p
+        <p class="hero-subtitle">Creative Developer & Digital Craftsman</p>
+        <h1>Crafting Timeless & Elegant <span class="serif-italic">Web Experiences</span></h1>
+        <div class="divider"></div>
+        <p>Combining classical aesthetics with modern engineering. Focused on bespoke web development, architecture, and intuitive digital design.</p>
+        <div class="hero-buttons">
+            <a class="btn-classic" href="#contact">Inquire Services</a>
+            <a class="btn-classic" href="page0001/">Get Started</a>
+            <a class="btn-classic" href="Work/">More additional work</a>
+        </div>
+    </div>
+
+    <!-- About Section -->
+    <section id="about">
+        <div class="section-header">
+            <h2>About</h2>
+            <div class="divider"></div>
+        </div>
+
+        <div class="grid-2">
+            <div class="classic-card">
+                <h3>Philosophy</h3>
+                <p>Digital products should be built with craftsmanship, structure, and endurance. I create tailored web solutions that emphasize clarity, performance, and refined aesthetic detail.</p>
+            </div>
+            <div class="classic-card">
+                <h3>Expertise</h3>
+                <p>Specializing in full-stack web applications, front-end architecture, bespoke user interfaces, and clean, maintainable code standards across platforms.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Services Section -->
+    <section id="services">
+        <div class="section-header">
+            <h2>Provided Services</h2>
+            <div class="divider"></div>
+        </div>
+
+        <div class="grid-3">
+            <div class="classic-card">
+                <h3>Custom Web Engineering</h3>
+                <p>Handcrafted web applications built to precision with clean HTML, modern CSS, and tailored JavaScript implementations.</p>
+            </div>
+
+            <div class="classic-card">
+                <h3>Architectural Design</h3>
+                <p>Establishing organized design systems, clear layout structures, and timeless visual identity for digital products.</p>
+            </div>
+
+            <div class="classic-card">
+                <h3>Technical Consultation</h3>
+                <p>Code review, performance optimization, and strategic development consulting for existing digital platforms.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact">
+        <div class="section-header">
+            <h2>Send a Message</h2>
+            <div class="divider"></div>
+        </div>
+
+        <div class="grid-2">
+            <div class="classic-card">
+                <h3>Contact Details</h3>
+                <p style="margin-bottom: 20px;">For inquiries, collaborations, or service requests, please send a message using the form or reach out directly.</p>
+                <p><strong>Email:</strong> origincircle5@gmail.com</p>
+                <p style="margin-top: 10px;"><strong>Location:</strong> Kathmandu, Nepal</p>
+            </div>
+
+            <form class="contact-form" id="contact-form">
+                <div class="form-group">
+                    <label for="user_name">Full Name</label>
+                    <input type="text" id="user_name" name="user_name" required>
+                </div>
+                <div class="form-group">
+                    <label for="user_email">Email Address</label>
+                    <input type="email" id="user_email" name="user_email" required>
+                </div>
+                <div class="form-group">
+                    <label for="message">Your Message</label>
+                    <textarea id="message" name="message" required></textarea>
+                </div>
+                <button type="submit" class="btn-classic" style="width: 100%;">Transmit Message</button>
+                <div id="form-status"></div>
+
+                <div class="link-container">
+                    <p>Looking for additional work?</p>
+                    <a href="page0001/" class="btn-classic">GET STARTED</a>
+                    <a href="Work/" class="btn-classic">More additional work</a>
+                </div>
+            </form>
+        </div>
+    </section>
+</main>
+
+<footer>
+    <p>© 2026 Pramod Sapkota. All Rights Reserved.</p>
+</footer>
+
+<script>
+// Theme toggle
+document.getElementById("theme-btn").addEventListener("click", function () {
+    document.body.classList.toggle("light");
+});
+
+// Mobile menu
+var menuBtn = document.getElementById("menu-toggle");
+var menu = document.getElementById("nav-menu");
+
+function setMenu(open) {
+    menu.classList.toggle("open", open);
+    menuBtn.classList.toggle("active", open);
+    menuBtn.setAttribute("aria-expanded", open ? "true" : "false");
+}
+
+menuBtn.addEventListener("click", function () {
+    setMenu(!menu.classList.contains("open"));
+});
+
+// Close the menu after tapping a link (the page still navigates normally)
+menu.querySelectorAll("a").forEach(function (link) {
+    link.addEventListener("click", function () {
+        setMenu(false);
+    });
+});
+
+// Reset menu state when resizing back to desktop
+window.addEventListener("resize", function () {
+    if (window.innerWidth > 768) setMenu(false);
+});
+
+// Contact form with EmailJS & mailto fallback
+document.getElementById("contact-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+
+    var statusDiv = document.getElementById("form-status");
+    statusDiv.style.color = "var(--accent-gold)";
+    statusDiv.innerText = "Transmitting message...";
+
+    var name = document.getElementById("user_name").value;
+    var email = document.getElementById("user_email").value;
+    var message = document.getElementById("message").value;
+    var form = this;
+
+    function mailtoFallback() {
+        var subject = encodeURIComponent("Inquiry from " + name);
+        var body = encodeURIComponent(message + "\n\n---\nFrom: " + name + "\nEmail: " + email);
+        window.location.href = "mailto:origincircle5@gmail.com?subject=" + subject + "&body=" + body;
+        statusDiv.innerText = "Opening mail client...";
+        form.reset();
+    }
+
+    if (!window.emailjs) {
+        mailtoFallback();
+        return;
+    }
+
+    emailjs.send("YOUR_SERVICE_ID", "YOUR_TEMPLATE_ID", {
+        from_name: name,
+        from_email: email,
+        message: message
+    }).then(function () {
+        statusDiv.innerText = "Message transmitted successfully.";
+        form.reset();
+    }, mailtoFallback);
+});
+</script>
+
+</body>
+</html>
