@@ -1,733 +1,439 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Real-Time Solar System and Day/Night Lab | sapkotap.com.np</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pramod Sapkota — Creative Developer & Consultant</title>
+<meta name="description" content="Portfolio and development services by Pramod Sapkota.">
+<meta name="author" content="Pramod Sapkota">
+<link rel="icon" type="image/jpeg" href="favicon.jpg">
+
+<!-- Classic Serif & Sans Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Source+Sans+10:wght@300;400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<!-- EmailJS SDK -->
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+<script type="text/javascript">
+    (function(){
+        // Initialize EmailJS (Replace 'YOUR_PUBLIC_KEY' with your actual key if using EmailJS)
+        emailjs.init("YOUR_PUBLIC_KEY");
+    })();
+</script>
+
 <style>
-*{box-sizing:border-box}
-body{margin:0;background:#05060d;color:#dfe3ff;font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif}
-main{max-width:1020px;margin:0 auto;padding:20px 14px 56px}
-h1{font-size:30px;margin:0 0 4px;font-weight:600}
-h2{font-size:20px;margin:0 0 8px;font-weight:600}
-h3{font-size:18px;margin:0 0 10px;font-weight:600;display:flex;align-items:center;gap:8px}
-p{margin:0 0 10px}
-.sub{color:#8e95c4;margin:0 0 14px}
-.mu{color:#8e95c4;font-size:14px}
-.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;margin-bottom:14px}
-.st{border:1px solid #20244a;background:#0a0c1f;border-radius:12px;padding:10px 12px;font-size:14px;color:#b7bdea}
-.st b{display:block;color:#fff;font-weight:600;margin-bottom:2px}
-.stage{position:relative;border:1px solid #20244a;border-radius:14px;overflow:hidden}
-canvas{display:block}
-#cv{width:100%;height:60vh;min-height:340px;touch-action:none;cursor:grab}
-.hud{position:absolute;top:10px;left:10px;font:12px/1.5 ui-monospace,Menlo,Consolas,monospace;color:#aab2ee;background:rgba(5,6,13,.75);border:1px solid #20244a;border-radius:8px;padding:6px 10px;pointer-events:none}
-.note{position:absolute;bottom:10px;left:10px;right:10px;text-align:center;font-size:13px;color:#fff;background:rgba(60,52,137,.92);border-radius:8px;padding:6px 10px;display:none;pointer-events:none}
-.legend{font-size:13px;color:#8e95c4;margin:8px 0 0}
-.panel{margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-.lab{color:#8e95c4;font-size:13px;min-width:70px}
-button,select,input[type=number]{font:inherit;font-size:14px;color:#dfe3ff;background:#11142e;border:1px solid #2a2f63;border-radius:8px;padding:7px 12px}
-input[type=number]{width:96px}
-input[type=range]{accent-color:#afa9ec}
-button{cursor:pointer}
-button:hover{border-color:#7f77dd}
-button.on{background:#3c3489;border-color:#afa9ec}
-button.go{background:#534ab7;border-color:#afa9ec}
-label.ck{display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer}
-label.ck input{accent-color:#afa9ec}
-.box{margin-top:18px;border:1px solid #20244a;border-radius:14px;padding:16px;background:#0a0c1f}
-.dot{width:12px;height:12px;border-radius:50%;display:inline-block}
-.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;margin-bottom:12px}
-.f{border:1px solid #20244a;border-radius:10px;padding:8px 10px;background:#070918}
-.f span{display:block;font-size:12px;color:#8e95c4}
-.f b{font-weight:500;font-size:15px}
-.fm{border-left:3px solid #7f77dd;padding:4px 0 4px 12px;margin:10px 0}
-.fm .t{font-size:13px;color:#afa9ec;font-weight:600}
-.eq{font:15px/1.7 ui-monospace,Menlo,Consolas,monospace;color:#fff;overflow-wrap:anywhere}
-.ex{font-size:14px;color:#b7bdea}
-.res{color:#ffd166}
-.good{color:#5dcaa5}
-.wrap{overflow-x:auto}
-table{border-collapse:collapse;width:100%;font-size:14px;min-width:420px}
-th,td{text-align:left;padding:7px 8px;border-bottom:1px solid #20244a}
-th{color:#8e95c4;font-weight:500}
-code{font-family:ui-monospace,Menlo,Consolas,monospace;background:#1b1f45;padding:2px 6px;border-radius:5px;font-size:13px}
-.plain p{color:#b7bdea;font-size:15px}
-a{color:#afa9ec}
-.pv{display:flex;flex-wrap:wrap;gap:16px;margin-top:12px;align-items:flex-start}
-#gc{width:100%;max-width:360px;height:auto;flex:0 0 auto;background:#02030a;border:1px solid #20244a;border-radius:14px}
-#pinfo{flex:1;min-width:260px}
-.st-day{color:#ffd166}.st-tw{color:#f0997b}.st-night{color:#85b7eb}
-footer{margin-top:20px;text-align:center;color:#6c73a8;font-size:13px}
+:root {
+    --bg-color: #0d0f12;
+    --paper-card: #14181f;
+    --border-gold: #c5a059;
+    --border-subtle: rgba(197, 160, 89, 0.25);
+    --text-primary: #f2ebd9;
+    --text-muted: #a3a8b2;
+    --accent-gold: #d4af37;
+}
+
+.light {
+    --bg-color: #f7f5f0;
+    --paper-card: #ffffff;
+    --border-gold: #9e7b3b;
+    --border-subtle: rgba(158, 123, 59, 0.25);
+    --text-primary: #1c1d1f;
+    --text-muted: #5e626a;
+    --accent-gold: #8c6d31;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    scroll-behavior: smooth;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    font-family: 'Source Sans 10', Georgia, serif;
+    line-height: 1.7;
+    transition: background-color 0.4s ease, color 0.4s ease;
+}
+
+h1, h2, h3, .brand {
+    font-family: 'Cinzel', serif;
+    letter-spacing: 1px;
+}
+
+.serif-italic {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+}
+
+/* Header & Navigation */
+header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--bg-color);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+nav {
+    max-width: 1100px;
+    margin: auto;
+    padding: 25px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+}
+
+.brand {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--accent-gold);
+    text-transform: uppercase;
+    text-decoration: none;
+    letter-spacing: 2px;
+}
+
+nav ul {
+    display: flex;
+    gap: 35px;
+    list-style: none;
+}
+
+nav a {
+    color: var(--text-primary);
+    text-decoration: none;
+    font-size: 14px;
+    font-family: 'Cinzel', serif;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    transition: color 0.3s;
+}
+
+nav a:hover {
+    color: var(--accent-gold);
+}
+
+.nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.toggle-theme {
+    background: transparent;
+    border: 1px solid var(--border-subtle);
+    color: var(--accent-gold);
+    padding: 8px 16px;
+    cursor: pointer;
+    font-family: 'Cinzel', serif;
+    font-size: 12px;
+    letter-spacing: 1px;
+    transition: 0.3s;
+}
+
+.toggle-theme:hover {
+    border-color: var(--accent-gold);
+}
+
+/* Hamburger button (hidden on desktop) */
+.menu-toggle {
+    display: none;
+    background: transparent;
+    border: 1px solid var(--border-subtle);
+    color: var(--accent-gold);
+    width: 42px;
+    height: 36px;
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    transition: 0.3s;
+}
+
+.menu-toggle:hover {
+    border-color: var(--accent-gold);
+}
+
+/* Hero Section */
+.hero {
+    max-width: 1000px;
+    margin: 100px auto 80px;
+    padding: 0 20px;
+    text-align: center;
+}
+
+.hero-subtitle {
+    font-family: 'Cinzel', serif;
+    color: var(--accent-gold);
+    font-size: 14px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 15px;
+}
+
+.hero h1 {
+    font-size: 52px;
+    font-weight: 600;
+    line-height: 1.25;
+    margin-bottom: 25px;
+}
+
+.divider {
+    width: 80px;
+    height: 2px;
+    background: var(--accent-gold);
+    margin: 30px auto;
+}
+
+.hero p {
+    font-size: 20px;
+    color: var(--text-muted);
+    max-width: 720px;
+    margin: 0 auto 40px;
+}
+
+.btn-classic {
+    display: inline-block;
+    padding: 14px 32px;
+    border: 1px solid var(--accent-gold);
+    color: var(--accent-gold);
+    text-decoration: none;
+    font-family: 'Cinzel', serif;
+    font-size: 13px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    transition: all 0.3s ease;
+    background: transparent;
+    cursor: pointer;
+    text-align: center;
+}
+
+.btn-classic:hover {
+    background: var(--accent-gold);
+    color: var(--bg-color);
+}
+
+/* Sections */
+section {
+    max-width: 1000px;
+    margin: 100px auto;
+    padding: 0 20px;
+}
+
+.section-header {
+    text-align: center;
+    margin-bottom: 60px;
+}
+
+.section-header h2 {
+    font-size: 32px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+}
+
+.grid-3 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 30px;
+}
+
+.classic-card {
+    background: var(--paper-card);
+    border: 1px solid var(--border-subtle);
+    padding: 40px 30px;
+    transition: border-color 0.3s;
+}
+
+.classic-card:hover {
+    border-color: var(--accent-gold);
+}
+
+.classic-card h3 {
+    font-size: 20px;
+    margin-bottom: 15px;
+    color: var(--accent-gold);
+}
+
+.classic-card p {
+    color: var(--text-muted);
+    font-size: 15px;
+}
+
+/* Contact Form */
+.contact-form {
+    background: var(--paper-card);
+    border: 1px solid var(--border-subtle);
+    padding: 40px;
+}
+
+.form-group {
+    margin-bottom: 25px;
+}
+
+.form-group label {
+    display: block;
+    font-family: 'Cinzel', serif;
+    font-size: 12px;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+    color: var(--accent-gold);
+    text-transform: uppercase;
+}
+
+input, textarea {
+    width: 100%;
+    padding: 12px 15px;
+    background: transparent;
+    border: 1px solid var(--border-subtle);
+    color: var(--text-primary);
+    font-family: 'Source Sans 10', serif;
+    font-size: 16px; /* 16px prevents iOS zoom on focus */
+    outline: none;
+    transition: border-color 0.3s;
+}
+
+input:focus, textarea:focus {
+    border-color: var(--accent-gold);
+}
+
+textarea {
+    height: 130px;
+    resize: vertical;
+}
+
+#form-status {
+    margin-top: 15px;
+    font-size: 14px;
+    text-align: center;
+    font-family: 'Cinzel', serif;
+}
+
+.link-container {
+    margin-top: 25px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-subtle);
+    text-align: center;
+}
+
+.link-container p {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+    font-family: 'Cinzel', serif;
+    letter-spacing: 1px;
+}
+
+footer {
+    border-top: 1px solid var(--border-subtle);
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-muted);
+    font-size: 13px;
+    font-family: 'Cinzel', serif;
+    letter-spacing: 1px;
+}
+
+/* ---------- Mobile ---------- */
+@media (max-width: 768px) {
+    nav {
+        padding: 18px 20px;
+        flex-wrap: wrap;
+    }
+
+    .brand {
+        font-size: 17px;
+        letter-spacing: 1px;
+    }
+
+    .menu-toggle {
+        display: inline-block;
+    }
+
+    /* Menu is now a dropdown instead of being hidden */
+    nav ul {
+        display: none;
+        flex-direction: column;
+        gap: 0;
+        width: 100%;
+        order: 3;
+        margin-top: 10px;
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    nav ul.open {
+        display: flex;
+    }
+
+    nav ul li {
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    nav ul li:last-child {
+        border-bottom: none;
+    }
+
+    nav ul a {
+        display: block;
+        padding: 16px 4px;
+        font-size: 14px;
+    }
+
+    .hero { margin: 60px auto 50px; }
+    .hero h1 { font-size: 34px; }
+    .hero p { font-size: 17px; }
+
+    section { margin: 60px auto; }
+    .section-header { margin-bottom: 40px; }
+    .section-header h2 { font-size: 26px; }
+
+    .grid-2 { grid-template-columns: 1fr; gap: 30px; }
+    .grid-3 { grid-template-columns: 1fr; }
+
+    .classic-card { padding: 30px 22px; }
+    .contact-form { padding: 28px 20px; }
+}
+
+@media (max-width: 380px) {
+    .brand { font-size: 15px; }
+    .toggle-theme { padding: 8px 10px; }
+}
 </style>
 </head>
+
 <body>
+
+<header>
+    <nav>
+        <a href="#" class="brand">Pramod Sapkota</a>
+
+        <ul id="nav-menu">
+            <li><a href="#about">About</a></li>
+            <li><a href="#services">Services</a></li>
+            <li><a href="#contact">Contact</a></li>
+            <li><a href="/page0001/" class="ext-link" target="_blank" rel="noopener">GET STARTED</a></li>
+            <li><a href="/Work/" class="ext-link" target="_blank" rel="noopener">More additional work</a></li>
+        </ul>
+
+        <div class="nav-actions">
+            <button class="toggle-theme" onclick="toggleTheme()">Theme</button>
+            <button class="menu-toggle" id="menu-toggle" aria-label="Toggle menu" aria-expanded="false" onclick="toggleMenu()">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+</header>
+
 <main>
-<h1>Real-Time Solar System and Day/Night Lab</h1>
-<p class="sub">Real planet positions for any date, real rotation speeds, and live day and night on every planet</p>
-
-<div class="steps">
-  <div class="st"><b>1. Real time by default</b>The page starts at the real current moment and runs at the real pace (1×). Speed it up to watch more.</div>
-  <div class="st"><b>2. Pick any date</b>Planets sit where they really are, from 3000 BC to 3000 AD.</div>
-  <div class="st"><b>3. Pick a planet</b>See its day and night on a spinning globe, plus the physics behind it.</div>
-</div>
-
-<div class="stage">
-  <canvas id="cv" aria-label="Solar system at real positions"></canvas>
-  <div class="hud" id="hud"></div>
-  <div class="note" id="note"></div>
-</div>
-<p class="legend">Planet sizes are drawn bigger than real. Red arrow: pull of gravity. Green arrow: direction of travel. Dashed lines: real orbit paths. View is from above the Sun.</p>
-
-<div class="panel">
-  <span class="lab">Date</span>
-  <input type="number" id="dy" min="1" max="31" value="1" aria-label="Day">
-  <select id="mo" aria-label="Month"></select>
-  <input type="number" id="yr" min="1" max="3000" value="2000" aria-label="Year">
-  <select id="era" aria-label="Era"><option>AD</option><option>BC</option></select>
-  <input type="number" id="hh" min="0" max="23" value="0" aria-label="UTC hour"><span class="mu">h UTC</span>
-  <button class="go" id="go">Go to date</button>
-</div>
-<div class="panel">
-  <span class="lab">Jump to</span>
-  <button id="d0">Right now</button>
-  <button id="d1">Apollo 11 launch</button>
-  <button id="d2">Year 2000</button>
-  <button id="d3">Year 1000 AD</button>
-  <button id="d4">Year 2500 BC</button>
-  <button id="d5">Year 3000 AD</button>
-</div>
-<div class="panel">
-  <span class="lab">Time</span>
-  <button id="play">Pause</button>
-  <span id="speeds" class="panel" style="margin:0"></span>
-  <label class="ck"><input type="checkbox" id="rev">Run backwards</label>
-</div>
-<p class="mu" style="margin:6px 0 0">At 1× everything moves at its true pace. Earth turns only 0.004° per second, so to watch the day and night move use 1 min/s or 1 hour/s.</p>
-<div class="panel">
-  <span class="lab">Mode</span>
-  <button id="mEph" class="on">Real positions (JPL)</button>
-  <button id="mPhys">Newton physics (N-body)</button>
-  <span class="mu">Newton mode starts from the real positions, then moves the planets using only gravity. Hollow rings show where the real planets are.</span>
-</div>
-<div class="panel">
-  <span class="lab">View</span>
-  <button id="vIn">Inner planets</button><button id="vOut">Outer planets</button><button id="vAll">Whole system</button>
-  <button id="zin">Zoom +</button><button id="zout">Zoom -</button>
-  <label class="ck"><input type="checkbox" id="follow">Follow selected</label>
-  <label class="ck"><input type="checkbox" id="labels" checked>Names</label>
-  <label class="ck"><input type="checkbox" id="orbits" checked>Orbit paths</label>
-</div>
-
-<section class="box">
-  <h2>Day and night on a planet</h2>
-  <p class="mu">The lit side faces the Sun. The globe spins at the planet's real rotation speed, and the Sun's direction comes from the real positions above.</p>
-  <div class="panel" style="margin-top:0" id="pbtn"></div>
-  <div class="panel">
-    <span class="lab">Place</span>
-    <select id="place" aria-label="Place"></select>
-    <label class="mu">Lat <input type="number" id="lat" value="27.717" min="-90" max="90" step="0.1"></label>
-    <label class="mu">Lon <input type="number" id="lon" value="85.324" min="-180" max="180" step="0.1"></label>
-  </div>
-  <div class="panel">
-    <span class="lab">Camera</span>
-    <input type="range" id="ang" min="10" max="150" value="90" style="flex:1;min-width:200px" aria-label="Camera angle from the Sun">
-    <span class="mu" id="angv"></span>
-  </div>
-  <div class="pv">
-    <canvas id="gc" width="360" height="360" aria-label="Globe showing day and night"></canvas>
-    <div id="pinfo"></div>
-  </div>
-</section>
-
-<section class="box" id="card"></section>
-
-<section class="box">
-  <h2>Gravity calculator: F = G × M × m / (r + h)²</h2>
-  <p class="mu">Here r is the radius of the big body and h is how high you are above its surface. Together, r + h is your distance from its centre.</p>
-  <div class="panel" style="margin-top:0">
-    <select id="cb" aria-label="Body"></select>
-    <label class="mu">Your mass (kg) <input type="number" id="cm" value="70" min="0"></label>
-    <label class="mu">Height h (km) <input type="number" id="ch" value="0" min="0"></label>
-  </div>
-  <div class="panel">
-    <button data-h="0">On the ground</button><button data-h="11">Airliner, 11 km</button>
-    <button data-h="408">ISS, 408 km</button><button data-h="20200">GPS satellite, 20,200 km</button>
-    <button data-h="384400">Moon distance</button>
-  </div>
-  <div id="cout" style="margin-top:12px"></div>
-  <h3 style="margin-top:14px">Surface gravity on every world</h3>
-  <div class="wrap"><table id="ctab"></table></div>
-</section>
-
-<section class="box plain">
-  <h2>How this matches the real solar system</h2>
-  <p><b>Real positions.</b> Orbit positions come from NASA/JPL's published Keplerian elements (E. M. Standish and J. G. Williams). Between 1800 and 2050 it uses JPL's high-accuracy table. From 3000 BC to 3000 AD it uses JPL's long-range table, accurate to within about half a degree in the worst case.</p>
-  <p><b>Day and night.</b> Each planet's spin axis direction and rotation rate come from the IAU working group values. The page combines the planet's real spin angle with the real direction of the Sun to find where it is noon, where it is night, and where the Sun is straight overhead. For Earth this is accurate to about a minute of time. For other planets the rotation phase is approximate, so it is good for learning but not for exact predictions.</p>
-  <p><b>Sunrise on other worlds.</b> A solar day is not the same as one spin. Mercury spins once in 58.6 Earth days but has a 176-day solar day. Venus spins backwards and has a 117-day solar day. Uranus lies on its side, so its poles get decades of continuous daylight and darkness.</p>
-  <p><b>Newton mode.</b> Starting from the real positions, only <code>F = G × M × m / (r + h)²</code> between all bodies moves the planets. If the filled planets stay on their rings, Newton's law is reproducing the real motion.</p>
-  <p class="mu">Limits: the main view is a top-down 2D picture of 3D orbits. Earth's position is the Earth-Moon centre of mass. Continents are drawn very coarsely and other planets show simple colours and latitude lines. Gas giants have no solid surface, so their rotation is the internal one. Dates before 15 October 1582 use the Julian calendar. Source: <a href="https://ssd.jpl.nasa.gov/planets/approx_pos.html" target="_blank" rel="noopener">NASA JPL Solar System Dynamics</a>.</p>
-</section>
-<footer>Built for sapkotap.com.np</footer>
-</main>
-
-<script>
-const $=id=>document.getElementById(id);
-const G=6.6743e-11,AU=1.495978707e11,DAY=86400,D2R=Math.PI/180,DT=21600;
-const MSUN=1.98847e30,RSUN=6.9634e8,EPS=23.43928*D2R;
-const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-const P=[
-{n:'Mercury',m:3.3011e23,R:2.4397e6,c:'#b8aea3',vis:2.8},
-{n:'Venus',m:4.8675e24,R:6.0518e6,c:'#e8c27a',vis:3.8},
-{n:'Earth',m:6.0457e24,R:6.371e6,c:'#4fa3ff',vis:4},
-{n:'Mars',m:6.4171e23,R:3.3895e6,c:'#e2674a',vis:3.3},
-{n:'Jupiter',m:1.8982e27,R:6.9911e7,c:'#d9a066',vis:7},
-{n:'Saturn',m:5.6834e26,R:5.8232e7,c:'#ead49a',vis:6.2},
-{n:'Uranus',m:8.681e25,R:2.5362e7,c:'#8fe3e8',vis:5},
-{n:'Neptune',m:1.02413e26,R:2.4622e7,c:'#5b7cff',vis:5}];
-const T1=[
-[0.38709927,0.00000037,0.20563593,0.00001906,7.00497902,-0.00594749,252.25032350,149472.67411175,77.45779628,0.16047689,48.33076593,-0.12534081],
-[0.72333566,0.00000390,0.00677672,-0.00004107,3.39467605,-0.00078890,181.97909950,58517.81538729,131.60246718,0.00268329,76.67984255,-0.27769418],
-[1.00000261,0.00000562,0.01671123,-0.00004392,-0.00001531,-0.01294668,100.46457166,35999.37244981,102.93768193,0.32327364,0,0],
-[1.52371034,0.00001847,0.09339410,0.00007882,1.84969142,-0.00813131,-4.55343205,19140.30268499,-23.94362959,0.44441088,49.55953891,-0.29257343],
-[5.20288700,-0.00011607,0.04838624,-0.00013253,1.30439695,-0.00183714,34.39644051,3034.74612775,14.72847983,0.21252668,100.47390909,0.20469106],
-[9.53667594,-0.00125060,0.05386179,-0.00050991,2.48599187,0.00193609,49.95424423,1222.49362201,92.59887831,-0.41897216,113.66242448,-0.28867794],
-[19.18916464,-0.00196176,0.04725744,-0.00004397,0.77263783,-0.00242939,313.23810451,428.48202785,170.95427630,0.40805281,74.01692503,0.04240589],
-[30.06992276,0.00026291,0.00859048,0.00005105,1.77004347,0.00035372,-55.12002969,218.45945325,44.96476227,-0.32241464,131.78422574,-0.00508664]];
-const T2=[
-[0.38709843,0.00000000,0.20563661,0.00002123,7.00559432,-0.00590158,252.25166724,149472.67486623,77.45771895,0.15940013,48.33961819,-0.12214182],
-[0.72332102,-0.00000026,0.00676399,-0.00005107,3.39777545,0.00043494,181.97970850,58517.81560260,131.76755713,0.05679648,76.67261496,-0.27274174],
-[1.00000018,-0.00000003,0.01673163,-0.00003661,-0.00054346,-0.01337178,100.46691572,35999.37306329,102.93005885,0.31795260,-5.11260389,-0.24123856],
-[1.52371243,0.00000097,0.09336511,0.00009149,1.85181869,-0.00724757,-4.56813164,19140.29934243,-23.91744784,0.45223625,49.71320984,-0.26852431],
-[5.20248019,-0.00002864,0.04853590,0.00018026,1.29861416,-0.00322699,34.33479152,3034.90371757,14.27495244,0.18199196,100.29282654,0.13024619],
-[9.54149883,-0.00003065,0.05550825,-0.00032044,2.49424102,0.00451969,50.07571329,1222.11494724,92.86136063,0.54179478,113.63998702,-0.25015002],
-[19.18797948,-0.00020455,0.04685740,-0.00001550,0.77298127,-0.00180155,314.20276625,428.49512595,172.43404441,0.09266985,73.96250215,0.05739699],
-[30.06952752,0.00006447,0.00895439,0.00000818,1.77005520,0.00022400,304.22289287,218.46515314,46.68158724,0.01009938,131.78635853,-0.00606302]];
-const BCS=[[-0.00012452,0.06064060,-0.35635438,38.35125],[0.00025899,-0.13434469,0.87320147,38.35125],[0.00058331,-0.97731848,0.17689245,7.67025],[-0.00041348,0.68346318,-0.10162547,7.67025]];
-/* IAU rotation: pole RA, pole Dec, W0 (deg at J2000), spin rate (deg/day) */
-const ROT=[
-[281.01,61.45,329.5988,6.1385108],
-[272.76,67.16,160.20,-1.4813688],
-[0.0,90.0,190.147,360.9856235],
-[317.68143,52.88650,176.630,350.89198226],
-[268.056595,64.495303,284.95,870.5366420],
-[40.589,83.537,38.90,810.7939024],
-[257.311,-15.175,203.81,-501.1600928],
-[299.36,43.46,253.18,536.3128492]];
-const REQ=[2439.7,6051.8,6378.137,3396.2,71492,60268,25559,24764];
-const OBL=[0.03,177.36,23.44,25.19,3.13,26.73,97.77,28.32];
-const PLACES={
-2:[['Kathmandu, Nepal',27.717,85.324],['London, UK',51.507,-0.128],['New York, USA',40.713,-74.006],['Tokyo, Japan',35.676,139.65],['Sydney, Australia',-33.869,151.209],['Cairo, Egypt',30.044,31.236],['Rio de Janeiro, Brazil',-22.907,-43.173],['Longyearbyen, Norway (78°N)',78.22,15.65],['North Pole',90,0],['South Pole',-90,0]],
-3:[['Jezero crater (Perseverance)',18.44,77.45],['Olympus Mons',18.65,-133.8],['Equator, 0° meridian',0,0],['North pole',90,0],['South pole',-90,0]],
-def:[['Equator, 0° meridian',0,0],['North pole',90,0],['South pole',-90,0]]};
-const CALC=[
-{n:'Earth',M:5.9722e24,R:6.371e6},{n:'Moon',M:7.342e22,R:1.7374e6},{n:'Mars',M:6.4171e23,R:3.3895e6},
-{n:'Venus',M:4.8675e24,R:6.0518e6},{n:'Mercury',M:3.3011e23,R:2.4397e6},{n:'Jupiter',M:1.8982e27,R:6.9911e7},
-{n:'Saturn',M:5.6834e26,R:5.8232e7},{n:'Uranus',M:8.681e25,R:2.5362e7},{n:'Neptune',M:1.02413e26,R:2.4622e7},
-{n:'Sun',M:1.98847e30,R:6.9634e8}];
-const SPEEDS=[{l:'Real time 1×',d:1/86400},{l:'1 min/s',d:1/1440},{l:'1 hour/s',d:1/24},{l:'1 day/s',d:1},{l:'1 month/s',d:30.4},{l:'1 year/s',d:365.25},{l:'10 years/s',d:3652.5},{l:'100 years/s',d:36525},{l:'1000 years/s',d:365250}];
-const POLYS=[
-[[-165,65],[-156,71],[-140,70],[-120,70],[-95,72],[-82,69],[-78,62],[-65,60],[-56,52],[-66,44],[-70,42],[-76,36],[-81,31],[-80,25],[-83,29],[-90,30],[-97,27],[-97,21],[-90,21],[-87,16],[-83,10],[-78,8],[-80,7],[-86,11],[-92,14],[-98,16],[-105,20],[-110,24],[-112,30],[-115,30],[-117,33],[-124,40],[-124,48],[-130,54],[-140,59],[-150,60],[-158,57],[-165,60]],
-[[-73,78],[-60,82],[-30,83],[-20,75],[-22,70],[-40,65],[-44,60],[-52,64],[-58,75]],
-[[-78,9],[-72,12],[-62,10],[-52,5],[-50,0],[-44,-2],[-35,-6],[-38,-13],[-41,-22],[-48,-26],[-53,-34],[-58,-38],[-62,-40],[-65,-45],[-68,-52],[-72,-54],[-75,-48],[-73,-38],[-71,-30],[-70,-18],[-76,-14],[-81,-5],[-80,0],[-77,4]],
-[[-17,21],[-13,28],[-6,35],[10,37],[11,33],[20,31],[32,31],[34,27],[38,18],[43,12],[51,12],[48,5],[41,-3],[40,-15],[35,-24],[32,-29],[26,-34],[18,-34],[15,-27],[12,-17],[13,-6],[9,3],[5,5],[-4,5],[-8,4],[-13,8],[-17,14]],
-[[-9,37],[-9,43],[-2,43.5],[-1,46],[-5,48],[2,51],[8,54],[9,57],[12,56],[18,59],[22,65],[25,66],[30,70],[40,68],[44,68],[60,69],[70,73],[80,73],[100,77],[112,74],[130,72],[142,72],[160,70],[170,70],[180,68],[180,65],[170,60],[160,60],[156,51],[142,53],[141,46],[135,44],[131,42],[129,36],[126,38],[122,40],[122,37],[119,35],[121,30],[118,24],[110,21],[108,16],[106,10],[104,9],[100,13],[100,7],[102,2],[104,1],[100,5],[98,10],[98,16],[94,17],[91,22],[87,21],[80,15],[78,8],[73,17],[72,21],[67,25],[62,25],[57,26],[56,27],[52,28],[49,30],[48,29],[50,26],[56,24],[59,22],[55,17],[44,13],[43,16],[39,22],[35,28],[34,32],[36,36],[30,36],[27,37],[26,40],[23,40],[23,36],[20,40],[19,42],[14,45],[12,44],[16,41],[16,38],[12,38],[9,44],[3,43],[0,39],[-1,37],[-5,36]],
-[[114,-22],[122,-18],[130,-12],[136,-12],[142,-11],[146,-19],[153,-26],[150,-37],[141,-38],[131,-31],[115,-34]],
-[[-5,50],[1,51],[2,53],[-2,56],[-3,58.5],[-6,58],[-5,55],[-3,54]],
-[[130,31],[135,34],[140,36],[142,40],[141,45],[139,38],[132,34]],
-[[44,-25],[47,-25],[50,-15],[49,-12],[44,-17]],
-[[109,1],[117,7],[119,1],[116,-4],[110,-3]],
-[[95,5],[98,4],[106,-4],[104,-6],[100,-2]],
-[[-180,-70],[-180,-90],[180,-90],[180,-70]]];
-const LAND=new Uint8Array(720*360);
-(function(){
-  const c=document.createElement('canvas');c.width=720;c.height=360;const x=c.getContext('2d');
-  x.fillStyle='#000';x.fillRect(0,0,720,360);x.fillStyle='#fff';
-  POLYS.forEach(function(poly){x.beginPath();poly.forEach(function(p,k){const a=(p[0]+180)*2,b=(90-p[1])*2;if(k)x.lineTo(a,b);else x.moveTo(a,b)});x.closePath();x.fill()});
-  const d=x.getImageData(0,0,720,360).data;
-  for(let k=0;k<LAND.length;k++)LAND[k]=d[k*4]>127?1:0;
-})();
-
-function sup(x,d){if(!isFinite(x)||x===0)return '0';const e=Math.floor(Math.log10(Math.abs(x))),m=x/Math.pow(10,e);return m.toFixed(d===undefined?2:d)+' × 10<sup>'+e+'</sup>'}
-function fx(x){if(x===0)return '0';const a=Math.abs(x);if(a>=1e6||a<1e-2)return sup(x,2);return x.toLocaleString('en-US',{maximumSignificantDigits:4})}
-function num(x){return Math.round(x).toLocaleString('en-US')}
-function fact(l,v){return '<div class="f"><span>'+l+'</span><b>'+v+'</b></div>'}
-function dur(s){if(s<5400)return (s/60).toFixed(1)+' minutes';if(s<172800)return (s/3600).toFixed(1)+' hours';if(s<2*365.25*DAY)return (s/DAY).toFixed(1)+' days';return (s/365.25/DAY).toFixed(1)+' years'}
-function hm(days){if(days>=3)return days.toFixed(2)+' days';const m=Math.round(days*1440);return Math.floor(m/60)+'h '+(m%60)+'m'}
-const pad=n=>(n<10?'0':'')+n;
-const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
-const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
-const norm=a=>{const m=Math.hypot(a[0],a[1],a[2])||1;return [a[0]/m,a[1]/m,a[2]/m]};
-function Rz(t){const c=Math.cos(t),s=Math.sin(t);return [c,s,0,-s,c,0,0,0,1]}
-function Rx(t){const c=Math.cos(t),s=Math.sin(t);return [1,0,0,0,c,s,0,-s,c]}
-function mm(A,B){const o=[];for(let r=0;r<3;r++)for(let c=0;c<3;c++)o.push(A[r*3]*B[c]+A[r*3+1]*B[3+c]+A[r*3+2]*B[6+c]);return o}
-function mv(A,v){return [A[0]*v[0]+A[1]*v[1]+A[2]*v[2],A[3]*v[0]+A[4]*v[1]+A[5]*v[2],A[6]*v[0]+A[7]*v[1]+A[8]*v[2]]}
-
-function toJd(Y,M,D){
-  const gr=(Y>1582)||(Y===1582&&(M>10||(M===10&&D>=15)));
-  let y=Y,m=M;if(m<=2){y--;m+=12}
-  const A=Math.floor(y/100),B=gr?2-A+Math.floor(A/4):0;
-  return Math.floor(365.25*(y+4716))+Math.floor(30.6001*(m+1))+D+B-1524.5;
-}
-function fromJd(j){
-  const z0=j+0.5,Z=Math.floor(z0),F=z0-Z;let A=Z;
-  if(Z>=2299161){const al=Math.floor((Z-1867216.25)/36524.25);A=Z+1+al-Math.floor(al/4)}
-  const B=A+1524,C=Math.floor((B-122.1)/365.25),D=Math.floor(365.25*C),E=Math.floor((B-D)/30.6001);
-  const day=B-D-Math.floor(30.6001*E)+F,month=E<14?E-1:E-13,year=month>2?C-4716:C-4715;
-  return {y:year,m:month,d:Math.floor(day)};
-}
-function label(o){return o.d+' '+MONTHS[o.m-1]+' '+(o.y<=0?(1-o.y)+' BC':o.y+' AD')}
-function hms(j){const f=(((j+0.5)%1)+1)%1,s=Math.floor(f*86400);return pad(Math.floor(s/3600))+':'+pad(Math.floor(s%3600/60))+':'+pad(s%60)}
-function jdNow(){return Date.now()/86400000+2440587.5}
-const JDMIN=toJd(-2999,1,1),JDMAX=toJd(3000,12,31);
-
-function elems(i,T){
-  const inR=T>=-2&&T<=0.5,E=(inR?T1:T2)[i],o={};
-  o.a=E[0]+E[1]*T;o.e=E[2]+E[3]*T;o.I=E[4]+E[5]*T;o.L=E[6]+E[7]*T;o.w=E[8]+E[9]*T;o.O=E[10]+E[11]*T;
-  let M=o.L-o.w;
-  if(!inR&&i>=4){const q=BCS[i-4];M+=q[0]*T*T+q[1]*Math.cos(q[3]*T*D2R)+q[2]*Math.sin(q[3]*T*D2R)}
-  o.M=((M+180)%360+360)%360-180;
-  return o;
-}
-function helio(i,jd){
-  const T=(jd-2451545)/36525,o=elems(i,T),e=o.e,M=o.M*D2R;
-  let Ea=M+e*Math.sin(M);
-  for(let k=0;k<15;k++){const d=(M-(Ea-e*Math.sin(Ea)))/(1-e*Math.cos(Ea));Ea+=d;if(Math.abs(d)<1e-11)break}
-  const xp=o.a*(Math.cos(Ea)-e),yp=o.a*Math.sqrt(1-e*e)*Math.sin(Ea);
-  const w=(o.w-o.O)*D2R,O=o.O*D2R,I=o.I*D2R;
-  const cw=Math.cos(w),sw=Math.sin(w),cO=Math.cos(O),sO=Math.sin(O),cI=Math.cos(I),sI=Math.sin(I);
-  return [(cw*cO-sw*sO*cI)*xp+(-sw*cO-cw*sO*cI)*yp,
-          (cw*sO+sw*cO*cI)*xp+(-sw*sO+cw*cO*cI)*yp,
-          (sw*sI)*xp+(cw*sI)*yp].map(v=>v*AU);
-}
-function velHelio(i,jd){
-  const h=0.25,a=helio(i,jd-h),b=helio(i,jd+h);
-  return [(b[0]-a[0])/(2*h*DAY),(b[1]-a[1])/(2*h*DAY),(b[2]-a[2])/(2*h*DAY)];
-}
-function periodDays(i,jd){const T=(jd-2451545)/36525;return 36525*360/((T>=-2&&T<=0.5?T1:T2)[i][7])}
-
-const cv=$('cv'),ctx=cv.getContext('2d');
-let W=0,H=0,dpr=1,mode='eph',jd=jdNow(),dir=1,speedDays=1/86400,paused=false,sel=2,sim=null,capped=false;
-let cam={x:0,y:0,s:1e-9},ptr=null,frameN=0,last=performance.now(),nt=null;
-let viewAng=90,pLat=27.717,pLon=85.324,gDirty=true;
-const stars=[];
-for(let i=0;i<220;i++)stars.push({x:Math.random(),y:Math.random(),s:Math.random()<.8?1:1.6,a:.2+Math.random()*.6});
-const toS=(x,y)=>[(x-cam.x)*cam.s+W/2,(y-cam.y)*cam.s+H/2];
-function resize(){dpr=Math.min(window.devicePixelRatio||1,2);W=cv.clientWidth;H=cv.clientHeight;cv.width=W*dpr;cv.height=H*dpr}
-window.addEventListener('resize',resize);
-function note(t){const n=$('note');n.textContent=t;n.style.display='block';clearTimeout(nt);nt=setTimeout(function(){n.style.display='none'},6000)}
-
-function cur(){
-  const out=[];
-  if(mode==='phys'){
-    const s=sim[0];
-    sim.forEach(function(b,k){out.push({n:b.n,c:b.c,vis:b.vis,m:b.m,R:b.R,i:k-1,x:b.x-s.x,y:b.y-s.y,z:b.z-s.z,vx:b.vx-s.vx,vy:b.vy-s.vy,vz:b.vz-s.vz})});
-  }else{
-    out.push({n:'Sun',c:'#ffd166',vis:9,m:MSUN,R:RSUN,i:-1,x:0,y:0,z:0,vx:0,vy:0,vz:0});
-    for(let i=0;i<8;i++){
-      const p=helio(i,jd),v=velHelio(i,jd);
-      out.push({n:P[i].n,c:P[i].c,vis:P[i].vis,m:P[i].m,R:P[i].R,i:i,x:p[0],y:p[1],z:p[2],vx:v[0],vy:v[1],vz:v[2]});
-    }
-  }
-  return out;
-}
-function initPhys(){
-  sim=[{n:'Sun',m:MSUN,R:RSUN,c:'#ffd166',vis:9,x:0,y:0,z:0,vx:0,vy:0,vz:0,ax:0,ay:0,az:0}];
-  for(let i=0;i<8;i++){
-    const p=helio(i,jd),v=velHelio(i,jd);
-    sim.push({n:P[i].n,m:P[i].m,R:P[i].R,c:P[i].c,vis:P[i].vis,x:p[0],y:p[1],z:p[2],vx:v[0],vy:v[1],vz:v[2],ax:0,ay:0,az:0});
-  }
-  let px=0,py=0,pz=0,mt=0;
-  for(const b of sim){px+=b.vx*b.m;py+=b.vy*b.m;pz+=b.vz*b.m;mt+=b.m}
-  for(const b of sim){b.vx-=px/mt;b.vy-=py/mt;b.vz-=pz/mt}
-}
-function accel(){
-  const n=sim.length;
-  for(const b of sim){b.ax=0;b.ay=0;b.az=0}
-  for(let i=0;i<n;i++){
-    const a=sim[i];
-    for(let j=i+1;j<n;j++){
-      const b=sim[j],dx=b.x-a.x,dy=b.y-a.y,dz=b.z-a.z,d2=dx*dx+dy*dy+dz*dz+1,inv=1/(d2*Math.sqrt(d2));
-      const fa=G*b.m*inv,fb=G*a.m*inv;
-      a.ax+=dx*fa;a.ay+=dy*fa;a.az+=dz*fa;b.ax-=dx*fb;b.ay-=dy*fb;b.az-=dz*fb;
-    }
-  }
-}
-function step(dt){
-  accel();
-  for(const b of sim){b.vx+=b.ax*dt/2;b.vy+=b.ay*dt/2;b.vz+=b.az*dt/2;b.x+=b.vx*dt;b.y+=b.vy*dt;b.z+=b.vz*dt}
-  accel();
-  for(const b of sim){b.vx+=b.ax*dt/2;b.vy+=b.ay*dt/2;b.vz+=b.az*dt/2}
-}
-
-function arrow(x1,y1,dx,dy,len,col,txt){
-  const m=Math.hypot(dx,dy);if(m<1e-30)return;
-  const ux=dx/m,uy=dy/m,x2=x1+ux*len,y2=y1+uy*len;
-  ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=2;
-  ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
-  ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2-ux*9-uy*4.5,y2-uy*9+ux*4.5);ctx.lineTo(x2-ux*9+uy*4.5,y2-uy*9-ux*4.5);ctx.closePath();ctx.fill();
-  ctx.font='11px system-ui,sans-serif';ctx.fillText(txt,x2+6,y2+4);
-}
-function draw(B){
-  ctx.setTransform(dpr,0,0,dpr,0,0);
-  ctx.fillStyle='#05060d';ctx.fillRect(0,0,W,H);
-  ctx.fillStyle='#fff';
-  for(const s of stars){ctx.globalAlpha=s.a;ctx.fillRect(s.x*W,s.y*H,s.s,s.s)}
-  ctx.globalAlpha=1;
-  if($('orbits').checked){
-    ctx.strokeStyle='rgba(175,185,255,0.22)';ctx.lineWidth=1;ctx.setLineDash([4,6]);
-    for(let i=0;i<8;i++){
-      const Pd=periodDays(i,jd);
-      ctx.beginPath();
-      for(let k=0;k<=120;k++){
-        const q=helio(i,jd-Pd/2+k*Pd/120),p=toS(q[0],q[1]);
-        if(k)ctx.lineTo(p[0],p[1]);else ctx.moveTo(p[0],p[1]);
-      }
-      ctx.stroke();
-    }
-    ctx.setLineDash([]);
-  }
-  if(mode==='phys'){
-    ctx.lineWidth=1.3;
-    for(let i=0;i<8;i++){
-      const q=helio(i,jd),p=toS(q[0],q[1]);
-      ctx.strokeStyle=P[i].c;ctx.beginPath();ctx.arc(p[0],p[1],P[i].vis+5,0,7);ctx.stroke();
-    }
-  }
-  for(const b of B){
-    const p=toS(b.x,b.y);
-    if(p[0]<-60||p[0]>W+60||p[1]<-60||p[1]>H+60)continue;
-    if(b.i<0){
-      const g=ctx.createRadialGradient(p[0],p[1],b.vis*0.4,p[0],p[1],b.vis*3);
-      g.addColorStop(0,'rgba(255,205,100,0.55)');g.addColorStop(1,'rgba(255,205,100,0)');
-      ctx.fillStyle=g;ctx.beginPath();ctx.arc(p[0],p[1],b.vis*3,0,7);ctx.fill();
-    }
-    ctx.fillStyle=b.c;ctx.beginPath();ctx.arc(p[0],p[1],b.vis,0,7);ctx.fill();
-    if(b.i===sel){ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(p[0],p[1],b.vis+9,0,7);ctx.stroke()}
-    if($('labels').checked){ctx.fillStyle='#b9c0f0';ctx.font='12px system-ui,sans-serif';ctx.fillText(b.n,p[0]+b.vis+5,p[1]-b.vis-3)}
-  }
-  const s=B[sel+1],p=toS(s.x,s.y);let gx=0,gy=0;
-  for(const o of B){
-    if(o===s)continue;
-    const dx=o.x-s.x,dy=o.y-s.y,dz=o.z-s.z,d=Math.sqrt(dx*dx+dy*dy+dz*dz),k=G*o.m/(d*d*d);
-    gx+=dx*k;gy+=dy*k;
-  }
-  arrow(p[0],p[1],gx,gy,46,'#ff6b6b','gravity');
-  arrow(p[0],p[1],s.vx,s.vy,46,'#5dcaa5','velocity');
-}
-
-/* ---------- planet globe: day and night ---------- */
-function rotMat(i){
-  const r=ROT[i];let Wd=(r[2]+r[3]*(jd-2451545))%360;if(Wd<0)Wd+=360;
-  return mm(Rz(Wd*D2R),mm(Rx((90-r[1])*D2R),Rz((90+r[0])*D2R)));
-}
-function sunVec(B){
-  const s=B[sel+1],d=Math.sqrt(s.x*s.x+s.y*s.y+s.z*s.z);
-  const x=-s.x/d,y=-s.y/d,z=-s.z/d;
-  return [x,Math.cos(EPS)*y-Math.sin(EPS)*z,Math.sin(EPS)*y+Math.cos(EPS)*z];
-}
-const gc=$('gc'),gx=gc.getContext('2d'),tmp=document.createElement('canvas');
-tmp.width=tmp.height=300;
-const tx=tmp.getContext('2d'),img=tx.createImageData(300,300),px=img.data,col=[0,0,0];
-function surf(i,la,lo){
-  const ld=la/D2R,lod=lo/D2R;let r,g,b;
-  if(i===0){const k=0.92+0.08*Math.sin(lo*18)*Math.sin(la*22);r=150*k;g=144*k;b=136*k}
-  else if(i===1){const k=0.95+0.05*Math.sin(la*9+lo*2);r=232*k;g=204*k;b=146*k}
-  else if(i===2){
-    const xi=Math.min(719,Math.floor((lod+180)*2)),yi=Math.min(359,Math.max(0,Math.floor((90-ld)*2)));
-    if(Math.abs(ld)>83){r=235;g=240;b=245}
-    else if(LAND[yi*720+xi]){
-      if(ld<-65||(ld>60&&lod>-75&&lod<-12)){r=232;g=238;b=242}
-      else{const k=0.85+0.15*Math.sin(lo*7+la*5);r=76*k;g=128*k;b=70*k}
-    }else{r=24;g=78;b=140}
-  }
-  else if(i===3){
-    if(Math.abs(ld)>84){r=240;g=240;b=245}
-    else{const dk=Math.sin(lo*3)*Math.cos(la*3)>0.35;r=dk?125:192;g=dk?66:98;b=dk?44:62}
-  }
-  else if(i===4){const s=Math.sin(la*11)+0.5*Math.sin(la*23+1),t=Math.min(1,Math.max(0,(s+1.5)/3));r=226-58*t;g=200-90*t;b=160-90*t}
-  else if(i===5){const t=(Math.sin(la*9)+1)/2;r=238-33*t;g=222-42*t;b=170-45*t}
-  else if(i===6){const k=0.97+0.03*Math.sin(la*8);r=150*k;g=225*k;b=230*k}
-  else{const k=0.92+0.08*Math.sin(la*10);r=70*k;g=100*k;b=230*k}
-  const cl=Math.max(Math.cos(la),0.15);
-  const nl=Math.abs(ld-30*Math.round(ld/30)),nn=Math.abs(lod-30*Math.round(lod/30))*cl;
-  if(nl<0.55||nn<0.55){r=r*0.78+255*0.22;g=g*0.78+255*0.22;b=b*0.78+255*0.22}
-  if(Math.abs(lod)*cl<0.6){r=255;g=215;b=110}
-  col[0]=r;col[1]=g;col[2]=b;
-}
-function drawGlobe(B){
-  const R=rotMat(sel),sI=sunVec(B),th=viewAng*D2R,ne=[0,-Math.sin(EPS),Math.cos(EPS)];
-  const w=norm(cross(sI,ne)),ct=Math.cos(th),st=Math.sin(th);
-  const v=norm([sI[0]*ct+w[0]*st,sI[1]*ct+w[1]*st,sI[2]*ct+w[2]*st]);
-  const kk=dot(ne,v),up=norm([ne[0]-v[0]*kk,ne[1]-v[1]*kk,ne[2]-v[2]*kk]),rt=cross(up,v);
-  const rB=mv(R,rt),uB=mv(R,up),vB=mv(R,v),sB=mv(R,sI);
-  const N=300,c=150;
-  for(let j=0;j<N;j++)for(let i=0;i<N;i++){
-    const x=(i+0.5-c)/c,y=(c-j-0.5)/c,q=x*x+y*y,o=(j*N+i)*4;
-    if(q>=1){px[o+3]=0;continue}
-    const z=Math.sqrt(1-q);
-    const nx=x*rB[0]+y*uB[0]+z*vB[0],ny=x*rB[1]+y*uB[1]+z*vB[1],nz=x*rB[2]+y*uB[2]+z*vB[2];
-    surf(sel,Math.asin(Math.max(-1,Math.min(1,nz))),Math.atan2(ny,nx));
-    const lit=nx*sB[0]+ny*sB[1]+nz*sB[2],t=Math.min(1,Math.max(0,(lit+0.06)/0.16)),day=t*t*(3-2*t);
-    const sh=0.06+day*(0.5+0.5*Math.max(lit,0));
-    px[o]=Math.min(255,col[0]*sh);px[o+1]=Math.min(255,col[1]*sh);px[o+2]=Math.min(255,col[2]*sh);
-    px[o+3]=q>0.985?255*(1-q)/0.015:255;
-  }
-  tx.putImageData(img,0,0);
-  const pr=sel===5?70:150,cx=180,cy=180;
-  gx.clearRect(0,0,360,360);
-  const r0=ROT[sel],a0=r0[0]*D2R,d0=r0[1]*D2R;
-  function ring(front){
-    const p=[Math.cos(d0)*Math.cos(a0),Math.cos(d0)*Math.sin(a0),Math.sin(d0)];
-    let e1=cross(p,up);if(Math.hypot(e1[0],e1[1],e1[2])<0.05)e1=cross(p,rt);e1=norm(e1);
-    const e2=cross(p,e1);gx.lineWidth=7;
-    [1.4,1.65,1.9,2.15].forEach(function(rho,ix){
-      gx.strokeStyle=ix%2?'rgba(205,185,140,0.55)':'rgba(225,208,165,0.6)';
-      gx.beginPath();let pen=false;
-      for(let a=0;a<=360;a+=3){
-        const ca=Math.cos(a*D2R)*rho,sa=Math.sin(a*D2R)*rho;
-        const Q=[ca*e1[0]+sa*e2[0],ca*e1[1]+sa*e2[1],ca*e1[2]+sa*e2[2]];
-        if((dot(Q,v)>=0)===front){const X=cx+dot(Q,rt)*pr,Y=cy-dot(Q,up)*pr;if(pen)gx.lineTo(X,Y);else{gx.moveTo(X,Y);pen=true}}else pen=false;
-      }
-      gx.stroke();
-    });
-  }
-  if(sel===5)ring(false);
-  gx.drawImage(tmp,cx-pr,cy-pr,2*pr,2*pr);
-  if(sel===5)ring(true);
-  gx.strokeStyle='rgba(255,255,255,0.18)';gx.lineWidth=1;gx.beginPath();gx.arc(cx,cy,pr,0,7);gx.stroke();
-  const sp=[dot(sB,rB),dot(sB,uB),dot(sB,vB)];
-  if(sp[2]>0){
-    gx.fillStyle='#ffd166';gx.beginPath();gx.arc(cx+sp[0]*pr,cy-sp[1]*pr,5,0,7);gx.fill();
-    gx.font='12px system-ui,sans-serif';gx.fillText('Sun overhead',cx+sp[0]*pr+8,cy-sp[1]*pr+4);
-  }
-  const fl=pLat*D2R,fo=pLon*D2R,b=[Math.cos(fl)*Math.cos(fo),Math.cos(fl)*Math.sin(fo),Math.sin(fl)];
-  const lp=[dot(b,rB),dot(b,uB),dot(b,vB)];
-  if(lp[2]>0){
-    gx.strokeStyle='#fff';gx.lineWidth=2;gx.beginPath();gx.arc(cx+lp[0]*pr,cy-lp[1]*pr,7,0,7);gx.stroke();
-    gx.fillStyle='#fff';gx.beginPath();gx.arc(cx+lp[0]*pr,cy-lp[1]*pr,2.5,0,7);gx.fill();
-  }
-}
-function infoPanel(B){
-  const i=sel,R=rotMat(i),sI=sunVec(B),sB=mv(R,sI),r=ROT[i],s=B[i+1];
-  const latS=Math.asin(Math.max(-1,Math.min(1,sB[2])))/D2R,lonS=Math.atan2(sB[1],sB[0])/D2R;
-  const fl=pLat*D2R,fo=pLon*D2R,nb=[Math.cos(fl)*Math.cos(fo),Math.cos(fl)*Math.sin(fo),Math.sin(fl)];
-  const el=Math.asin(Math.max(-1,Math.min(1,dot(nb,sB))))/D2R;
-  const sign=r[3]>0?1:-1,H=((pLon-lonS+540)%360+360)%360-180;
-  let hs=(12+sign*H/15)%24;if(hs<0)hs+=24;
-  let st,cl;
-  if(el>0){st='Day';cl='st-day'}
-  else if(i===2&&el>-18){st=el>-6?'Civil twilight':el>-12?'Nautical twilight':'Astronomical twilight';cl='st-tw'}
-  else{st='Night';cl='st-night'}
-  const T=(jd-2451545)/36525,tab=(T>=-2&&T<=0.5)?T1:T2,nrate=tab[i][7]/36525;
-  const sid=360/Math.abs(r[3]),solar=360/Math.abs(r[3]-nrate);
-  const vq=2*Math.PI*REQ[i]*1000/(sid*DAY),vl=vq*Math.cos(fl);
-  const vo=Math.sqrt(s.vx*s.vx+s.vy*s.vy+s.vz*s.vz);
-  const name=P[i].n;
-  let extra='';
-  if(i===2){
-    extra='<div class="fm"><div class="t">How fast are you really moving?</div><div class="ex">'+
-    'Spinning with Earth at this place: <b>'+num(vl*3.6)+' km/h</b> ('+num(vl)+' m/s)<br>'+
-    'Spinning at the equator: <b>'+num(vq*3.6)+' km/h</b><br>'+
-    'Orbiting the Sun: <b>'+num(vo*3.6)+' km/h</b> ('+fx(vo/1000)+' km/s)<br>'+
-    'Sun and Earth around the galaxy: about <b>830,000 km/h</b> (about 230 km/s, an estimate)<br>'+
-    'You feel none of it because you and everything around you move together at a nearly constant speed.</div></div>';
-  }
-  $('pinfo').innerHTML=
-  '<h3><i class="dot" style="background:'+P[i].c+'"></i>'+name+' on '+label(fromJd(jd))+', '+hms(jd)+' UTC</h3>'+
-  '<div class="facts">'+
-  fact('At the marked place','<span class="'+cl+'">'+st+'</span>')+
-  fact('Sun height above horizon',el.toFixed(1)+'°')+
-  fact('Local solar time',pad(Math.floor(hs))+':'+pad(Math.floor((hs%1)*60)))+
-  fact('Sun overhead at',Math.abs(latS).toFixed(1)+'°'+(latS>=0?'N':'S')+', '+Math.abs(lonS).toFixed(1)+'°'+(lonS>=0?'E':'W'))+
-  fact('One spin takes',hm(sid)+(r[3]<0?' (backwards)':''))+
-  fact('One day and night takes',hm(solar))+
-  fact('Axial tilt',OBL[i]+'°')+
-  fact('Spin speed at equator',num(vq*3.6)+' km/h')+
-  fact('Speed around the Sun',fx(vo/1000)+' km/s')+'</div>'+extra+
-  '<p class="mu" style="margin-top:8px">White ring: your marked place. Yellow dot: where the Sun is straight overhead. Gold line: the 0° meridian. The Sun is to the right at the 90° camera angle, so the left side is night.</p>';
-}
-
-function renderCard(B){
-  const s=B[sel+1],box=$('card');
-  const d=Math.sqrt(s.x*s.x+s.y*s.y+s.z*s.z),F=G*MSUN*s.m/(d*d),h=d-RSUN,a=F/s.m;
-  const v=Math.sqrt(s.vx*s.vx+s.vy*s.vy+s.vz*s.vz),vc=Math.sqrt(G*MSUN/d);
-  const T=(jd-2451545)/36525,el=elems(sel,T),sa=el.a*AU;
-  const vv=Math.sqrt(G*MSUN*(2/d-1/sa));
-  const Tn=2*Math.PI*Math.sqrt(sa*sa*sa/(G*(MSUN+s.m)))/DAY,Tr=periodDays(sel,jd);
-  const L=[];
-  for(const o of B){
-    if(o===s)continue;
-    const dx=o.x-s.x,dy=o.y-s.y,dz=o.z-s.z,dd=Math.sqrt(dx*dx+dy*dy+dz*dz);
-    L.push({o:o,F:G*o.m*s.m/(dd*dd)});
-  }
-  L.sort((x,y)=>y.F-x.F);
-  let rows='';
-  for(let i=0;i<4;i++)rows+='<tr><td>'+L[i].o.n+'</td><td>'+sup(L[i].F)+' N</td><td>'+fx(L[i].F/F*100)+'%</td></tr>';
-  let drift='';
-  if(mode==='phys'){
-    const q=helio(sel,jd),dx=s.x-q[0],dy=s.y-q[1],dz=s.z-q[2],err=Math.sqrt(dx*dx+dy*dy+dz*dz);
-    const cs=(s.x*q[0]+s.y*q[1]+s.z*q[2])/(d*Math.sqrt(q[0]*q[0]+q[1]*q[1]+q[2]*q[2]));
-    drift=fact('Newton vs real, position gap',fx(err/1000)+' km ('+(Math.acos(Math.min(1,cs))/D2R).toFixed(3)+'°)');
-  }
-  box.innerHTML=
-  '<h3><i class="dot" style="background:'+s.c+'"></i>'+s.n+': Newton\'s maths on '+label(fromJd(jd))+'</h3>'+
-  '<div class="facts">'+fact('Mass',sup(s.m)+' kg')+fact('Distance from Sun',fx(d/AU)+' AU')+fact('Speed',fx(v/1000)+' km/s')+fact('One orbit takes',fx(Tr/365.25)+' years')+drift+'</div>'+
-  '<div class="fm"><div class="t">Step 1: the formula</div><div class="eq">F = G × M × m / (r + h)²</div>'+
-  '<div class="ex">G = 6.674 × 10<sup>-11</sup>, M = mass of the Sun, m = mass of '+s.n+'</div></div>'+
-  '<div class="fm"><div class="t">Step 2: the distance (r + h) on this date</div><div class="ex">r = radius of the Sun = '+num(RSUN/1000)+' km<br>'+
-  'h = height of '+s.n+' above the Sun\'s surface = '+num(h/1000)+' km<br>r + h = '+num(d/1000)+' km = '+sup(d)+' m</div></div>'+
-  '<div class="fm"><div class="t">Step 3: put the numbers in</div>'+
-  '<div class="eq">F = ('+sup(G)+' × '+sup(MSUN)+' × '+sup(s.m)+') / ('+sup(d)+')²</div>'+
-  '<div class="eq res">F = '+sup(F)+' newtons</div>'+
-  '<div class="ex">Acceleration a = F / m = '+fx(a)+' m/s²</div></div>'+
-  '<div class="fm"><div class="t">Step 4: does Newton match the real motion?</div>'+
-  '<div class="ex">Speed Newton predicts here (from the orbit size): <b>'+fx(vv/1000)+' km/s</b><br>'+
-  'Speed in the '+(mode==='phys'?'simulation':'real JPL motion')+': <b>'+fx(v/1000)+' km/s</b> '+
-  '<span class="good">('+(Math.abs(vv-v)/v*100).toFixed(2)+'% difference)</span><br>'+
-  'Orbit time Newton predicts: <b>'+fx(Tn)+' days</b>. Real orbit time: <b>'+fx(Tr)+' days</b> '+
-  '<span class="good">('+(Math.abs(Tn-Tr)/Tr*100).toFixed(3)+'% difference)</span><br>'+
-  'Speed for a perfect circle at this distance would be '+fx(vc/1000)+' km/s.</div></div>'+
-  '<div class="wrap"><table><tr><th>Pulled by</th><th>Force on '+s.n+'</th><th>Compared with strongest</th></tr>'+rows+'</table></div>';
-}
-function hud(){
-  const T=(jd-2451545)/36525,tb=(T>=-2&&T<=0.5)?'JPL Table 1 (1800-2050)':'JPL Table 2a (3000 BC-3000 AD)';
-  $('hud').innerHTML='Date: '+label(fromJd(jd))+'<br>Time: '+hms(jd)+' UTC<br>Data: '+tb+'<br>Mode: '+(mode==='eph'?'real positions':'Newton physics'+(capped?' (speed capped)':''));
-}
-
-function loop(t){
-  const real=Math.min((t-last)/1000,0.05);last=t;
-  if(!paused){
-    if(mode==='eph')jd+=dir*speedDays*real;
-    else{
-      let rem=speedDays*DAY*real;const mx=2500*DT;
-      if(rem>mx){rem=mx;capped=true}else capped=false;
-      let guard=0;
-      while(rem>1e-6&&guard<2600){const dt=Math.min(DT,rem);step(dir*dt);rem-=dt;jd+=dir*dt/DAY;guard++}
-    }
-    if(jd<JDMIN||jd>JDMAX){jd=Math.min(Math.max(jd,JDMIN),JDMAX);paused=true;$('play').textContent='Play';note('Reached the edge of the data range (3000 BC to 3000 AD).')}
-  }
-  const B=cur();
-  if($('follow').checked){cam.x=B[sel+1].x;cam.y=B[sel+1].y}
-  draw(B);frameN++;
-  if(frameN%6===0)hud();
-  if(frameN%10===0||gDirty)renderCard(B);
-  if(frameN%4===0||gDirty){drawGlobe(B);infoPanel(B);gDirty=false}
-  requestAnimationFrame(loop);
-}
-
-function view(R){$('follow').checked=false;cam.x=0;cam.y=0;cam.s=Math.min(W,H)/2/R*0.92}
-function pos(e){const r=cv.getBoundingClientRect();return [e.clientX-r.left,e.clientY-r.top]}
-function fillPlaces(){
-  const list=PLACES[sel]||PLACES.def,s=$('place');s.innerHTML='';
-  list.forEach(function(p,k){const o=document.createElement('option');o.value=k;o.textContent=p[0];s.appendChild(o)});
-  s.selectedIndex=0;applyPlace();
-}
-function applyPlace(){
-  const list=PLACES[sel]||PLACES.def,p=list[$('place').selectedIndex];
-  pLat=p[1];pLon=p[2];$('lat').value=pLat;$('lon').value=pLon;gDirty=true;
-}
-function syncSel(){
-  [].forEach.call($('pbtn').children,function(b,k){b.className=k===sel?'on':''});
-  fillPlaces();gDirty=true;
-}
-function pick(sx,sy){
-  const B=cur();let best=-1,bd=1e9;
-  for(const b of B){
-    if(b.i<0)continue;
-    const p=toS(b.x,b.y),d=Math.hypot(p[0]-sx,p[1]-sy);
-    if(d<Math.max(b.vis+10,18)&&d<bd){bd=d;best=b.i}
-  }
-  if(best>=0){sel=best;syncSel()}
-}
-cv.addEventListener('pointerdown',function(e){cv.setPointerCapture(e.pointerId);const p=pos(e);ptr={sx:p[0],sy:p[1],lx:p[0],ly:p[1],moved:false}});
-cv.addEventListener('pointermove',function(e){
-  if(!ptr)return;const p=pos(e);
-  if(Math.hypot(p[0]-ptr.sx,p[1]-ptr.sy)>4)ptr.moved=true;
-  if(ptr.moved){$('follow').checked=false;cam.x-=(p[0]-ptr.lx)/cam.s;cam.y-=(p[1]-ptr.ly)/cam.s}
-  ptr.lx=p[0];ptr.ly=p[1];
-});
-cv.addEventListener('pointerup',function(){if(ptr&&!ptr.moved)pick(ptr.sx,ptr.sy);ptr=null});
-cv.addEventListener('pointercancel',function(){ptr=null});
-cv.addEventListener('wheel',function(e){
-  e.preventDefault();
-  const p=pos(e),bx=(p[0]-W/2)/cam.s+cam.x,by=(p[1]-H/2)/cam.s+cam.y;
-  cam.s=Math.min(Math.max(cam.s*(e.deltaY<0?1.15:1/1.15),5e-12),5e-8);
-  cam.x=bx-(p[0]-W/2)/cam.s;cam.y=by-(p[1]-H/2)/cam.s;
-},{passive:false});
-
-function setJd(v){jd=Math.min(Math.max(v,JDMIN),JDMAX);if(mode==='phys')initPhys();gDirty=true}
-function setDate(y,m,d){setJd(toJd(y,m,d))}
-$('go').onclick=function(){
-  const era=$('era').value,y0=Math.max(1,Math.min(3000,Math.round(+$('yr').value||1)));
-  const Y=era==='BC'?1-y0:y0,M=+$('mo').value,D=Math.max(1,Math.min(31,Math.round(+$('dy').value||1)));
-  const hh=Math.max(0,Math.min(23,+$('hh').value||0));
-  setJd(toJd(Y,M,D)+hh/24);
-};
-$('d0').onclick=function(){setJd(jdNow())};
-$('d1').onclick=function(){setDate(1969,7,16)};
-$('d2').onclick=function(){setDate(2000,1,1)};
-$('d3').onclick=function(){setDate(1000,1,1)};
-$('d4').onclick=function(){setDate(-2499,1,1)};
-$('d5').onclick=function(){setDate(3000,1,1)};
-for(let i=0;i<12;i++){const o=document.createElement('option');o.value=i+1;o.textContent=MONTHS[i];$('mo').appendChild(o)}
-$('mo').value=1;
-
-function setMode(m){
-  mode=m;
-  $('mEph').className=m==='eph'?'on':'';$('mPhys').className=m==='phys'?'on':'';
-  if(m==='phys'){initPhys();note('Newton mode: starting from the real positions, only gravity moves the planets. Hollow rings are the real planets.')}
-  gDirty=true;
-}
-$('mEph').onclick=function(){setMode('eph')};
-$('mPhys').onclick=function(){setMode('phys')};
-$('vIn').onclick=function(){view(1.8*AU)};
-$('vOut').onclick=function(){view(31*AU)};
-$('vAll').onclick=function(){view(36*AU)};
-$('zin').onclick=function(){cam.s=Math.min(cam.s*1.4,5e-8)};
-$('zout').onclick=function(){cam.s=Math.max(cam.s/1.4,5e-12)};
-function togglePause(){paused=!paused;$('play').textContent=paused?'Play':'Pause'}
-$('play').onclick=togglePause;
-$('rev').onchange=function(){dir=this.checked?-1:1};
-document.addEventListener('keydown',function(e){if(e.code==='Space'&&e.target===document.body){e.preventDefault();togglePause()}});
-const sp=$('speeds');
-SPEEDS.forEach(function(s){
-  const b=document.createElement('button');b.textContent=s.l;if(s.d===speedDays)b.className='on';
-  b.onclick=function(){speedDays=s.d;[].forEach.call(sp.children,function(x){x.className=''});b.className='on'};
-  sp.appendChild(b);
-});
-
-P.forEach(function(p,k){
-  const b=document.createElement('button');b.textContent=p.n;
-  b.onclick=function(){sel=k;syncSel()};
-  $('pbtn').appendChild(b);
-});
-$('place').onchange=applyPlace;
-$('lat').oninput=function(){pLat=Math.max(-90,Math.min(90,+this.value||0));gDirty=true};
-$('lon').oninput=function(){pLon=Math.max(-180,Math.min(180,+this.value||0));gDirty=true};
-$('ang').oninput=function(){viewAng=+this.value;$('angv').textContent=viewAng+'° from the Sun'+(viewAng===90?' (side view)':'');gDirty=true};
-
-CALC.forEach(function(b){const o=document.createElement('option');o.textContent=b.n;$('cb').appendChild(o)});
-function calc(){
-  const b=CALC[$('cb').selectedIndex],m=Math.max(+$('cm').value||0,0),h=Math.max(+$('ch').value||0,0)*1000;
-  const d=b.R+h,F=G*b.M*m/(d*d),g=G*b.M/(d*d),g0=G*b.M/(b.R*b.R);
-  const ve=Math.sqrt(2*G*b.M/d),vc=Math.sqrt(G*b.M/d),T=2*Math.PI*d/vc;
-  $('cout').innerHTML=
-  '<div class="fm"><div class="t">The formula</div><div class="eq">F = G × M × m / (r + h)²</div>'+
-  '<div class="ex">M = '+sup(b.M)+' kg ('+b.n+'), m = '+fx(m)+' kg (you)<br>r = '+num(b.R/1000)+' km, h = '+num(h/1000)+' km, r + h = '+num(d/1000)+' km</div></div>'+
-  '<div class="fm"><div class="t">The numbers</div><div class="eq">F = ('+sup(G)+' × '+sup(b.M)+' × '+fx(m)+') / ('+sup(d)+')²</div><div class="eq res">F = '+fx(F)+' newtons</div></div>'+
-  '<div class="facts">'+fact('Gravity at this height, g',fx(g)+' m/s²')+fact('Compared with the surface',(g/g0*100).toFixed(1)+'%')+
-  fact('Escape speed',fx(ve/1000)+' km/s')+fact('Circular orbit speed',fx(vc/1000)+' km/s')+fact('One orbit takes',dur(T))+'</div>';
-  let t='<tr><th>World</th><th>g (m/s²)</th><th>Your weight (N)</th><th>Compared with Earth</th></tr>';
-  const gE=G*CALC[0].M/(CALC[0].R*CALC[0].R);
-  CALC.forEach(function(c){const gg=G*c.M/(c.R*c.R);t+='<tr><td>'+c.n+'</td><td>'+fx(gg)+'</td><td>'+fx(gg*m)+'</td><td>'+(gg/gE).toFixed(2)+'×</td></tr>'});
-  $('ctab').innerHTML=t;
-}
-$('cb').onchange=calc;$('cm').oninput=calc;$('ch').oninput=calc;
-[].forEach.call(document.querySelectorAll('[data-h]'),function(b){b.onclick=function(){$('ch').value=this.dataset.h;calc()}});
-
-resize();view(1.8*AU);calc();syncSel();
-$('ang').oninput.call($('ang'));
-requestAnimationFrame(loop);
-</script>
-</body>
-</html>
+    <!-- Hero Section -->
+    <div class="hero">
+        <p
