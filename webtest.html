@@ -12,14 +12,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Source+Sans+10:wght@300;400;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <!-- EmailJS SDK -->
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script type="text/javascript">
     (function(){
-        // Initialize EmailJS (Replace 'YOUR_PUBLIC_KEY' with your actual key if using EmailJS)
-        emailjs.init("YOUR_PUBLIC_KEY");
+        // Replace 'YOUR_PUBLIC_KEY' with your actual EmailJS key
+        if (window.emailjs) emailjs.init("YOUR_PUBLIC_KEY");
     })();
 </script>
 
@@ -85,6 +84,7 @@ nav {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 15px;
 }
 
 .brand {
@@ -116,6 +116,12 @@ nav a:hover {
     color: var(--accent-gold);
 }
 
+.nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
 .toggle-theme {
     background: transparent;
     border: 1px solid var(--border-subtle);
@@ -131,6 +137,37 @@ nav a:hover {
 .toggle-theme:hover {
     border-color: var(--accent-gold);
 }
+
+/* Hamburger button — pure CSS, no icon library needed */
+.menu-toggle {
+    display: none;
+    background: transparent;
+    border: 1px solid var(--accent-gold);
+    width: 44px;
+    height: 38px;
+    padding: 0;
+    cursor: pointer;
+    position: relative;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.menu-toggle span {
+    position: absolute;
+    left: 10px;
+    right: 10px;
+    height: 2px;
+    background: var(--accent-gold);
+    transition: transform 0.3s ease, opacity 0.2s ease, top 0.3s ease;
+}
+
+.menu-toggle span:nth-child(1) { top: 11px; }
+.menu-toggle span:nth-child(2) { top: 17px; }
+.menu-toggle span:nth-child(3) { top: 23px; }
+
+/* Turns into an X when open */
+.menu-toggle.active span:nth-child(1) { top: 17px; transform: rotate(45deg); }
+.menu-toggle.active span:nth-child(2) { opacity: 0; }
+.menu-toggle.active span:nth-child(3) { top: 17px; transform: rotate(-45deg); }
 
 /* Hero Section */
 .hero {
@@ -168,6 +205,13 @@ nav a:hover {
     color: var(--text-muted);
     max-width: 720px;
     margin: 0 auto 40px;
+}
+
+.hero-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15px;
 }
 
 .btn-classic {
@@ -272,7 +316,7 @@ input, textarea {
     border: 1px solid var(--border-subtle);
     color: var(--text-primary);
     font-family: 'Source Sans 10', serif;
-    font-size: 15px;
+    font-size: 16px; /* prevents iOS zoom on focus */
     outline: none;
     transition: border-color 0.3s;
 }
@@ -308,6 +352,12 @@ textarea {
     letter-spacing: 1px;
 }
 
+.link-container .btn-classic {
+    display: block;
+    width: 100%;
+    margin-bottom: 12px;
+}
+
 footer {
     border-top: 1px solid var(--border-subtle);
     text-align: center;
@@ -318,10 +368,70 @@ footer {
     letter-spacing: 1px;
 }
 
+/* ---------- Mobile ---------- */
 @media (max-width: 768px) {
-    .hero h1 { font-size: 36px; }
-    .grid-2 { grid-template-columns: 1fr; }
-    nav ul { display: none; }
+    nav {
+        padding: 16px 20px;
+        flex-wrap: wrap;
+    }
+
+    .brand {
+        font-size: 17px;
+        letter-spacing: 1px;
+    }
+
+    .menu-toggle {
+        display: block;
+    }
+
+    /* Menu becomes a dropdown instead of being hidden */
+    nav ul {
+        display: none;
+        flex-direction: column;
+        gap: 0;
+        width: 100%;
+        order: 3;
+        margin-top: 12px;
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    nav ul.open {
+        display: flex;
+    }
+
+    nav ul li {
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    nav ul li:last-child {
+        border-bottom: none;
+    }
+
+    nav ul a {
+        display: block;
+        padding: 16px 4px;
+        font-size: 14px;
+    }
+
+    .hero { margin: 60px auto 50px; }
+    .hero h1 { font-size: 34px; }
+    .hero p { font-size: 17px; }
+    .hero-buttons .btn-classic { width: 100%; max-width: 320px; }
+
+    section { margin: 60px auto; }
+    .section-header { margin-bottom: 40px; }
+    .section-header h2 { font-size: 26px; }
+
+    .grid-2 { grid-template-columns: 1fr; gap: 30px; }
+    .grid-3 { grid-template-columns: 1fr; }
+
+    .classic-card { padding: 30px 22px; }
+    .contact-form { padding: 28px 20px; }
+}
+
+@media (max-width: 380px) {
+    .brand { font-size: 14px; }
+    .toggle-theme { padding: 8px 10px; }
 }
 </style>
 </head>
@@ -331,14 +441,21 @@ footer {
 <header>
     <nav>
         <a href="#" class="brand">Pramod Sapkota</a>
-        <ul>
+
+        <ul id="nav-menu">
             <li><a href="#about">About</a></li>
             <li><a href="#services">Services</a></li>
             <li><a href="#contact">Contact</a></li>
-            <li><a href="/page0001/" target="_blank">GET STARTED</a></li>
-            <li><a href="/Work/" target="_blank">More additional work</a></li>
+            <li><a href="page0001/">GET STARTED</a></li>
+            <li><a href="Work/">More additional work</a></li>
         </ul>
-        <button class="toggle-theme" onclick="toggleTheme()">Theme</button>
+
+        <div class="nav-actions">
+            <button type="button" class="toggle-theme" id="theme-btn">Theme</button>
+            <button type="button" class="menu-toggle" id="menu-toggle" aria-label="Toggle menu" aria-expanded="false">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
     </nav>
 </header>
 
@@ -349,7 +466,11 @@ footer {
         <h1>Crafting Timeless & Elegant <span class="serif-italic">Web Experiences</span></h1>
         <div class="divider"></div>
         <p>Combining classical aesthetics with modern engineering. Focused on bespoke web development, architecture, and intuitive digital design.</p>
-        <a class="btn-classic" href="#contact">Inquire Services</a>
+        <div class="hero-buttons">
+            <a class="btn-classic" href="#contact">Inquire Services</a>
+            <a class="btn-classic" href="page0001/">Get Started</a>
+            <a class="btn-classic" href="Work/">More additional work</a>
+        </div>
     </div>
 
     <!-- About Section -->
@@ -411,7 +532,7 @@ footer {
                 <p style="margin-top: 10px;"><strong>Location:</strong> Kathmandu, Nepal</p>
             </div>
 
-            <form class="contact-form" id="contact-form" onsubmit="handleContactSubmit(event)">
+            <form class="contact-form" id="contact-form">
                 <div class="form-group">
                     <label for="user_name">Full Name</label>
                     <input type="text" id="user_name" name="user_name" required>
@@ -429,7 +550,8 @@ footer {
 
                 <div class="link-container">
                     <p>Looking for additional work?</p>
-                    <a href="/page0001/" target="_blank" class="btn-classic" style="width: 100%;">GET STARTED</a>
+                    <a href="page0001/" class="btn-classic">GET STARTED</a>
+                    <a href="Work/" class="btn-classic">More additional work</a>
                 </div>
             </form>
         </div>
@@ -441,42 +563,72 @@ footer {
 </footer>
 
 <script>
-// Theme Toggle
-function toggleTheme() {
+// Theme toggle
+document.getElementById("theme-btn").addEventListener("click", function () {
     document.body.classList.toggle("light");
+});
+
+// Mobile menu
+var menuBtn = document.getElementById("menu-toggle");
+var menu = document.getElementById("nav-menu");
+
+function setMenu(open) {
+    menu.classList.toggle("open", open);
+    menuBtn.classList.toggle("active", open);
+    menuBtn.setAttribute("aria-expanded", open ? "true" : "false");
 }
 
-// Contact Form with EmailJS & Mailto Fallback
-function handleContactSubmit(e) {
+menuBtn.addEventListener("click", function () {
+    setMenu(!menu.classList.contains("open"));
+});
+
+// Close the menu after tapping a link (the page still navigates normally)
+menu.querySelectorAll("a").forEach(function (link) {
+    link.addEventListener("click", function () {
+        setMenu(false);
+    });
+});
+
+// Reset menu state when resizing back to desktop
+window.addEventListener("resize", function () {
+    if (window.innerWidth > 768) setMenu(false);
+});
+
+// Contact form with EmailJS & mailto fallback
+document.getElementById("contact-form").addEventListener("submit", function (e) {
     e.preventDefault();
 
-    const statusDiv = document.getElementById("form-status");
+    var statusDiv = document.getElementById("form-status");
     statusDiv.style.color = "var(--accent-gold)";
     statusDiv.innerText = "Transmitting message...";
 
-    const name = document.getElementById("user_name").value;
-    const email = document.getElementById("user_email").value;
-    const message = document.getElementById("message").value;
+    var name = document.getElementById("user_name").value;
+    var email = document.getElementById("user_email").value;
+    var message = document.getElementById("message").value;
+    var form = this;
 
-    // Send using EmailJS SDK
+    function mailtoFallback() {
+        var subject = encodeURIComponent("Inquiry from " + name);
+        var body = encodeURIComponent(message + "\n\n---\nFrom: " + name + "\nEmail: " + email);
+        window.location.href = "mailto:origincircle5@gmail.com?subject=" + subject + "&body=" + body;
+        statusDiv.innerText = "Opening mail client...";
+        form.reset();
+    }
+
+    if (!window.emailjs) {
+        mailtoFallback();
+        return;
+    }
+
     emailjs.send("YOUR_SERVICE_ID", "YOUR_TEMPLATE_ID", {
         from_name: name,
         from_email: email,
         message: message
-    }).then(function() {
+    }).then(function () {
         statusDiv.innerText = "Message transmitted successfully.";
-        document.getElementById("contact-form").reset();
-    }, function(error) {
-        // Fallback to mailto protocol
-        const subject = encodeURIComponent("Inquiry from " + name);
-        const body = encodeURIComponent(message + "\n\n---\nFrom: " + name + "\nEmail: " + email);
-
-        window.location.href = `mailto:origincircle5@gmail.com?subject=${subject}&body=${body}`;
-
-        statusDiv.innerText = "Opening mail client...";
-        document.getElementById("contact-form").reset();
-    });
-}
+        form.reset();
+    }, mailtoFallback);
+});
 </script>
 
 </body>
