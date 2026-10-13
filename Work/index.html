@@ -185,6 +185,8 @@ table.et td:nth-child(1){white-space:nowrap}
   </div>
 </section>
 
+<section class="box" id="sunwx"><h2>Sunrise, sunset and weather</h2><p class="mu">Uses the place marked in the Day and night section (or picked on the world map). Sun and Moon times follow the simulation date. Weather is live from the internet.</p><div class="panel"><button id="sunbtn" class="go">Show sunrise, sunset and weather</button><span class="mu" id="sunplace"></span></div><div id="sunout" aria-live="polite"></div><div id="wxout" aria-live="polite"></div></section>
+
 <section class="box" id="world"><h2>World locations & civil clocks</h2><p class="mu">All countries and territories are selectable. Large countries can have several time zones: a country reference point is the default; choose another zone or search a city. Civil clocks use your browser’s IANA time-zone rules. Ancient and far-future legal offsets are not guaranteed.</p><div class="panel"><input id="citySearch" placeholder="Search a city, e.g. Tokyo" aria-label="City search"><button id="searchCity">Search city</button><select id="cityResults" aria-label="City results"></select></div><p id="searchStatus" class="mu"></p><div class="panel"><label>Time zone <select id="timezone" aria-label="IANA time zone"></select></label><label class="ck"><input type="checkbox" id="focusPlace" checked>Keep selected place visible</label></div><p id="localClock"></p><canvas id="worldMap" width="1000" height="500" style="width:100%;height:auto;cursor:crosshair" aria-label="World country map: click to set coordinates"></canvas><p class="mu">Click anywhere to set coordinates. Map clicks and typed coordinates retain the selected time zone: choose the correct zone separately. Borders are geographic reference data, not a statement on disputed sovereignty.</p><details><summary>Clocks for all countries / territories</summary><div class="wrap" style="max-height:360px;overflow:auto"><table><thead><tr><th>Location (reference point)</th><th>Local time</th></tr></thead><tbody id="worldClocks"></tbody></table></div></details></section><section class="box"><h2>Moon & eclipses</h2><div class="pv"><canvas id="moonCanvas" width="240" height="240" aria-label="Moon phase visualization"></canvas><div id="moonInfo"></div></div><p class="mu">Moon sizes and Earth–Moon separation in the main overview are exaggerated when too small to see. Phase diagram is schematic, not a photographic sky orientation.</p><div class="panel"><button id="predict">Predict upcoming eclipses</button><span class="mu">Search begins at the displayed simulation date, using the selected Earth coordinates.</span></div><div id="eclipses" aria-live="polite"></div><p class="mu">Educational predictions from Astronomy Engine; weather, terrain and lunar limb effects are not included. Lunar altitude at peak is not a full visibility forecast. Prediction controls support years 1800–2100.</p><p class="res">Never look directly at the Sun. Use certified solar-viewing protection; ordinary sunglasses are unsafe.</p></section>
 <section class="box" id="card"></section>
 
@@ -1147,6 +1149,62 @@ return sum+'<h3>Solar eclipses</h3><div class="wrap"><table class="et">'+head+so
 }
 $('predict').onclick=()=>{const d=simDate();if(d.getUTCFullYear()<1800||d.getUTCFullYear()>2100){$('eclipses').textContent='Choose a date between 1800 and 2100.';return}$('eclipses').textContent='Calculating…';setTimeout(()=>{try{const list=PLACES[sel]||PLACES.def,p=list[$('place').selectedIndex];let name=p?p[0]:'Selected point';if(!p||Math.abs(p[1]-pLat)>0.05||Math.abs(p[2]-pLon)>0.05)name='Selected point ('+pLat.toFixed(2)+'°, '+pLon.toFixed(2)+'°)';$('eclipses').innerHTML=eclipseReport(d,pLat,pLon,zone,name)}catch(e){$('eclipses').textContent='Prediction error: '+e.message}},30)};
 for(const id of ['lat','lon','place'])$(id).addEventListener('change',()=>{$('eclipses').textContent='Location changed. Re-run predictions.';updateExtra()});
+function sunReport(d,lat,lon,zone){
+const A=Astronomy,obs=new A.Observer(lat,lon,0),DAY=86400000;
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=(dt,o)=>{try{return new Intl.DateTimeFormat('en-GB',Object.assign({timeZone:zone},o)).format(dt)}catch(e){return dt.toISOString().slice(0,16).replace('T',' ')+' UTC'}};
+const clock=dt=>dt?fmt(dt,{hour:'2-digit',minute:'2-digit',hourCycle:'h12'}):'None today';
+const dayS=dt=>fmt(dt,{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+const parts=t=>{const p={};new Intl.DateTimeFormat('en-US',{timeZone:zone,year:'numeric',month:'numeric',day:'numeric',hour:'numeric',minute:'numeric',second:'numeric',hourCycle:'h23'}).formatToParts(new Date(t)).forEach(x=>p[x.type]=+x.value);return p};
+let m0;try{const p=parts(d.getTime()),T=Date.UTC(p.year,p.month-1,p.day);m0=T;for(let i=0;i<3;i++){const q=parts(m0);m0+=T-Date.UTC(q.year,q.month-1,q.day,q.hour%24,q.minute,q.second)}}catch(e){m0=Math.floor(d.getTime()/DAY)*DAY}
+const S=new Date(m0),ev=f=>{try{const r=f();return r?r.date:null}catch(e){return null}};
+const rise=ev(()=>A.SearchRiseSet(A.Body.Sun,obs,1,S,1)),set=ev(()=>A.SearchRiseSet(A.Body.Sun,obs,-1,S,1));
+const dawn=ev(()=>A.SearchAltitude(A.Body.Sun,obs,1,S,1,-6)),dusk=ev(()=>A.SearchAltitude(A.Body.Sun,obs,-1,S,1,-6));
+const noonE=(()=>{try{return A.SearchHourAngle(A.Body.Sun,obs,0,S).time.date}catch(e){return null}})();
+const mrise=ev(()=>A.SearchRiseSet(A.Body.Moon,obs,1,S,1)),mset=ev(()=>A.SearchRiseSet(A.Body.Moon,obs,-1,S,1));
+const alt=(b,dt)=>{const eq=A.Equator(b,dt,obs,true,true);return A.Horizon(dt,obs,eq.ra,eq.dec,'normal').altitude};
+const hm=ms=>Math.floor(ms/3600000)+' h '+String(Math.round(ms%3600000/60000)).padStart(2,'0')+' min';
+let len;
+if(rise&&set&&set>rise)len=hm(set-rise);
+else if(!rise&&!set)len=(noonE&&alt(A.Body.Sun,noonE)>0)?'24 h (midnight sun)':'0 h (polar night)';
+else len='Sun rises or sets on a different day';
+const a=alt(A.Body.Sun,d),state=a>0?'Day':a>-6?'Civil twilight':a>-12?'Nautical twilight':a>-18?'Astronomical twilight':'Night';
+const nr=ev(()=>A.SearchRiseSet(A.Body.Sun,obs,1,d,2)),ns=ev(()=>A.SearchRiseSet(A.Body.Sun,obs,-1,d,2));
+const f=(l,v)=>'<div class="f"><span>'+l+'</span><b>'+v+'</b></div>';
+let h='<h3>Sun and Moon on '+esc(dayS(S))+'</h3><p class="mu">Times are in '+esc(zone)+' for the simulation date. Press the button again after changing the date or place.</p><div class="facts">'+
+f('Sunrise',clock(rise))+f('Sunset',clock(set))+f('Solar noon (Sun highest)',clock(noonE))+f('Length of day',len)+
+f('Dawn (first light)',clock(dawn))+f('Dusk (last light)',clock(dusk))+f('Moonrise',clock(mrise))+f('Moonset',clock(mset))+'</div>';
+h+='<div class="facts">'+f('At the simulation time',state+', Sun at '+a.toFixed(1)+'\u00b0 '+(a>0?'above':'below')+' the horizon')+
+f('Next sunrise',ns===null&&nr===null?'None soon':(nr?fmt(nr,{weekday:'short',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',hourCycle:'h12'}):'None soon'))+
+f('Next sunset',ns?fmt(ns,{weekday:'short',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',hourCycle:'h12'}):'None soon')+'</div>';
+return h}
+const WX_TEXT={0:'Clear sky',1:'Mostly clear',2:'Partly cloudy',3:'Overcast',45:'Fog',48:'Freezing fog',51:'Light drizzle',53:'Drizzle',55:'Heavy drizzle',56:'Freezing drizzle',57:'Heavy freezing drizzle',61:'Light rain',63:'Rain',65:'Heavy rain',66:'Freezing rain',67:'Heavy freezing rain',71:'Light snow',73:'Snow',75:'Heavy snow',77:'Snow grains',80:'Light rain showers',81:'Rain showers',82:'Violent rain showers',85:'Snow showers',86:'Heavy snow showers',95:'Thunderstorm',96:'Thunderstorm with hail',99:'Thunderstorm with heavy hail'};
+let sunRan=false,wxSeq=0;
+function sunPlaceName(){const list=PLACES[sel]||PLACES.def,p=list[$('place').selectedIndex];return(!p||Math.abs(p[1]-pLat)>0.05||Math.abs(p[2]-pLon)>0.05)?'Selected point ('+pLat.toFixed(2)+'\u00b0, '+pLon.toFixed(2)+'\u00b0)':p[0]}
+function escH(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+async function showWeather(){
+const seq=++wxSeq,out=$('wxout'),lat=pLat,lon=pLon;
+out.innerHTML='<h3>Weather</h3><p class="mu">Loading live weather\u2026</p>';
+try{
+const url='https://api.open-meteo.com/v1/forecast?latitude='+lat.toFixed(4)+'&longitude='+lon.toFixed(4)+'&current=temperature_2m,apparent_temperature,relative_humidity_2m,precipitation,weather_code,cloud_cover,wind_speed_10m,wind_direction_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,uv_index_max&forecast_days=4&timezone=auto';
+const r=await fetch(url);if(!r.ok)throw Error('HTTP '+r.status);
+const w=await r.json();if(seq!==wxSeq)return;
+const c=w.current,dd=w.daily,f=(l,v)=>'<div class="f"><span>'+l+'</span><b>'+v+'</b></div>';
+const dirs=['N','NE','E','SE','S','SW','W','NW'],dir=dirs[Math.round(c.wind_direction_10m/45)%8];
+let h='<h3>Weather now</h3><p class="mu">Live conditions near '+escH(sunPlaceName())+', measured at '+escH(c.time.replace('T',' '))+' local time. This is today\u2019s real weather, not the simulation date.</p><div class="facts">'+
+f('Conditions',escH(WX_TEXT[c.weather_code]||'Unknown'))+f('Temperature',c.temperature_2m+' \u00b0C')+f('Feels like',c.apparent_temperature+' \u00b0C')+f('Humidity',c.relative_humidity_2m+'%')+f('Cloud cover',c.cloud_cover+'%')+f('Wind',c.wind_speed_10m+' km/h from '+dir)+f('Rain now',c.precipitation+' mm')+'</div>';
+h+='<h3>Next days</h3><div class="wrap"><table><tr><th>Day</th><th>Conditions</th><th>High / Low</th><th>Chance of rain</th><th>Rain total</th><th>UV index</th></tr>';
+for(let i=0;i<dd.time.length;i++){const day=new Date(dd.time[i]+'T12:00:00Z').toLocaleDateString('en-GB',{timeZone:'UTC',weekday:'short',day:'2-digit',month:'short'});
+h+='<tr><td>'+escH(day)+'</td><td>'+escH(WX_TEXT[dd.weather_code[i]]||'Unknown')+'</td><td>'+dd.temperature_2m_max[i]+' / '+dd.temperature_2m_min[i]+' \u00b0C</td><td>'+(dd.precipitation_probability_max[i]==null?'n/a':dd.precipitation_probability_max[i]+'%')+'</td><td>'+dd.precipitation_sum[i]+' mm</td><td>'+(dd.uv_index_max[i]==null?'n/a':dd.uv_index_max[i])+'</td></tr>'}
+h+='</table></div><p class="mu">Weather data from Open-Meteo. Clouds and rain can hide an eclipse even when the table above says it is visible.</p>';
+out.innerHTML=h}
+catch(e){if(seq===wxSeq)out.innerHTML='<h3>Weather</h3><p class="mu">Weather could not be loaded. It needs an internet connection and the Open-Meteo service. Sunrise and sunset above still work offline.</p>'}}
+function refreshSun(){const d=simDate();$('sunplace').textContent=sunPlaceName()+' \u2022 '+pLat.toFixed(3)+'\u00b0, '+pLon.toFixed(3)+'\u00b0';
+try{$('sunout').innerHTML=sunReport(d,pLat,pLon,zone)}catch(e){$('sunout').textContent='Sun calculation error: '+e.message}showWeather()}
+$('sunbtn').onclick=()=>{sunRan=true;refreshSun()};
+const sunAuto=()=>{if(sunRan)setTimeout(refreshSun,50)};
+for(const id of ['lat','lon','place'])$(id).addEventListener('change',sunAuto);
+$('worldMap').addEventListener('click',sunAuto);$('cityResults').addEventListener('change',sunAuto);
 fillPlaces();updateExtra();
 
 requestAnimationFrame(loop);
