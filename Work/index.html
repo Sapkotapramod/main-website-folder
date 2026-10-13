@@ -3,6 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Free interactive real-time solar system simulation with a day/night lab, Moon phases, world clocks and solar and lunar eclipse predictions for any place on Earth. Built by Pramod Sapkota.">
+<meta name="robots" content="index, follow, max-snippet:-1">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Real-Time Solar System and Day/Night Lab">
+<meta property="og:description" content="Interactive solar system simulation with day/night lab, Moon phases, world clocks and eclipse predictions.">
+<meta name="twitter:card" content="summary">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Real-Time Solar System and Day/Night Lab","description":"Interactive space simulation: real-time solar system, day and night on Earth, Moon phases, world clocks and eclipse predictions.","applicationCategory":"EducationalApplication","operatingSystem":"Any (web browser)","isAccessibleForFree":true,"author":{"@type":"Person","name":"Pramod Sapkota","url":"https://sapkotap.com.np/"}}</script>
 <title>Real-Time Solar System and Day/Night Lab | sapkotap.com.np</title>
 <style>
 *{box-sizing:border-box}
@@ -59,6 +66,40 @@ a{color:#afa9ec}
 .st-day{color:#ffd166}.st-tw{color:#f0997b}.st-night{color:#85b7eb}
 footer{margin-top:20px;text-align:center;color:#6c73a8;font-size:13px}
 input[type=text],#citySearch{font:inherit;background:#11142e;color:#dfe3ff;border:1px solid #2a2f63;padding:9px;border-radius:8px}select{max-width:100%} #localClock{font-size:20px;color:#5dcaa5} #moonInfo{flex:1;min-width:240px} @media(max-width:600px){h1{font-size:24px}.panel{gap:6px} #pinfo{min-width:0} .box{padding:12px}}
+
+/* Readability overrides */
+html{color-scheme:dark;-webkit-text-size-adjust:100%}
+body{background:#070a1c;color:#f4f6ff;font-size:18px;line-height:1.75;font-weight:400;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+main{max-width:1060px}
+h1{font-size:34px;line-height:1.2;color:#fff;font-weight:700}
+h2{font-size:25px;line-height:1.3;color:#fff;font-weight:700;margin-bottom:12px}
+h3{font-size:20px;color:#fff;font-weight:700;margin:18px 0 10px}
+p{margin-bottom:14px}
+.sub,.mu,.legend,.lab{color:#c3cbf5}
+.mu{font-size:15.5px}.lab{font-size:15px}.legend{font-size:15px}
+.st{font-size:16px;color:#dfe4ff;background:#101638;border-color:#3b4488}
+.box{background:#0f1436;border-color:#3b4488;padding:22px 20px}
+.box>p,.plain p,.ex{max-width:72ch}
+.plain p{color:#f0f2ff;font-size:18px;line-height:1.8}
+.ex{font-size:17px;color:#e6e9ff}
+.f{background:#0a0e2a;border-color:#3b4488}.f span{font-size:14px;color:#c3cbf5}.f b{font-size:17px;color:#fff}
+th,td{border-bottom-color:#3b4488}
+table{font-size:16px}th{color:#d5dbff;font-weight:600}
+button,select,input[type=number],input{font-size:16px;color:#fff;background:#171d4a;border-color:#4a54a8}
+code{background:#222a63;color:#fff;font-size:15px}
+a{color:#c9c5ff}
+.res{color:#ffe08a}.good{color:#7ee8c2}
+.hud{font-size:13px;color:#e6eaff;background:rgba(5,7,22,.88)}
+.note{font-size:15px}
+.esum{border:1px solid #3b4488;background:#0a0e2a;border-radius:12px;padding:6px 16px 4px;margin:6px 0 4px}
+.esum h3{margin-top:10px}.esum ul{padding-left:20px;margin:0 0 10px}.esum li{margin-bottom:8px}
+table.et{min-width:640px}table.et td,table.et th{vertical-align:top;padding:10px 10px;line-height:1.55}
+table.et td:nth-child(1){white-space:nowrap}
+.vb{display:inline-block;padding:3px 10px;border-radius:999px;font-weight:700;font-size:14.5px;white-space:nowrap}
+.vb.yes{background:#0f5132;color:#d8ffe9;border:1px solid #3fcf8e}
+.vb.part{background:#5c4300;color:#fff1c4;border:1px solid #f0b429}
+.vb.no{background:#3a1a22;color:#ffd9de;border:1px solid #ef7d8d}
+@media(max-width:640px){body{font-size:17px}h1{font-size:28px}.plain p{font-size:17px}}
 </style>
 </head>
 <body>
@@ -1041,7 +1082,70 @@ $('cityResults').onchange=()=>{const o=$('cityResults').selectedOptions[0];if(!o
 function altitude(body,d){const obs=new Astronomy.Observer(pLat,pLon,0),eq=Astronomy.Equator(body,d,obs,true,true);return Astronomy.Horizon(d,obs,eq.ra,eq.dec,'normal').altitude}
 function drawMoonMarker(B){const d=simDate();if(d.getUTCFullYear()<1800||d.getUTCFullYear()>2100)return;const e=toS(B[3].x,B[3].y),v=Astronomy.GeoMoon(d);const ve=Astronomy.RotateVector(Astronomy.Rotation_EQJ_ECL(),v);let dx=ve.x*AU*cam.s,dy=ve.y*AU*cam.s;const r=Math.hypot(dx,dy);if(r<18){dx=dx/(r||1)*18;dy=dy/(r||1)*18}ctx.fillStyle='#ccc';ctx.beginPath();ctx.arc(e[0]+dx,e[1]+dy,3,0,7);ctx.fill();if($('labels').checked){ctx.font='11px system-ui';ctx.fillText('Moon',e[0]+dx+6,e[1]+dy)}}
 function updateExtra(){const d=simDate();$('localClock').textContent='Selected zone: '+zone+' • '+civil(d,zone)+' | UTC: '+d.toISOString();worldMap();if($('worldClocks').closest('details').open){$('worldClocks').replaceChildren(...COUNTRY_PLACES.map(p=>{const tr=document.createElement('tr');for(const text of [p[0],civil(d,p[3])]){const td=document.createElement('td');td.textContent=text;tr.append(td)}return tr}))}if(d.getUTCFullYear()<1800||d.getUTCFullYear()>2100){$('moonInfo').textContent='Moon calculations available for 1800–2100 in this application.';return}const m=Astronomy.Illumination('Moon',d),phase=Astronomy.MoonPhase(d),wax=phase<180;const name=phase<10||phase>350?'New Moon':phase<80?'Waxing crescent':phase<100?'First quarter':phase<170?'Waxing gibbous':phase<190?'Full Moon':phase<260?'Waning gibbous':phase<280?'Last quarter':'Waning crescent';$('moonInfo').innerHTML='<div class="facts">'+fact('Phase',name)+fact('Illuminated',(m.phase_fraction*100).toFixed(1)+'%')+fact('Geocentric distance',Math.round(m.geo_dist*149597870.7).toLocaleString()+' km')+fact('Altitude at selected Earth location',altitude('Moon',d).toFixed(1)+'°')+'</div>';const x=$('moonCanvas').getContext('2d');x.clearRect(0,0,240,240);const image=x.createImageData(200,200),a=phase*D2R;for(let j=0;j<200;j++)for(let i=0;i<200;i++){const xx=(i-99.5)/95,yy=(j-99.5)/95,q=xx*xx+yy*yy;if(q>1)continue;const lit=xx*Math.sin(a)-Math.sqrt(1-q)*Math.cos(a),k=(j*200+i)*4,c=lit>0?190+40*lit:28;image.data[k]=image.data[k+1]=image.data[k+2]=c;image.data[k+3]=255}x.putImageData(image,20,20);}
-$('predict').onclick=()=>{const d=simDate();if(d.getUTCFullYear()<1800||d.getUTCFullYear()>2100){$('eclipses').textContent='Choose a date between 1800 and 2100.';return}$('eclipses').textContent='Calculating…';setTimeout(()=>{try{const obs=new Astronomy.Observer(pLat,pLon,0),rows=[];const stamp=d=>civil(d,zone)+'<br><span class="mu">'+d.toISOString()+' UTC</span>';let solar=Astronomy.SearchGlobalSolarEclipse(d),lunar=Astronomy.SearchLunarEclipse(d);for(let k=0;k<3;k++){rows.push('<tr><td>Solar (global)</td><td>'+solar.kind+'</td><td>'+stamp(solar.peak.date)+'</td><td>Global event; not necessarily visible here.</td></tr>');solar=Astronomy.NextGlobalSolarEclipse(solar.peak);const alt=altitude('Moon',lunar.peak.date);rows.push('<tr><td>Lunar (global)</td><td>'+lunar.kind+'</td><td>'+stamp(lunar.peak.date)+'</td><td>Moon at peak: '+alt.toFixed(1)+'°; '+(alt>0?'above':'below')+' horizon.<br>Penumbral interval: '+stamp(new Date(lunar.peak.date.getTime()-lunar.sd_penum*60000))+' to '+stamp(new Date(lunar.peak.date.getTime()+lunar.sd_penum*60000))+'</td></tr>');lunar=Astronomy.NextLunarEclipse(lunar.peak)}let local=Astronomy.SearchLocalSolarEclipse(d,obs);let attempts=0;while(local.peak.altitude<=0&&local.partial_begin.altitude<=0&&local.partial_end.altitude<=0&&attempts++<100)local=Astronomy.NextLocalSolarEclipse(local.peak.time,obs);$('eclipses').innerHTML='<h3>Next solar eclipse at '+pLat.toFixed(3)+'°, '+pLon.toFixed(3)+'°</h3><p>'+local.kind+' • '+(local.obscuration*100).toFixed(1)+'% solar-disc coverage at peak<br>'+stamp(local.peak.time.date)+'<br>Sun altitude at peak: '+local.peak.altitude.toFixed(1)+'°</p><p>Partial begins: '+stamp(local.partial_begin.time.date)+'<br>Partial ends: '+stamp(local.partial_end.time.date)+'</p><h3>Next global events</h3><div class="wrap"><table><tr><th>Event</th><th>Type</th><th>Peak</th><th>Location notes</th></tr>'+rows.join('')+'</table></div><p class="mu">Calculated from simulation date '+d.toISOString()+'. Re-run after changing date or coordinates.</p>'}catch(e){$('eclipses').textContent='Prediction error: '+e.message}},30)};
+function eclipseReport(d,lat,lon,zone,placeName){
+const A=Astronomy,obs=new A.Observer(lat,lon,0),MIN=60000,DAY=86400000;
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=(dt,o)=>{try{return new Intl.DateTimeFormat('en-GB',Object.assign({timeZone:zone},o)).format(dt)}catch(e){return dt.toISOString().replace('T',' ').slice(0,16)+' UTC'}};
+const full=dt=>fmt(dt,{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h12'});
+const clock=dt=>fmt(dt,{hour:'2-digit',minute:'2-digit',hourCycle:'h12'});
+const day=dt=>fmt(dt,{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
+const utc=dt=>dt.toISOString().slice(0,16).replace('T',' ')+' UTC';
+const alt=(b,dt)=>{const eq=A.Equator(b,dt,obs,true,true);return A.Horizon(dt,obs,eq.ra,eq.dec,'normal').altitude};
+const share=(b,t0,t1,step)=>{let up=0,n=0;for(let t=t0;t<=t1;t+=step){n++;if(alt(b,new Date(t))>0)up++}return n?up/n:0};
+const badge=(c,t)=>'<b class="vb '+c+'">'+t+'</b>';
+const kindName={total:'Total',annular:'Annular',partial:'Partial',penumbral:'Penumbral'};
+const nSol=5,nLun=5;
+const globals=[];let g=A.SearchGlobalSolarEclipse(d);
+for(let k=0;k<nSol;k++){globals.push(g);g=A.NextGlobalSolarEclipse(g.peak)}
+const lastG=globals[globals.length-1].peak.date.getTime()+DAY;
+const locals=[];let lc=A.SearchLocalSolarEclipse(d,obs);
+for(let k=0;k<40&&lc.peak.time.date.getTime()<=lastG;k++){locals.push(lc);lc=A.NextLocalSolarEclipse(lc.peak.time,obs)}
+let firstSolar=null,firstLunar=null,firstPen=null;
+const solarRows=globals.map(G=>{
+const gp=G.peak.date,L=locals.find(x=>Math.abs(x.peak.time.date.getTime()-gp.getTime())<1.5*DAY);
+const gk=kindName[G.kind]||G.kind;
+if(!L)return '<tr><td data-l="Date">'+esc(day(gp))+'</td><td data-l="Eclipse">'+gk+' (global)</td><td data-l="Visible here?">'+badge('no','Not visible here')+'</td><td data-l="Details">The Moon\u2019s shadow does not reach this location. '+(isFinite(G.latitude)&&isFinite(G.longitude)?'The greatest eclipse is near '+Math.abs(G.latitude).toFixed(1)+'\u00b0'+(G.latitude<0?'S':'N')+', '+Math.abs(G.longitude).toFixed(1)+'\u00b0'+(G.longitude<0?'W':'E')+'.':'It is only a partial eclipse, seen from far-northern or far-southern regions.')+'</td></tr>';
+const t0=L.partial_begin.time.date.getTime(),t1=L.partial_end.time.date.getTime(),pk=L.peak.time.date;
+const f=share(A.Body.Sun,t0,t1,2*MIN),a=L.peak.altitude;
+let b,note;
+if(f>=0.999){b=badge('yes','Visible');note='The Sun is above the horizon for the whole eclipse.'}
+else if(f>0){b=badge('part','Partly visible');note='The Sun is below the horizon for part of the eclipse ('+(a>0?'it rises after it starts or sets before it ends':'the maximum happens below the horizon')+'), so you only see part of it.'}
+else{b=badge('no','Not visible here');note='The eclipse happens while the Sun is below the horizon (night time here).'}
+if(f>0&&!firstSolar)firstSolar={d:day(pk),k:L.kind,o:L.obscuration};
+const kind=L.kind==='total'?'Total':L.kind==='annular'?'Annular':'Partial';
+let det='<b>'+(L.obscuration*100).toFixed(1)+'%</b> of the Sun\u2019s disc covered at maximum.<br>Starts '+clock(L.partial_begin.time.date)+' \u2022 Maximum '+clock(pk)+' \u2022 Ends '+clock(L.partial_end.time.date);
+if(L.total_begin&&L.total_end)det+='<br>'+(L.kind==='annular'?'Ring phase':'Totality')+': '+clock(L.total_begin.time.date)+' to '+clock(L.total_end.time.date);
+det+='<br>Sun altitude at maximum: '+a.toFixed(1)+'\u00b0.<br>'+note+'<br><span class="mu">Maximum in UTC: '+utc(pk)+'</span>';
+return '<tr><td data-l="Date">'+esc(day(pk))+'</td><td data-l="Eclipse">'+kind+' here<br><span class="mu">('+gk+' globally)</span></td><td data-l="Visible here?">'+b+'</td><td data-l="Details">'+det+'</td></tr>'});
+const lunarRows=[];let e=A.SearchLunarEclipse(d);
+for(let k=0;k<nLun;k++){
+const pk=e.peak.date,P=pk.getTime();
+const pen=[P-e.sd_penum*MIN,P+e.sd_penum*MIN];
+const par=e.sd_partial>0?[P-e.sd_partial*MIN,P+e.sd_partial*MIN]:null;
+const tot=e.sd_total>0?[P-e.sd_total*MIN,P+e.sd_total*MIN]:null;
+const main=par||pen,f=share(A.Body.Moon,main[0],main[1],5*MIN),a=alt(A.Body.Moon,pk);
+const kind=kindName[e.kind]||e.kind;
+let b,note;
+if(f>=0.999){b=badge('yes','Visible');note='The Moon is above the horizon for the whole '+(par?'partial/total phase.':'eclipse.')}
+else if(f>0){b=badge('part','Partly visible');note='The Moon is below the horizon for part of it, so you only see part of the eclipse.'}
+else{b=badge('no','Not visible here');note='The Moon is below the horizon during the eclipse (it is daytime here, or the Moon has not risen).'}
+if(f>0&&e.kind!=='penumbral'&&!firstLunar)firstLunar={d:day(pk),k:kind,full:f>=0.999};
+if(f>0&&e.kind==='penumbral'&&!firstPen)firstPen={d:day(pk)};
+let det=e.kind==='penumbral'?'The Moon only passes through the faint outer shadow, so there is no dark bite.<br>':'<b>'+(e.obscuration*100).toFixed(0)+'%</b> of the Moon in Earth\u2019s dark shadow at maximum.<br>';
+if(par)det+='Partial phase: '+clock(new Date(par[0]))+' to '+clock(new Date(par[1]))+' (maximum '+clock(pk)+')<br>';
+if(tot)det+='Total phase: '+clock(new Date(tot[0]))+' to '+clock(new Date(tot[1]))+'<br>';
+det+='Faint penumbral shading: '+clock(new Date(pen[0]))+' to '+clock(new Date(pen[1]))+(par?'':' (maximum '+clock(pk)+')')+'<br>Moon altitude at maximum: '+a.toFixed(1)+'\u00b0.<br>'+note;
+if(e.kind==='penumbral')det+='<br><span class="mu">Penumbral eclipses are very faint and hard to notice by eye.</span>';
+det+='<br><span class="mu">Maximum in UTC: '+utc(pk)+'</span>';
+lunarRows.push('<tr><td data-l="Date">'+esc(day(pk))+'</td><td data-l="Eclipse">'+kind+' lunar</td><td data-l="Visible here?">'+b+'</td><td data-l="Details">'+det+'</td></tr>');
+e=A.NextLunarEclipse(e.peak)}
+const head='<tr><th>Date</th><th>Eclipse</th><th>Visible here?</th><th>Details (times in '+esc(zone)+')</th></tr>';
+let sum='<div class="esum"><h3>Eclipses for '+esc(placeName)+'</h3><p class="mu">Latitude '+lat.toFixed(3)+'\u00b0, longitude '+lon.toFixed(3)+'\u00b0. Counting from '+esc(day(d))+'. Times are shown in '+esc(zone)+'.</p><ul>';
+sum+='<li><b>Next solar eclipse you can see here:</b> '+(firstSolar?esc(firstSolar.d)+' \u2013 '+(firstSolar.k==='total'?'total':firstSolar.k==='annular'?'annular':'partial')+', '+(firstSolar.o*100).toFixed(1)+'% of the Sun covered.':'none in the next '+nSol+' solar eclipses worldwide. Move the simulation date forward and predict again.')+'</li>';
+sum+='<li><b>Next lunar eclipse you can clearly see here (partial or total):</b> '+(firstLunar?esc(firstLunar.d)+' \u2013 '+firstLunar.k.toLowerCase()+(firstLunar.full?', Moon above the horizon the whole time.':', Moon above the horizon for part of it.'):'none in the next '+nLun+' lunar eclipses.'+(firstPen?' Only a faint penumbral one is visible, on '+esc(firstPen.d)+'.':' Move the simulation date forward and predict again.'))+'</li></ul>'+(/^Selected point/.test(placeName)?'<p class="mu">This is a point you picked on the map. Times use the time zone chosen in the World locations section; change it there if the point is in another zone.</p>':'')+'</div>';
+return sum+'<h3>Solar eclipses</h3><div class="wrap"><table class="et">'+head+solarRows.join('')+'</table></div><h3>Lunar eclipses</h3><div class="wrap"><table class="et">'+head+lunarRows.join('')+'</table></div><p class="mu">Calculated for the simulation date '+esc(utc(d))+'. Change the place or date, then press the button again. Weather, clouds, mountains and buildings are not included. Never look at the Sun without certified eclipse glasses.</p>';
+}
+$('predict').onclick=()=>{const d=simDate();if(d.getUTCFullYear()<1800||d.getUTCFullYear()>2100){$('eclipses').textContent='Choose a date between 1800 and 2100.';return}$('eclipses').textContent='Calculating…';setTimeout(()=>{try{const list=PLACES[sel]||PLACES.def,p=list[$('place').selectedIndex];let name=p?p[0]:'Selected point';if(!p||Math.abs(p[1]-pLat)>0.05||Math.abs(p[2]-pLon)>0.05)name='Selected point ('+pLat.toFixed(2)+'°, '+pLon.toFixed(2)+'°)';$('eclipses').innerHTML=eclipseReport(d,pLat,pLon,zone,name)}catch(e){$('eclipses').textContent='Prediction error: '+e.message}},30)};
 for(const id of ['lat','lon','place'])$(id).addEventListener('change',()=>{$('eclipses').textContent='Location changed. Re-run predictions.';updateExtra()});
 fillPlaces();updateExtra();
 
