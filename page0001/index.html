@@ -332,7 +332,7 @@
   <div class="top">
     <a class="brand" href="index.html"><span class="dot"></span>Pramod</a>
     <div class="topRight">
-      <a class="backlink" href="https://sapkotap.com.np">&larr; back to portfolio</a>
+      <a class="backlink" href="index.html">&larr; back to portfolio</a>
       <button class="themeToggle" id="themeToggle" aria-label="Toggle theme">☀</button>
     </div>
   </div>
@@ -545,6 +545,37 @@
   </div>
 
   <!-- AUTHENTICATED DASHBOARDS VIEW -->
+  <!-- EXTRA SECURITY GATE: shown right after password/OTP login succeeds, before
+       any dashboard content is revealed, if the user has set a PIN and/or a
+       custom security question. Protects against a stolen session/device
+       even though it can't stop the Supabase session itself being created. -->
+  <div class="portal-container" id="pinGateWrap" style="display:none; max-width:420px; margin:60px auto;">
+    <div class="card">
+      <div class="form-title">Extra Security Check</div>
+      <p class="form-hint" id="pinGateHint">For your protection, enter your PIN to continue.</p>
+
+      <div id="pinGateLockedMsg" style="display:none; color:var(--danger); font-size:0.85rem; margin-bottom:12px;"></div>
+
+      <div class="field" id="pinGatePinField">
+        <label for="pinGateInput">PIN</label>
+        <div class="pw-wrap">
+          <input type="password" id="pinGateInput" inputmode="numeric" maxlength="8" placeholder="••••••" autocomplete="off">
+          <button type="button" class="pw-toggle" data-target="pinGateInput" aria-label="Show PIN">👁</button>
+        </div>
+      </div>
+
+      <div class="field" id="pinGateAnswerField" style="display:none;">
+        <label for="pinGateAnswerInput" id="pinGateQuestionLabel">Security question</label>
+        <input type="text" id="pinGateAnswerInput" placeholder="Your answer" autocomplete="off">
+      </div>
+
+      <button type="button" class="btn" id="btnPinGateSubmit">Continue</button>
+      <button type="button" class="btn btn-outline" id="btnPinGateUseOther" style="display:none;">Use security question instead</button>
+      <button type="button" class="btn btn-outline" id="btnPinGateSignOut">Sign out</button>
+      <div id="pinGateNotice" style="font-size:0.8rem; margin-top:10px;"></div>
+    </div>
+  </div>
+
   <div class="portal-container" id="dashboardWrap">
     <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-solid); padding-bottom:14px;">
       <div>
@@ -560,6 +591,7 @@
       <button type="button" class="btn-subtle" id="tabBtnChat" style="padding:6px 14px; font-size:0.85rem; cursor:pointer; background:transparent; border:1px solid var(--border-solid); color:var(--muted); border-radius:6px;">Direct Chat</button>
       <button type="button" class="btn-subtle" id="tabBtnCommunity" style="padding:6px 14px; font-size:0.85rem; cursor:pointer; background:transparent; border:1px solid var(--border-solid); color:var(--muted); border-radius:6px;">Community</button>
       <button type="button" class="btn-subtle" id="tabBtnSupport" style="padding:6px 14px; font-size:0.85rem; cursor:pointer; background:transparent; border:1px solid var(--border-solid); color:var(--muted); border-radius:6px;">Message Admin</button>
+      <button type="button" class="btn-subtle" id="tabBtnSecurity" style="padding:6px 14px; font-size:0.85rem; cursor:pointer; background:transparent; border:1px solid var(--border-solid); color:var(--muted); border-radius:6px;">Security</button>
       <button type="button" class="btn-subtle" id="tabBtnAdmin" style="display:none; padding:6px 14px; font-size:0.85rem; cursor:pointer; background:transparent; border:1px solid var(--violet); color:var(--violet); border-radius:6px;">Admin Console</button>
     </div>
 
@@ -684,6 +716,48 @@
       <div id="userSupportTicketsList" style="font-size:0.8rem; color:var(--muted);">No messages submitted yet.</div>
     </div>
 
+    <!-- TAB: EXTRA LOGIN SECURITY (PIN / security question) -->
+    <div id="tabContentSecurity" style="display:none; margin-top:20px;">
+      <h3 style="font-family:'Space Grotesk',sans-serif; color:var(--cyan); margin-bottom:6px;">Extra Login Security</h3>
+      <p style="font-size:0.8rem; color:var(--muted); margin-bottom:16px;">
+        Add a PIN and/or a custom security question. Once set, you'll be asked for it right after you sign in —
+        even on a device you've already trusted — before you can see anything in your account.
+        It's stored as a one-way hash: nobody, including the site admin, can ever see it. If you forget it, an admin can reset it so you can set a new one.
+      </p>
+
+      <div id="securityStatusBox" style="font-size:0.8rem; color:var(--muted); margin-bottom:18px;">Loading current status...</div>
+
+      <!-- PIN -->
+      <div style="background:var(--surface-2); border:1px solid var(--border-solid); border-radius:8px; padding:14px; margin-bottom:16px;">
+        <div style="font-size:0.85rem; font-weight:600; margin-bottom:10px; color:var(--text);">PIN (6–8 digits)</div>
+        <div class="field" id="newPinField" style="margin-bottom:8px;">
+          <div class="pw-wrap">
+            <input type="password" id="newPinInput" inputmode="numeric" maxlength="8" placeholder="New PIN" autocomplete="off">
+            <button type="button" class="pw-toggle" data-target="newPinInput" aria-label="Show PIN">👁</button>
+          </div>
+        </div>
+        <div class="field" id="newPinConfirmField" style="margin-bottom:10px;">
+          <div class="pw-wrap">
+            <input type="password" id="newPinConfirmInput" inputmode="numeric" maxlength="8" placeholder="Confirm PIN" autocomplete="off">
+            <button type="button" class="pw-toggle" data-target="newPinConfirmInput" aria-label="Show PIN">👁</button>
+          </div>
+        </div>
+        <button type="button" class="btn" id="btnSavePin" style="width:auto; padding:8px 20px;">Save PIN</button>
+        <button type="button" class="btn btn-outline" id="btnRemovePin" style="width:auto; padding:8px 20px;">Remove PIN</button>
+        <div id="pinSettingsNotice" style="font-size:0.78rem; margin-top:8px;"></div>
+      </div>
+
+      <!-- Security question -->
+      <div style="background:var(--surface-2); border:1px solid var(--border-solid); border-radius:8px; padding:14px;">
+        <div style="font-size:0.85rem; font-weight:600; margin-bottom:10px; color:var(--text);">Custom Security Question</div>
+        <input type="text" id="newSecurityQuestion" class="field" style="margin-bottom:8px;" placeholder="e.g. What street did you grow up on?" maxlength="200">
+        <input type="text" id="newSecurityAnswer" class="field" style="margin-bottom:10px;" placeholder="Answer" maxlength="100" autocomplete="off">
+        <button type="button" class="btn" id="btnSaveQuestion" style="width:auto; padding:8px 20px;">Save Question</button>
+        <button type="button" class="btn btn-outline" id="btnRemoveQuestion" style="width:auto; padding:8px 20px;">Remove Question</button>
+        <div id="questionSettingsNotice" style="font-size:0.78rem; margin-top:8px;"></div>
+      </div>
+    </div>
+
     <!-- ADMIN PANEL: "Control room" -->
     <div id="adminArea" style="display:none; margin-top:36px; border-top:1px solid var(--border-solid); padding-top:24px;">
 
@@ -737,7 +811,7 @@
       <div class="admin-tabpane" id="adminTab-users">
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:10px;">
           <!-- Add New User Directly -->
-          <div class="main-admin-only" style="background:var(--surface-2); border:1px solid var(--border-solid); border-radius:10px; padding:16px;">
+          <div style="background:var(--surface-2); border:1px solid var(--border-solid); border-radius:10px; padding:16px;">
             <h4 style="margin:0 0 10px 0; font-size:0.9rem; color:var(--violet);">Add New User (Admin Provisioning)</h4>
             <form id="adminAddUserForm" style="display:flex; flex-direction:column; gap:8px;">
               <input type="text" id="adminNewFullName" class="field" style="margin:0;" placeholder="Full Name" required>
@@ -775,10 +849,10 @@
           </div>
         </div>
 
-        <h4 class="main-admin-only" style="margin-bottom:8px;">Registered Users</h4>
-        <table class="main-admin-only">
+        <h4 style="margin-bottom:8px;">Registered Users</h4>
+        <table>
           <thead>
-            <tr><th>Name</th><th>Username</th><th>Email</th><th>Role</th><th>Created</th><th id="thActions">Actions</th></tr>
+            <tr><th>Name</th><th>Username</th><th>Email</th><th>Role</th><th>Created</th><th>Security</th><th id="thActions">Actions</th></tr>
           </thead>
           <tbody id="adminUsersTbody"></tbody>
         </table>
@@ -837,6 +911,17 @@
 
       <!-- MODERATION: per-user chat history for investigating reports -->
       <div class="admin-tabpane" id="adminTab-community">
+        <h4 style="margin-bottom:4px;">Reported Messages <span style="font-size:0.75rem; color:var(--cyan); font-weight:normal;">(Main Admin Only)</span></h4>
+        <p style="font-size:0.78rem; color:var(--muted); margin-bottom:12px;">Messages other users have flagged, newest first. Dismissing a report just clears it from this list — delete the message or suspend the user separately if that's also warranted.</p>
+        <div style="width:100%; overflow-x:auto; margin-bottom:28px;">
+          <table>
+            <thead>
+              <tr><th>Reported</th><th>Message</th><th>Posted By</th><th>Reported By</th><th>Reason</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="adminReportsTbody"><tr><td colspan="6" style="text-align:center; color:var(--muted);">No reports.</td></tr></tbody>
+          </table>
+        </div>
+
         <h4 style="margin-bottom:4px;">User Chat History Lookup</h4>
         <p style="font-size:0.78rem; color:var(--muted); margin-bottom:12px;">Pull a specific person's full history — community chat (including anything they deleted), direct messages, and support tickets — in one timeline. Use this when reviewing a report, not for casual browsing.</p>
 
@@ -853,7 +938,7 @@
     </div>
   </div>
 
-  <footer class="note">sapkotap.com.np — secure authentication powered by Mr.Pramod Sapkota and supabase</footer>
+  <footer class="note">sapkotap.com.np — secure authentication powered by Supabase Cloud</footer>
 
 <script>
 (function(){
@@ -901,6 +986,8 @@
   let otpRequestedAt = null;
   let otpResendTimer = null;
   let isAdminGlobal = false; // lets non-admin-specific UI (like Community) quietly check admin status
+  let pinVerifiedThisSession = false; // extra PIN/security-question gate, re-checked on every fresh sign-in
+  let pendingGateUser = null;
 
   // Geo Detection
   let clientIP = "detecting...";
@@ -1167,7 +1254,7 @@
           loginEmail = resolvedEmail;
         } else {
           // Direct fallback query if RPC not yet created
-          const { data: prof } = await supabase.from("profiles").select("email").eq("username", identifier.toLowerCase()).maybeSingle();
+          const { data: prof } = await supabase.from("profiles").select("email").ilike("username", identifier).maybeSingle();
           if(prof && prof.email) loginEmail = prof.email;
           else {
             showStatus("No account found with username @" + identifier, "bad");
@@ -1413,7 +1500,26 @@
       return;
     }
     sessionUser = user;
+
+    // ---- Extra PIN / security-question gate (checked once per fresh sign-in) ----
+    if(!pinVerifiedThisSession){
+      try {
+        const { data: sec } = await supabase.rpc('get_my_security_status').maybeSingle();
+        if(sec && (sec.has_pin || sec.has_question)){
+          showSecurityGate(sec, user);
+          return; // revealDashboardReal() runs once the gate is passed
+        }
+      } catch(e) {
+        // RPC not installed yet, or call failed — don't block a normal login over this
+      }
+    }
+
+    revealDashboardReal(user);
+  }
+
+  async function revealDashboardReal(user){
     logAudit("LOGIN_SUCCESS", { device: currentDeviceHash }, user.email);
+    document.getElementById('pinGateWrap').style.display = 'none';
     document.getElementById('mainAuthWrap').style.display = 'none';
     document.getElementById('dashboardWrap').style.display = 'block';
 
@@ -1437,7 +1543,6 @@
     }
 
     isAdminGlobal = isAdmin;
-    document.querySelectorAll('.main-admin-only').forEach(el => { el.style.display = isMainAdmin ? '' : 'none'; });
     const displayName = profile?.full_name || user.user_metadata?.full_name || user.email;
     const displayUsername = profile?.username || user.email.split('@')[0];
     const roleBadge = isMainAdmin ? " [MAIN ADMINISTRATOR]" : (isAdmin ? " [ADMINISTRATOR]" : " [MEMBER]");
@@ -1503,8 +1608,49 @@
       document.querySelectorAll('.admin-tabpane').forEach(p => p.classList.remove('active'));
       btn.classList.add('active');
       document.getElementById('adminTab-' + btn.dataset.admintab).classList.add('active');
+      if(btn.dataset.admintab === 'community') loadCommunityReports();
     });
   });
+
+  async function loadCommunityReports(){
+    const tbody = document.getElementById('adminReportsTbody');
+    if(!tbody || !supabase) return;
+    try{
+      const { data, error } = await supabase.rpc('admin_list_community_reports');
+      if(error) throw error;
+      if(!data || data.length === 0){
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--muted);">No reports.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = data.map(r => `
+        <tr>
+          <td>${new Date(r.reported_at).toLocaleString()}</td>
+          <td style="max-width:260px; white-space:pre-wrap;">${escapeHtml(r.message_text)}${r.message_deleted ? ' <span style="color:var(--muted); font-size:0.7rem;">(deleted)</span>' : ''}</td>
+          <td>@${escapeHtml(r.sender_username)}<br><span style="color:var(--muted); font-size:0.72rem;">${escapeHtml(r.sender_email)}</span></td>
+          <td>@${escapeHtml(r.reporter_username)}<br><span style="color:var(--muted); font-size:0.72rem;">${escapeHtml(r.reporter_email)}</span></td>
+          <td style="max-width:200px; white-space:pre-wrap;">${escapeHtml(r.reason)}</td>
+          <td style="white-space:nowrap;">
+            ${!r.message_deleted ? `<button type="button" class="btn btn-outline" style="padding:3px 8px; font-size:0.72rem; border-color:var(--danger); color:var(--danger); margin-bottom:4px;" onclick="window.deleteCommunityMessage('${r.message_id}')">Delete msg</button><br>` : ''}
+            <button type="button" class="btn btn-outline" style="padding:3px 8px; font-size:0.72rem; border-color:var(--danger); color:var(--danger); margin-bottom:4px;" onclick="window.suspendCommunityUser('${r.sender_id}')">Suspend user</button><br>
+            <button type="button" class="btn btn-outline" style="padding:3px 8px; font-size:0.72rem;" onclick="window.dismissReport('${r.report_id}')">Dismiss</button>
+          </td>
+        </tr>
+      `).join('');
+    }catch(err){
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--danger);">Could not load reports: ${escapeHtml(err.message)} — run community_chat_fix.sql if this is new.</td></tr>`;
+    }
+  }
+
+  window.dismissReport = async function(reportId){
+    if(!confirm("Dismiss this report? It will be removed from the list.")) return;
+    try{
+      const { error } = await supabase.rpc('admin_dismiss_report', { target_report_id: reportId });
+      if(error) throw error;
+      loadCommunityReports();
+    }catch(err){
+      alert("Could not dismiss report: " + err.message);
+    }
+  };
 
   async function loadAdminDashboard(isMainAdmin){
     const thActions = document.getElementById('thActions');
@@ -1530,6 +1676,17 @@
         roles.forEach(r => { rolesMap[r.user_id] = r.role; });
       }
     } catch(e) {}
+
+    // Extra-login-security status per user (PIN/question set? locked out?) —
+    // no hashes are ever returned, just status flags (see admin_list_security_status)
+    let secMap = {};
+    try {
+      const { data: secRows } = await supabase.rpc('admin_list_security_status');
+      if(secRows){
+        secRows.forEach(s => { secMap[s.user_id] = s; });
+      }
+    } catch(e) {}
+
     const sel = document.getElementById('adminUserSelect');
     const tbody = document.getElementById('adminUsersTbody');
     sel.innerHTML = '<option value="">Select target user...</option>';
@@ -1553,8 +1710,19 @@
             const roleButton = r === 'admin'
               ? `<button type="button" class="btn btn-outline" style="padding:4px 10px; font-size:0.75rem; border-color:var(--danger); color:var(--danger);" onclick="window.changeUserRole('${u.id}', 'user')">Demote to User</button>`
               : `<button type="button" class="btn btn-outline" style="padding:4px 10px; font-size:0.75rem; border-color:var(--violet); color:var(--violet);" onclick="window.changeUserRole('${u.id}', 'admin')">Make Admin</button>`;
-            actionHtml = `${roleButton} <button type="button" class="btn btn-outline" style="padding:4px 10px; font-size:0.75rem; border-color:var(--danger); color:var(--danger);" data-act="delete-user" data-uid="${escapeHtml(u.id)}" data-username="${escapeHtml(u.username)}">Delete User</button>`;
+            actionHtml = `${roleButton} <button type="button" class="btn btn-outline js-delete-user" data-uid="${sanitize(u.id)}" data-uname="${sanitize(u.username)}" style="padding:4px 10px; font-size:0.75rem; border-color:var(--danger); color:var(--danger);">Delete User</button>`;
           }
+        }
+
+        const sec = secMap[u.id];
+        let secHtml = '<span style="color:var(--muted); font-size:0.75rem;">–</span>';
+        if(sec && (sec.has_pin || sec.has_question)){
+          const parts = [];
+          if(sec.has_pin) parts.push('PIN');
+          if(sec.has_question) parts.push('Question');
+          const lockedBadge = sec.is_locked ? ' <span style="color:var(--danger);">(locked)</span>' : '';
+          secHtml = `<span style="font-size:0.75rem; color:var(--text);">${parts.join(' + ')}${lockedBadge}</span>
+            <br><button type="button" class="btn btn-outline js-reset-security" data-uid="${sanitize(u.id)}" data-uname="${sanitize(u.username)}" style="padding:2px 8px; font-size:0.7rem; margin-top:4px; border-color:var(--violet); color:var(--violet);">Reset</button>`;
         }
 
         tbody.innerHTML += `<tr>
@@ -1563,6 +1731,7 @@
           <td>${sanitize(u.email)}</td>
           <td><span style="color:${r==='admin'?'var(--cyan)':'var(--muted)'}; font-weight:600;">${r}</span></td>
           <td>${new Date(u.created_at).toLocaleDateString()}</td>
+          <td>${secHtml}</td>
           ${isMainAdmin ? `<td>${actionHtml}</td>` : ''}
         </tr>`;
       });
@@ -1646,8 +1815,9 @@
     // 3. Files tab — every file ever sent, across all users
     loadAdminFilesList();
 
-    // 4. Moderation tab — user picker for chat-history lookups
+    // 4. Moderation tab — user picker for chat-history lookups + reports list
     populateModUserSelect();
+    if(isMainAdmin) loadCommunityReports();
   }
 
   async function loadAdminFilesList(){
@@ -1696,13 +1866,46 @@
     }
   }
 
+  // Delegated listener for every "Delete User" button (data attributes only —
+  // never string-built into an onclick, so the username can't break out of
+  // a JS context no matter what characters it contains).
+  document.getElementById('adminUsersTbody')?.addEventListener('click', (e) => {
+    const delBtn = e.target.closest('.js-delete-user');
+    if(delBtn){ window.adminDeleteUser(delBtn.dataset.uid, delBtn.dataset.uname); return; }
+    const secBtn = e.target.closest('.js-reset-security');
+    if(secBtn) window.adminResetUserSecurity(secBtn.dataset.uid, secBtn.dataset.uname);
+  });
+
+  // Admin-only: wipe a user's PIN/security-question so they can set new ones.
+  // Admin never sees the old PIN/answer — this only clears it.
+  window.adminResetUserSecurity = async function(userId, username){
+    if(!confirm(`Reset @${username}'s PIN and security question? They'll be asked to set new ones.`)) return;
+    try {
+      const { error } = await supabase.rpc('admin_reset_user_security', { target_user_id: userId });
+      if(error) throw error;
+      logAudit("ADMIN_RESET_USER_SECURITY", { target: username }, sessionUser?.email);
+      alert(`Security reset for @${username}.`);
+      loadAdminDashboard(isAdminGlobal);
+    } catch(err){
+      alert("Could not reset security: " + err.message);
+    }
+  };
+
   // Global helper for Main Admin to assign/revoke admin roles
   window.changeUserRole = async function(targetUserId, newRole){
     if(!confirm("Are you sure you want to change this user's role to " + newRole.toUpperCase() + "?")) return;
     try {
-      const { error } = await supabase.rpc('admin_set_user_role', { target_user_id: targetUserId, new_role: newRole });
-      if(error){
-        alert("Failed to update role: " + error.message);
+      const { error: delErr } = await supabase.from("user_roles").delete().eq("user_id", targetUserId);
+      if(delErr){
+        alert("Failed to update role (delete step): " + delErr.message);
+        return;
+      }
+      const { error: insErr } = await supabase.from("user_roles").insert({
+        user_id: targetUserId,
+        role: newRole
+      });
+      if(insErr){
+        alert("Failed to update role (insert step): " + insErr.message);
         return;
       }
       alert("Role updated successfully to " + newRole.toUpperCase());
@@ -1893,6 +2096,9 @@
   if(supabase){
     supabase.auth.onAuthStateChange((event) => {
       if(event === 'SIGNED_OUT'){
+        pinVerifiedThisSession = false;
+        pendingGateUser = null;
+        document.getElementById('pinGateWrap').style.display = 'none';
         document.getElementById('dashboardWrap').style.display = 'none';
         document.getElementById('mainAuthWrap').style.display = 'grid';
         showLogin();
@@ -1925,7 +2131,7 @@
   let communityPollInterval = null;
 
   function switchDashboardTab(tabName){
-    const tabs = ['Files', 'Chat', 'Community', 'Support', 'Admin'];
+    const tabs = ['Files', 'Chat', 'Community', 'Support', 'Security', 'Admin'];
     tabs.forEach(t => {
       const btn = document.getElementById('tabBtn' + t);
       const content = document.getElementById(t === 'Admin' ? 'adminArea' : 'tabContent' + t);
@@ -1972,12 +2178,17 @@
     if(tabName.toLowerCase() === 'support'){
       loadUserSupportTickets();
     }
+
+    if(tabName.toLowerCase() === 'security'){
+      loadSecuritySettings();
+    }
   }
 
   document.getElementById('tabBtnFiles')?.addEventListener('click', () => switchDashboardTab('Files'));
   document.getElementById('tabBtnChat')?.addEventListener('click', () => switchDashboardTab('Chat'));
   document.getElementById('tabBtnCommunity')?.addEventListener('click', () => switchDashboardTab('Community'));
   document.getElementById('tabBtnSupport')?.addEventListener('click', () => switchDashboardTab('Support'));
+  document.getElementById('tabBtnSecurity')?.addEventListener('click', () => switchDashboardTab('Security'));
   document.getElementById('tabBtnAdmin')?.addEventListener('click', () => switchDashboardTab('Admin'));
 
   /* --- SUPPORT INQUIRIES (USER & ADMIN) --- */
@@ -2036,7 +2247,7 @@
         <div style="background:var(--surface); border:1px solid var(--border-solid); border-radius:6px; padding:10px; margin-bottom:8px;">
           <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
             <strong style="color:var(--text);">${escapeHtml(m.subject)}</strong>
-            <span style="padding:2px 8px; border-radius:4px; font-size:0.7rem; background:${m.status==='resolved'?'rgba(34,197,94,0.15)':'rgba(234,179,8,0.15)'}; color:${m.status==='resolved'?'var(--good)':'#eab308'};">${escapeHtml(String(m.status).toUpperCase())}</span>
+            <span style="padding:2px 8px; border-radius:4px; font-size:0.7rem; background:${m.status==='resolved'?'rgba(34,197,94,0.15)':'rgba(234,179,8,0.15)'}; color:${m.status==='resolved'?'var(--good)':'#eab308'};">${m.status.toUpperCase()}</span>
           </div>
           <div style="color:var(--muted); font-size:0.8rem; white-space:pre-wrap;">${escapeHtml(m.message)}</div>
           <div style="font-size:0.7rem; color:var(--muted); margin-top:6px;">${new Date(m.created_at).toLocaleString()}</div>
@@ -2052,6 +2263,197 @@
     } catch(err){
       container.innerHTML = '<div style="color:var(--muted); font-size:0.75rem;">Support table not yet created in Supabase SQL editor.</div>';
     }
+  }
+
+  /* =========================================================
+     EXTRA LOGIN SECURITY — PIN & Security Question (user settings)
+     ========================================================= */
+  async function loadSecuritySettings(){
+    const box = document.getElementById('securityStatusBox');
+    if(!box || !supabase) return;
+    try {
+      const { data, error } = await supabase.rpc('get_my_security_status').maybeSingle();
+      if(error) throw error;
+      const hasPin = !!data?.has_pin;
+      const hasQ = !!data?.has_question;
+      box.innerHTML = `
+        <span style="color:${hasPin?'var(--good)':'var(--muted)'};">PIN: ${hasPin ? 'Set ✓' : 'Not set'}</span>
+        &nbsp;•&nbsp;
+        <span style="color:${hasQ?'var(--good)':'var(--muted)'};">Security question: ${hasQ ? 'Set ✓' : 'Not set'}</span>
+      `;
+    } catch(e){
+      box.innerHTML = '<span style="color:var(--muted);">Could not load security status — the SQL for this feature may not be installed yet.</span>';
+    }
+  }
+
+  document.getElementById('btnSavePin')?.addEventListener('click', async () => {
+    const notice = document.getElementById('pinSettingsNotice');
+    const pin = document.getElementById('newPinInput').value.trim();
+    const confirmPin = document.getElementById('newPinConfirmInput').value.trim();
+    notice.textContent = '';
+    if(!/^[0-9]{6,8}$/.test(pin)){
+      notice.innerHTML = '<span style="color:var(--danger);">PIN must be 6 to 8 digits.</span>';
+      return;
+    }
+    if(pin !== confirmPin){
+      notice.innerHTML = '<span style="color:var(--danger);">PINs do not match.</span>';
+      return;
+    }
+    try {
+      const { error } = await supabase.rpc('set_security_pin', { pin });
+      if(error) throw error;
+      notice.innerHTML = '<span style="color:var(--good);">PIN saved. You\'ll be asked for it on your next sign-in.</span>';
+      document.getElementById('newPinInput').value = '';
+      document.getElementById('newPinConfirmInput').value = '';
+      logAudit("SECURITY_PIN_SET", {}, sessionUser?.email);
+      loadSecuritySettings();
+    } catch(e){
+      notice.innerHTML = '<span style="color:var(--danger);">Could not save PIN: ' + escapeHtml(e.message) + '</span>';
+    }
+  });
+
+  document.getElementById('btnRemovePin')?.addEventListener('click', async () => {
+    if(!confirm("Remove your PIN? You'll no longer be asked for it at login (unless you also have a security question set).")) return;
+    const notice = document.getElementById('pinSettingsNotice');
+    try {
+      const { error } = await supabase.rpc('clear_security_pin');
+      if(error) throw error;
+      notice.innerHTML = '<span style="color:var(--good);">PIN removed.</span>';
+      logAudit("SECURITY_PIN_REMOVED", {}, sessionUser?.email);
+      loadSecuritySettings();
+    } catch(e){
+      notice.innerHTML = '<span style="color:var(--danger);">Could not remove PIN: ' + escapeHtml(e.message) + '</span>';
+    }
+  });
+
+  document.getElementById('btnSaveQuestion')?.addEventListener('click', async () => {
+    const notice = document.getElementById('questionSettingsNotice');
+    const question = document.getElementById('newSecurityQuestion').value.trim();
+    const answer = document.getElementById('newSecurityAnswer').value.trim();
+    notice.textContent = '';
+    if(question.length < 5){
+      notice.innerHTML = '<span style="color:var(--danger);">Question must be at least 5 characters.</span>';
+      return;
+    }
+    if(answer.length < 2){
+      notice.innerHTML = '<span style="color:var(--danger);">Answer must be at least 2 characters.</span>';
+      return;
+    }
+    try {
+      const { error } = await supabase.rpc('set_security_question', { question, answer });
+      if(error) throw error;
+      notice.innerHTML = '<span style="color:var(--good);">Security question saved.</span>';
+      document.getElementById('newSecurityAnswer').value = '';
+      logAudit("SECURITY_QUESTION_SET", {}, sessionUser?.email);
+      loadSecuritySettings();
+    } catch(e){
+      notice.innerHTML = '<span style="color:var(--danger);">Could not save question: ' + escapeHtml(e.message) + '</span>';
+    }
+  });
+
+  document.getElementById('btnRemoveQuestion')?.addEventListener('click', async () => {
+    if(!confirm("Remove your security question? You'll no longer be asked for it at login (unless you also have a PIN set).")) return;
+    const notice = document.getElementById('questionSettingsNotice');
+    try {
+      const { error } = await supabase.rpc('clear_security_question');
+      if(error) throw error;
+      notice.innerHTML = '<span style="color:var(--good);">Security question removed.</span>';
+      document.getElementById('newSecurityQuestion').value = '';
+      logAudit("SECURITY_QUESTION_REMOVED", {}, sessionUser?.email);
+      loadSecuritySettings();
+    } catch(e){
+      notice.innerHTML = '<span style="color:var(--danger);">Could not remove question: ' + escapeHtml(e.message) + '</span>';
+    }
+  });
+
+  /* =========================================================
+     EXTRA LOGIN SECURITY — the post-login gate screen itself
+     ========================================================= */
+  function showSecurityGate(sec, user){
+    pendingGateUser = user;
+    document.getElementById('mainAuthWrap').style.display = 'none';
+    document.getElementById('dashboardWrap').style.display = 'none';
+    document.getElementById('pinGateWrap').style.display = 'block';
+
+    const pinField = document.getElementById('pinGatePinField');
+    const answerField = document.getElementById('pinGateAnswerField');
+    const useOtherBtn = document.getElementById('btnPinGateUseOther');
+    const lockedMsg = document.getElementById('pinGateLockedMsg');
+    const hint = document.getElementById('pinGateHint');
+    document.getElementById('pinGateNotice').textContent = '';
+    document.getElementById('pinGateInput').value = '';
+    document.getElementById('pinGateAnswerInput').value = '';
+
+    if(sec.is_locked){
+      lockedMsg.style.display = 'block';
+      const until = sec.locked_until ? new Date(sec.locked_until).toLocaleTimeString() : 'shortly';
+      lockedMsg.textContent = `Too many wrong attempts. Locked until ${until}. Contact the admin if you need it reset sooner.`;
+    } else {
+      lockedMsg.style.display = 'none';
+    }
+
+    // Default to PIN if they have one, else the question
+    let mode = sec.has_pin ? 'pin' : 'question';
+    function render(){
+      if(mode === 'pin'){
+        pinField.style.display = 'block';
+        answerField.style.display = 'none';
+        hint.textContent = 'For your protection, enter your PIN to continue.';
+        useOtherBtn.style.display = sec.has_question ? 'block' : 'none';
+        useOtherBtn.textContent = 'Use security question instead';
+      } else {
+        pinField.style.display = 'none';
+        answerField.style.display = 'block';
+        document.getElementById('pinGateQuestionLabel').textContent = sec.question || 'Security question';
+        hint.textContent = 'Answer your security question to continue.';
+        useOtherBtn.style.display = sec.has_pin ? 'block' : 'none';
+        useOtherBtn.textContent = 'Use PIN instead';
+      }
+    }
+    render();
+
+    useOtherBtn.onclick = () => { mode = (mode === 'pin') ? 'question' : 'pin'; render(); };
+
+    document.getElementById('btnPinGateSubmit').onclick = async () => {
+      const notice = document.getElementById('pinGateNotice');
+      notice.textContent = '';
+      try {
+        let ok = false;
+        if(mode === 'pin'){
+          const pin = document.getElementById('pinGateInput').value.trim();
+          const { data } = await supabase.rpc('verify_security_pin', { pin });
+          ok = !!data;
+        } else {
+          const answer = document.getElementById('pinGateAnswerInput').value.trim();
+          const { data } = await supabase.rpc('verify_security_answer', { answer });
+          ok = !!data;
+        }
+
+        if(ok){
+          pinVerifiedThisSession = true;
+          logAudit("SECURITY_GATE_PASSED", {}, user.email);
+          document.getElementById('pinGateWrap').style.display = 'none';
+          revealDashboardReal(user);
+        } else {
+          logAudit("SECURITY_GATE_FAILED", {}, user.email);
+          notice.innerHTML = '<span style="color:var(--danger);">Incorrect. Please try again.</span>';
+          // Refresh lock status in case this attempt just triggered a lockout
+          const { data: fresh } = await supabase.rpc('get_my_security_status').maybeSingle();
+          if(fresh?.is_locked){
+            lockedMsg.style.display = 'block';
+            const until = fresh.locked_until ? new Date(fresh.locked_until).toLocaleTimeString() : 'shortly';
+            lockedMsg.textContent = `Too many wrong attempts. Locked until ${until}. Contact the admin if you need it reset sooner.`;
+          }
+        }
+      } catch(e){
+        notice.innerHTML = '<span style="color:var(--danger);">Error: ' + escapeHtml(e.message) + '</span>';
+      }
+    };
+
+    document.getElementById('btnPinGateSignOut').onclick = async () => {
+      if(supabase) await supabase.auth.signOut();
+      document.getElementById('pinGateWrap').style.display = 'none';
+    };
   }
 
   async function loadAdminSupportInquiries(){
@@ -2076,7 +2478,7 @@
           <td>${escapeHtml(m.user_email || 'Anonymous')}</td>
           <td><strong>${escapeHtml(m.subject)}</strong></td>
           <td style="max-width:220px; word-break:break-word;">${escapeHtml(m.message)}</td>
-          <td><span style="padding:2px 6px; border-radius:4px; font-size:0.7rem; color:${m.status==='resolved'?'var(--good)':'#eab308'};">${escapeHtml(m.status)}</span></td>
+          <td><span style="padding:2px 6px; border-radius:4px; font-size:0.7rem; color:${m.status==='resolved'?'var(--good)':'#eab308'};">${m.status}</span></td>
           <td style="min-width:220px;">
             ${m.admin_reply ? `
               <div style="font-size:0.75rem; color:var(--violet); font-weight:700; margin-bottom:4px;">Replied:</div>
@@ -2181,7 +2583,7 @@
       const { data: targetProfile, error: profErr } = await supabase
         .from('profiles')
         .select('id, username, full_name')
-        .eq('username', targetUsername)
+        .ilike('username', targetUsername)
         .maybeSingle();
 
       if(profErr || !targetProfile){
@@ -2316,31 +2718,45 @@
       }
 
       const otherUserIds = accepted.map(a => a.sender_id === sessionUser.id ? a.receiver_id : a.sender_id);
-      const { data: profiles } = await supabase.from('profiles').select('id, username, full_name, chat_nickname').in('id', otherUserIds);
+      // profiles_public (not profiles) — regular users can't read each other's
+      // full profiles row under RLS, only this safe, limited view.
+      const { data: profiles } = await supabase.from('profiles_public').select('id, username, full_name, chat_nickname').in('id', otherUserIds);
       const profMap = {};
       (profiles || []).forEach(p => profMap[p.id] = p);
 
-      cont.innerHTML = otherUserIds.map(uid => {
-        const p = profMap[uid] || { username: 'user', full_name: 'Contact' };
+      // Built with createElement + textContent (never innerHTML string-building
+      // for user data), and click handling via addEventListener + dataset —
+      // so a malicious nickname/username can never execute as code, no matter
+      // what characters it contains.
+      cont.innerHTML = '';
+      otherUserIds.forEach(uid => {
+        const p = profMap[uid] || { username: 'user', full_name: 'Contact', chat_nickname: '' };
         const displayName = p.chat_nickname || ('@' + p.username);
         const isSel = (uid === activeChatContactId);
-        return `
-          <div class="chat-contact" data-uid="${escapeHtml(uid)}" data-username="${escapeHtml(p.username)}" data-nick="${escapeHtml(p.chat_nickname || '')}" style="cursor:pointer; padding:6px 8px; border-radius:6px; margin-bottom:4px; background:${isSel?'rgba(34,211,238,0.15)':'transparent'}; border:${isSel?'1px solid var(--cyan)':'1px solid transparent'};">
-            <div style="font-weight:600; font-size:0.85rem; color:${isSel?'var(--cyan)':'var(--text)'};">${escapeHtml(displayName)}</div>
-            <div style="font-size:0.75rem; color:var(--muted);">${p.chat_nickname ? '@' + escapeHtml(p.username) : escapeHtml(p.full_name || '')}</div>
-          </div>
-        `;
-      }).join('');
+
+        const row = document.createElement('div');
+        row.style.cssText = `cursor:pointer; padding:6px 8px; border-radius:6px; margin-bottom:4px; background:${isSel?'rgba(34,211,238,0.15)':'transparent'}; border:${isSel?'1px solid var(--cyan)':'1px solid transparent'};`;
+        row.dataset.uid = uid;
+        row.dataset.username = p.username;
+        row.dataset.nickname = p.chat_nickname || '';
+
+        const nameEl = document.createElement('div');
+        nameEl.style.cssText = `font-weight:600; font-size:0.85rem; color:${isSel?'var(--cyan)':'var(--text)'};`;
+        nameEl.textContent = displayName;
+
+        const subEl = document.createElement('div');
+        subEl.style.cssText = 'font-size:0.75rem; color:var(--muted);';
+        subEl.textContent = p.chat_nickname ? ('@' + p.username) : (p.full_name || '');
+
+        row.appendChild(nameEl);
+        row.appendChild(subEl);
+        row.addEventListener('click', () => window.selectChatContact(row.dataset.uid, row.dataset.username, row.dataset.nickname));
+        cont.appendChild(row);
+      });
     } catch(err){
       cont.innerHTML = '<div style="color:var(--muted); font-size:0.75rem;">Requires chat_invitations table — run the provided SQL fix.</div>';
     }
   }
-
-  document.getElementById('acceptedContactsList')?.addEventListener('click', (e) => {
-    const el = e.target.closest('.chat-contact');
-    if(!el) return;
-    window.selectChatContact(el.dataset.uid, el.dataset.username, el.dataset.nick);
-  });
 
   window.selectChatContact = function(userId, username, nickname){
     activeChatContactId = userId;
@@ -2448,8 +2864,7 @@
 
     const messageType = isImage ? 'image' : (isAudio ? 'audio' : 'file');
     const safeName = file.name.replace(/[^\w.\- ()]/g, '_').slice(0, 150) || 'attachment';
-    const chatFolder = [sessionUser.id, activeChatContactId].sort().join('_');
-    const storagePath = `${chatFolder}/${Date.now()}_${safeName}`;
+    const storagePath = `${sessionUser.id}/${activeChatContactId}/${Date.now()}_${safeName}`;
     chatUploadStatus.textContent = "Uploading attachment…";
     try{
       const { error: uploadError } = await supabase.storage
@@ -2508,8 +2923,7 @@
           const blob = new Blob(voiceChunks, { type: voiceRecorder.mimeType || 'audio/webm' });
           if(blob.size > 20 * 1024 * 1024) throw new Error("Voice message exceeds 20 MB.");
           const ext = blob.type.includes('ogg') ? 'ogg' : (blob.type.includes('mp4') ? 'm4a' : 'webm');
-          const chatFolder = [sessionUser.id, activeChatContactId].sort().join('_');
-          const path = `${chatFolder}/${Date.now()}_voice.${ext}`;
+          const path = `${sessionUser.id}/${activeChatContactId}/${Date.now()}_voice.${ext}`;
           chatUploadStatus.textContent = "Uploading voice message…";
           const { error: uploadError } = await supabase.storage.from('chat-attachments')
             .upload(path, blob, { upsert: false, contentType: blob.type || 'audio/webm' });
@@ -2659,6 +3073,7 @@
             <div style="display:flex; gap:10px; margin-top:3px;">
               ${canDelete ? `<span style="font-size:0.68rem; color:var(--muted); cursor:pointer;" onclick="window.deleteCommunityMessage('${m.id}')">Delete</span>` : ''}
               ${canSuspend ? `<span style="font-size:0.68rem; color:var(--danger); cursor:pointer;" onclick="window.suspendCommunityUser('${m.sender_id}')">Suspend user</span>` : ''}
+              ${(!isMine) ? `<span style="font-size:0.68rem; color:var(--muted); cursor:pointer;" onclick="window.reportCommunityMessage('${m.id}')">Report</span>` : ''}
             </div>
           </div>
         `;
@@ -2717,6 +3132,31 @@
       loadCommunityMessages(false);
     }catch(err){
       alert("Could not delete message: " + err.message);
+    }
+  };
+
+  // Anyone can report someone else's message — goes straight to the main
+  // admin's Reports list (Admin Console -> moderation) with the message
+  // content and both real identities attached, for review.
+  window.reportCommunityMessage = async function(messageId){
+    const reason = prompt("Why are you reporting this message? (required)");
+    if(reason === null) return; // cancelled
+    const trimmed = reason.trim();
+    if(trimmed.length < 3){
+      alert("Please give a short reason (at least 3 characters).");
+      return;
+    }
+    try{
+      const { error } = await supabase.from('community_message_reports').insert({
+        message_id: messageId,
+        reporter_id: sessionUser.id,
+        reason: trimmed
+      });
+      if(error) throw error;
+      alert("Thanks — this has been reported to the admin.");
+      logAudit("COMMUNITY_MESSAGE_REPORTED", { message_id: messageId }, sessionUser?.email);
+    }catch(err){
+      alert("Could not submit report: " + err.message);
     }
   };
 
@@ -2828,11 +3268,6 @@
 
   // Delete a user through a server-side, admin-only Supabase RPC.
   // The database function must verify the caller's admin role and delete the Auth user.
-  document.getElementById('adminUsersTbody')?.addEventListener('click', (e) => {
-    const b = e.target.closest('[data-act="delete-user"]');
-    if(b) window.adminDeleteUser(b.dataset.uid, b.dataset.username);
-  });
-
   window.adminDeleteUser = async function(userId, username){
     if(!supabase || !sessionUser) return;
     if(userId === sessionUser.id){
