@@ -7,7 +7,7 @@
 <meta name="description" content="Login and registration for sapkotap.com.np">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="icon" type="image/jpeg" href="favicon.png">
+<link rel="icon" type="image/jpeg" href="favicon.jpg">
 <!-- Supabase SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
 
@@ -862,7 +862,7 @@
         <h4 style="margin-bottom:8px;">Registered Users</h4>
         <table>
           <thead>
-            <tr><th>Name</th><th>Username</th><th>Email</th><th>Role</th><th>Created</th><th>Security</th><th id="thActions">Actions</th></tr>
+            <tr><th>Name</th><th>Username</th><th>Email</th><th>Role</th><th>Created</th><th>Security</th><th>Moderate</th><th id="thActions">Actions</th></tr>
           </thead>
           <tbody id="adminUsersTbody"></tbody>
         </table>
@@ -929,6 +929,15 @@
               <tr><th>Reported</th><th>Message</th><th>Posted By</th><th>Reported By</th><th>Reason</th><th>Actions</th></tr>
             </thead>
             <tbody id="adminReportsTbody"><tr><td colspan="6" style="text-align:center; color:var(--muted);">No reports.</td></tr></tbody>
+          </table>
+        </div>
+
+        <h4 style="margin-bottom:4px;">Admin Suspensions &amp; Bans <span style="font-size:0.75rem; color:var(--cyan); font-weight:normal;">(Main Admin Only)</span></h4>
+        <p style="font-size:0.78rem; color:var(--muted); margin-bottom:12px;">Every suspension or ban made by another admin, with their written reason and photo evidence. Reverse it if it was unjustified.</p>
+        <div style="width:100%; overflow-x:auto; margin-bottom:28px;">
+          <table>
+            <thead><tr><th>When</th><th>By Admin</th><th>User</th><th>Action</th><th>Reason</th><th>Evidence</th><th>Status</th></tr></thead>
+            <tbody id="adminActionsTbody"><tr><td colspan="7" style="text-align:center; color:var(--muted);">None yet.</td></tr></tbody>
           </table>
         </div>
 
@@ -1737,6 +1746,10 @@
     if(secCard) secCard.style.display = isMainAdmin ? 'block' : 'none';
     if(secSel) secSel.innerHTML = '<option value="">Select user...</option>';
 
+    if(!isMainAdmin){
+      // Other admins never see the real owner. They see a generic "Admin" account instead.
+      tbody.innerHTML = `<tr><td>Admin</td><td>@admin</td><td>origincircle5@gmail.com</td><td><span style="color:var(--cyan); font-weight:600;">admin</span></td><td>–</td><td><span style="color:var(--muted); font-size:0.75rem;">–</span></td><td><span style="color:var(--muted); font-size:0.75rem;">–</span></td></tr>`;
+    }
     if(users){
       users.forEach(u => {
         const opt = document.createElement('option');
@@ -1787,8 +1800,17 @@
           <td><span style="color:${r==='admin'?'var(--cyan)':'var(--muted)'}; font-weight:600;">${r}</span></td>
           <td>${new Date(u.created_at).toLocaleDateString()}</td>
           <td>${secHtml}</td>
+          <td>${(r === 'admin' || isTargetMainAdmin || u.id === sessionUser.id) ? '<span style="color:var(--muted); font-size:0.75rem;">–</span>' : `<button type="button" class="btn btn-outline" data-moderate="${sanitize(u.id)}" data-uname="${sanitize(u.username)}" style="padding:3px 10px; font-size:0.72rem; width:auto; border-color:var(--danger); color:var(--danger);">Suspend / Ban</button>`}</td>
           ${isMainAdmin ? `<td>${actionHtml}</td>` : ''}
         </tr>`;
+      });
+    }
+
+    if(!tbody.dataset.modBound){
+      tbody.dataset.modBound = '1';
+      tbody.addEventListener('click', (e) => {
+        const b = e.target.closest('[data-moderate]');
+        if(b) window.openModerateDialog(b.getAttribute('data-moderate'), b.getAttribute('data-uname'));
       });
     }
 
@@ -1883,7 +1905,7 @@
 
     // 4. Moderation tab — user picker for chat-history lookups + reports list
     populateModUserSelect();
-    if(isMainAdmin){ loadCommunityReports(); loadUserReports(); }
+    if(isMainAdmin){ loadCommunityReports(); loadUserReports(); loadAdminActions(); }
   }
 
   async function loadUserReports(){
@@ -3410,7 +3432,104 @@
       `).join('') + `</div>`;
   });
 
-  window.suspendCommunityUser = async function(targetUserId){
+  window.suspendCommunityUser = function(targetUserId){ window.openModerateDialog(targetUserId, 'this user'); };
+
+  window.openModerateDialog = function(uid, uname){
+    const isOwner = !!(sessionUser && sessionUser.email && sessionUser.email.toLowerCase() === ADMIN_EMAIL.toLowerCase());
+    const old = document.getElementById('modDialogOverlay'); if(old) old.remove();
+    const ov = document.createElement('div');
+    ov.id = 'modDialogOverlay';
+    ov.style.cssText = 'position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:9999; display:flex; align-items:center; justify-content:center; padding:16px;';
+    ov.innerHTML = `
+      <div style="background:var(--surface-2, #fff); color:var(--text); border:1px solid var(--border-solid); border-radius:12px; padding:20px; width:100%; max-width:440px; max-height:90vh; overflow:auto;">
+        <h3 style="margin:0 0 4px;">Suspend or ban @${escapeHtml(uname)}</h3>
+        <p style="font-size:0.78rem; color:var(--muted); margin:0 0 12px;">${isOwner ? 'This is recorded on the audit trail.' : 'Your reason and photo evidence are sent to the main admin, who can review or reverse this.'}</p>
+        <label style="font-size:0.78rem; font-weight:600;">Action</label>
+        <select id="modAction" class="field" style="margin:4px 0 10px;">
+          <option value="suspend">Suspend (blocked from posting in Community)</option>
+          <option value="ban">Ban (cannot sign in at all)</option>
+        </select>
+        <label style="font-size:0.78rem; font-weight:600;">Exact reason (min 10 characters)</label>
+        <textarea id="modReason" class="field" style="margin:4px 0 10px; min-height:90px;" placeholder="What did they do, where, and when?"></textarea>
+        <label style="font-size:0.78rem; font-weight:600;">Photo evidence${isOwner ? ' (optional)' : ' (required, screenshot, max 5 MB)'}</label>
+        <input type="file" id="modEvidence" accept="image/*" style="margin:4px 0 12px; width:100%;">
+        <div id="modNotice" style="font-size:0.8rem; color:var(--danger); min-height:18px; margin-bottom:8px;"></div>
+        <div style="display:flex; gap:8px; justify-content:flex-end;">
+          <button type="button" class="btn btn-outline" id="modCancel" style="width:auto; padding:6px 16px;">Cancel</button>
+          <button type="button" class="btn" id="modSubmit" style="width:auto; padding:6px 16px;">Confirm</button>
+        </div>
+      </div>`;
+    document.body.appendChild(ov);
+    document.getElementById('modCancel').onclick = () => ov.remove();
+    document.getElementById('modSubmit').onclick = async () => {
+      const notice = document.getElementById('modNotice');
+      const action = document.getElementById('modAction').value;
+      const reason = document.getElementById('modReason').value.trim();
+      const file = document.getElementById('modEvidence').files[0];
+      if(reason.length < 10){ notice.textContent = 'Write the exact reason (at least 10 characters).'; return; }
+      if(!isOwner && !file){ notice.textContent = 'A photo of the evidence is required.'; return; }
+      if(file && (!file.type.startsWith('image/') || file.size > 5*1024*1024)){ notice.textContent = 'Evidence must be an image under 5 MB.'; return; }
+      const btn = document.getElementById('modSubmit'); btn.disabled = true; notice.style.color = 'var(--muted)'; notice.textContent = 'Working...';
+      try{
+        let path = null;
+        if(file){
+          const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(-60);
+          path = sessionUser.id + '/' + Date.now() + '_' + safe;
+          const up = await supabase.storage.from('moderation-evidence').upload(path, file, { contentType: file.type });
+          if(up.error) throw up.error;
+        }
+        const { error } = await supabase.rpc('admin_moderate_user', { target_user_id: uid, action, reason, evidence_path: path });
+        if(error) throw error;
+        ov.remove();
+        alert(action === 'ban' ? 'User banned.' : 'User suspended.');
+        loadAdminDashboard(isOwner);
+      }catch(err){
+        btn.disabled = false; notice.style.color = 'var(--danger)'; notice.textContent = err.message || String(err);
+      }
+    };
+  };
+
+  async function loadAdminActions(){
+    const tb = document.getElementById('adminActionsTbody');
+    if(!tb || !supabase) return;
+    try{
+      const { data, error } = await supabase.from('admin_actions').select('*');
+      if(error) throw error;
+      if(!data || !data.length){ tb.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--muted);">None yet.</td></tr>'; return; }
+      const ids = [...new Set(data.flatMap(r => [r.admin_id, r.target_user_id]))];
+      const { data: profs } = await supabase.from('profiles').select('id, username').in('id', ids);
+      const nm = {}; (profs || []).forEach(x => nm[x.id] = '@' + x.username);
+      data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      const rows = await Promise.all(data.map(async r => {
+        let ev = '–';
+        if(r.evidence_path){
+          const { data: s } = await supabase.storage.from('moderation-evidence').createSignedUrl(r.evidence_path, 3600);
+          if(s) ev = `<a href="${s.signedUrl}" target="_blank" rel="noopener"><img src="${s.signedUrl}" loading="lazy" style="max-width:90px; max-height:70px; border-radius:6px; display:block;"></a>`;
+        }
+        const canReverse = r.status === 'active' && (r.action === 'suspend' || r.action === 'ban');
+        return `<tr>
+          <td style="white-space:nowrap;">${new Date(r.created_at).toLocaleString()}</td>
+          <td>${escapeHtml(nm[r.admin_id] || r.admin_id)}</td>
+          <td>${escapeHtml(nm[r.target_user_id] || r.target_user_id)}</td>
+          <td><strong style="color:${r.action==='ban'?'var(--danger)':'#eab308'};">${escapeHtml(r.action)}</strong></td>
+          <td style="max-width:240px; word-break:break-word;">${escapeHtml(r.reason)}</td>
+          <td>${ev}</td>
+          <td>${escapeHtml(r.status)}${canReverse ? `<br><button type="button" class="btn btn-outline" data-reverse-action="${r.id}" style="padding:2px 8px; font-size:0.7rem; margin-top:4px; width:auto;">Reverse</button>` : ''}</td>
+        </tr>`;
+      }));
+      tb.innerHTML = rows.join('');
+      tb.querySelectorAll('[data-reverse-action]').forEach(b => b.addEventListener('click', async () => {
+        if(!confirm('Reverse this action and restore the user?')) return;
+        const { error } = await supabase.rpc('admin_reverse_action', { p_id: b.getAttribute('data-reverse-action') });
+        if(error){ alert('Could not reverse: ' + error.message); return; }
+        loadAdminActions();
+      }));
+    }catch(e){
+      tb.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--danger); font-size:0.78rem;">Could not load: ' + escapeHtml(e.message || String(e)) + '</td></tr>';
+    }
+  }
+
+  window._legacySuspend = async function(targetUserId){
     if(!supabase) return;
     const reason = prompt("Reason for suspending this user (shown only to admins, kept on record):");
     if(reason === null) return; // cancelled
