@@ -5,10 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sign In / Register — Pramod Sapkota</title>
 <meta name="description" content="Login and registration for sapkotap.com.np">
-<link rel="icon" type="image/jpeg" href="favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-
+<link rel="icon" type="image/jpeg" href="favicon.png">
 <!-- Supabase SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
 
@@ -328,12 +327,12 @@
 
 </style>
 </head>
-<body data-theme="dark">
+<body data-theme="light">
 
   <div class="top">
-    <a class="brand" href="/index.html"><span class="dot"></span>Pramod</a>
+    <a class="brand" href="index.html"><span class="dot"></span>Pramod</a>
     <div class="topRight">
-      <a class="backlink" href="https://sapkotap.com.np">&larr; back to portfolio</a>
+      <a class="backlink" href="index.html">&larr; back to portfolio</a>
       <button class="themeToggle" id="themeToggle" aria-label="Toggle theme">☀</button>
     </div>
   </div>
@@ -812,7 +811,7 @@
       <div class="admin-tabpane" id="adminTab-users">
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:10px;">
           <!-- Add New User Directly -->
-          <div style="background:var(--surface-2); border:1px solid var(--border-solid); border-radius:10px; padding:16px;">
+          <div id="adminAddUserCard" style="background:var(--surface-2); border:1px solid var(--border-solid); border-radius:10px; padding:16px;">
             <h4 style="margin:0 0 10px 0; font-size:0.9rem; color:var(--violet);">Add New User (Admin Provisioning)</h4>
             <form id="adminAddUserForm" style="display:flex; flex-direction:column; gap:8px;">
               <input type="text" id="adminNewFullName" class="field" style="margin:0;" placeholder="Full Name" required>
@@ -930,6 +929,14 @@
               <tr><th>Reported</th><th>Message</th><th>Posted By</th><th>Reported By</th><th>Reason</th><th>Actions</th></tr>
             </thead>
             <tbody id="adminReportsTbody"><tr><td colspan="6" style="text-align:center; color:var(--muted);">No reports.</td></tr></tbody>
+          </table>
+        </div>
+
+        <h4 style="margin-bottom:4px;">Reported Users <span style="font-size:0.75rem; color:var(--cyan); font-weight:normal;">(Main Admin Only)</span></h4>
+        <div style="width:100%; overflow-x:auto; margin-bottom:28px;">
+          <table>
+            <thead><tr><th>Reported</th><th>User</th><th>Reported By</th><th>Reason</th><th>Actions</th></tr></thead>
+            <tbody id="adminUserReportsTbody"><tr><td colspan="5" style="text-align:center; color:var(--muted);">No reports.</td></tr></tbody>
           </table>
         </div>
 
@@ -1061,14 +1068,14 @@
 
   // Theme Toggle
   const themeToggle = document.getElementById('themeToggle');
-  const savedTheme = localStorage.getItem('theme') || 'dark';
+  const savedTheme = localStorage.getItem('theme_v2') || 'light';
   document.documentElement.setAttribute('data-theme', savedTheme);
   themeToggle.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
 
   themeToggle.addEventListener('click', () => {
     const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', next);
-    localStorage.setItem('theme', next);
+    localStorage.setItem('theme_v2', next);
     themeToggle.textContent = next === 'dark' ? '☀️' : '🌙';
   });
 
@@ -1683,6 +1690,8 @@
   async function loadAdminDashboard(isMainAdmin){
     const thActions = document.getElementById('thActions');
     if(thActions) thActions.style.display = isMainAdmin ? 'table-cell' : 'none';
+    const addCard = document.getElementById('adminAddUserCard');
+    if(addCard) addCard.style.display = isMainAdmin ? '' : 'none';
 
     // 1. Users list & Roles
     let users = [];
@@ -1874,7 +1883,34 @@
 
     // 4. Moderation tab — user picker for chat-history lookups + reports list
     populateModUserSelect();
-    if(isMainAdmin) loadCommunityReports();
+    if(isMainAdmin){ loadCommunityReports(); loadUserReports(); }
+  }
+
+  async function loadUserReports(){
+    const tb = document.getElementById('adminUserReportsTbody');
+    if(!tb || !supabase) return;
+    try{
+      const { data, error } = await supabase.from('user_reports').select('*').neq('status', 'dismissed');
+      if(error) throw error;
+      if(!data || !data.length){ tb.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--muted);">No reports.</td></tr>'; return; }
+      const ids = [...new Set(data.flatMap(r => [r.reporter_id, r.reported_user_id]))];
+      const { data: profs } = await supabase.from('profiles').select('id, username, full_name').in('id', ids);
+      const nm = {}; (profs || []).forEach(x => nm[x.id] = '@' + x.username + (x.full_name ? ' (' + x.full_name + ')' : ''));
+      data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      tb.innerHTML = data.map(r => `<tr>
+        <td style="white-space:nowrap;">${new Date(r.created_at).toLocaleString()}</td>
+        <td>${escapeHtml(nm[r.reported_user_id] || r.reported_user_id)}</td>
+        <td>${escapeHtml(nm[r.reporter_id] || r.reporter_id)}</td>
+        <td style="max-width:240px; word-break:break-word;">${escapeHtml(r.reason)}<div style="font-size:0.68rem; color:var(--muted);">${escapeHtml(r.context || '')}</div></td>
+        <td><button type="button" class="btn-outline" style="padding:3px 10px; font-size:0.72rem; width:auto; border:1px solid var(--border-solid);" data-dismiss-ureport="${r.id}">Dismiss</button></td>
+      </tr>`).join('');
+      tb.querySelectorAll('[data-dismiss-ureport]').forEach(b => b.addEventListener('click', async () => {
+        await supabase.from('user_reports').update({ status: 'dismissed' }).eq('id', b.getAttribute('data-dismiss-ureport'));
+        loadUserReports();
+      }));
+    }catch(e){
+      tb.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--danger); font-size:0.78rem;">Could not load reports: ' + escapeHtml(e.message || String(e)) + '</td></tr>';
+    }
   }
 
   async function loadAdminFilesList(){
@@ -2542,8 +2578,7 @@
     try {
       const { data, error } = await supabase
         .from('support_messages')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select('*');
 
       if(error) throw error;
       if(!data || data.length === 0){
@@ -2551,6 +2586,7 @@
         return;
       }
 
+      data.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
       tbody.innerHTML = data.map(m => `
         <tr>
           <td style="white-space:nowrap;">${new Date(m.created_at).toLocaleString()}</td>
@@ -2572,7 +2608,8 @@
         </tr>
       `).join('');
     } catch(err){
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--muted); font-size:0.75rem;">Requires support_messages table & RLS policies in Supabase — run the provided SQL fix.</td></tr>';
+      console.error('support_messages error:', err);
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--danger); font-size:0.78rem;">Could not load support messages: ' + escapeHtml(err.message || String(err)) + '</td></tr>';
     }
   }
 
@@ -2840,10 +2877,48 @@
   window.selectChatContact = function(userId, username, nickname){
     activeChatContactId = userId;
     activeChatContactName = username;
-    document.getElementById('chatHeader').textContent = "Chatting with " + (nickname || ("@" + username));
+    document.getElementById('chatHeader').innerHTML = '<span>Chatting with ' + escapeHtml(nickname || ("@" + username)) + '</span> <a href="#" style="float:right; font-size:0.72rem; color:var(--danger); text-decoration:none; font-weight:600;" onclick="event.preventDefault(); window.reportChatUser()">Report user</a>';
+    lastChatSig = '';
     document.getElementById('chatInputBar').style.display = 'flex';
     loadAcceptedContacts();
     loadActiveConversation(userId, username, false);
+  };
+
+  let lastChatSig = '';
+  const chatSignedCache = new Map();
+  async function getChatSigned(path, dl){
+    const key = path + '|' + (dl || '');
+    const c = chatSignedCache.get(key);
+    if(c && c.exp > Date.now()) return { data: { signedUrl: c.url } };
+    const r = await supabase.storage.from('chat-attachments').createSignedUrl(path, 3600, dl ? { download: dl } : undefined);
+    if(r.data && r.data.signedUrl) chatSignedCache.set(key, { url: r.data.signedUrl, exp: Date.now() + 50*60*1000 });
+    return r;
+  }
+
+  window.deleteMyChatMessage = async function(id){
+    if(!confirm('Delete this message for both of you? (The site owner can still review it for safety.)')) return;
+    try{
+      const { error } = await supabase.rpc('soft_delete_direct_message', { p_id: String(id) });
+      if(error) throw error;
+      lastChatSig = '';
+      loadActiveConversation(activeChatContactId, activeChatContactName, false);
+    }catch(err){ alert('Could not delete: ' + (err.message || err)); }
+  };
+
+  window.reportChatUser = async function(){
+    if(!activeChatContactId) return;
+    const reason = prompt('Why are you reporting this user? (the site owner will review it)');
+    if(!reason || reason.trim().length < 3) return;
+    try{
+      const { error } = await supabase.from('user_reports').insert({
+        reporter_id: sessionUser.id,
+        reported_user_id: activeChatContactId,
+        reason: reason.trim().slice(0, 500),
+        context: 'direct chat'
+      });
+      if(error) throw error;
+      alert('Report sent. Thank you.');
+    }catch(err){ alert('Could not send report: ' + (err.message || err)); }
   };
 
   async function loadActiveConversation(contactId, username, isPoll){
@@ -2863,6 +2938,13 @@
         return;
       }
 
+      // Only redraw when the message list actually changed. Redrawing every 4s
+      // re-downloaded every image and restarted any playing voice message.
+      const sig = contactId + '|' + msgs.map(m => m.id).join(',');
+      if(isPoll && sig === lastChatSig) return;
+      if(isPoll && Array.from(box.querySelectorAll('audio')).some(a => !a.paused && !a.ended)) return;
+      lastChatSig = sig;
+
       const shouldScroll = (!isPoll || box.scrollTop + box.clientHeight >= box.scrollHeight - 50);
 
       const rendered = await Promise.all(msgs.map(async (m) => {
@@ -2871,17 +2953,17 @@
         let inner = '';
 
         if(m.message_type === 'image' && m.attachment_path){
-          const { data: signed } = await supabase.storage.from('chat-attachments').createSignedUrl(m.attachment_path, 3600);
+          const { data: signed } = await getChatSigned(m.attachment_path);
           inner = signed
-            ? `<img src="${signed.signedUrl}" style="max-width:220px; max-height:220px; border-radius:8px; display:block;">`
+            ? `<img src="${signed.signedUrl}" loading="lazy" decoding="async" onclick="window.open(this.src,'_blank')" style="width:auto; height:auto; max-width:220px; max-height:220px; object-fit:contain; border-radius:8px; display:block; cursor:zoom-in;">`
             : `<span>[image unavailable]</span>`;
         } else if(m.message_type === 'audio' && m.attachment_path){
-          const { data: signed } = await supabase.storage.from('chat-attachments').createSignedUrl(m.attachment_path, 3600);
+          const { data: signed } = await getChatSigned(m.attachment_path);
           inner = signed
             ? `<audio controls src="${signed.signedUrl}" style="max-width:220px; height:34px;"></audio>`
             : `<span>[voice message unavailable]</span>`;
         } else if(m.message_type === 'file' && m.attachment_path){
-          const { data: signed } = await supabase.storage.from('chat-attachments').createSignedUrl(m.attachment_path, 3600, { download: m.attachment_name || 'file' });
+          const { data: signed } = await getChatSigned(m.attachment_path, m.attachment_name || 'file');
           inner = signed
             ? `<a href="${signed.signedUrl}" download="${escapeHtml(m.attachment_name || 'file')}" style="color:inherit; text-decoration:underline;">📄 ${escapeHtml(m.attachment_name || 'file')}</a>`
             : `<span>[file unavailable]</span>`;
@@ -2892,7 +2974,7 @@
         return `
           <div style="display:flex; flex-direction:column; align-items:${isMe?'flex-end':'flex-start'};">
             <div style="${bubbleStyle}">${inner}</div>
-            <span style="font-size:0.65rem; color:var(--muted); margin-top:2px;">${new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+            <span style="font-size:0.65rem; color:var(--muted); margin-top:2px;">${new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}${isMe ? ` &nbsp;<a href="#" style="color:var(--danger); text-decoration:none;" onclick="event.preventDefault(); window.deleteMyChatMessage('${m.id}')">Delete</a>` : ''}</span>
           </div>
         `;
       }));
@@ -3289,7 +3371,7 @@
         .limit(200);
       (dm || []).forEach(m => entries.push({
         when: m.created_at,
-        source: m.sender_id === targetId ? 'Direct (sent)' : 'Direct (received)',
+        source: (m.sender_id === targetId ? 'Direct (sent)' : 'Direct (received)') + (m.deleted_at ? ' — DELETED by sender ' + new Date(m.deleted_at).toLocaleString() : ''),
         color: 'var(--violet)',
         text: m.message_type && m.message_type !== 'text' ? `[${m.message_type} attachment: ${m.attachment_name || ''}]` : m.message,
         extra: ''
