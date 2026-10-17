@@ -722,7 +722,7 @@
       <p style="font-size:0.8rem; color:var(--muted); margin-bottom:16px;">
         Add a PIN and/or a custom security question. Once set, you'll be asked for it right after you sign in —
         even on a device you've already trusted — before you can see anything in your account.
-        It's stored as a one-way hash: nobody, including the site admin, can ever see it. If you forget it, an admin can reset it so you can set a new one.
+        It's stored as a one-way hash: nobody, including the site admin, can ever see it. You cannot change or remove it yourself once saved. If you forget it, only the site owner can reset it so you can set a new one.
       </p>
 
       <div id="securityStatusBox" style="font-size:0.8rem; color:var(--muted); margin-bottom:18px;">Loading current status...</div>
@@ -846,6 +846,16 @@
 
             <button type="button" class="btn" id="btnAdminUpload" style="padding:8px 0; margin-top:12px; display:none;">Upload All</button>
             <div id="adminUploadNotice" style="font-size:0.78rem; margin-top:8px;"></div>
+          </div>
+        </div>
+
+        <div id="adminSecResetCard" style="display:none; background:var(--surface-2); border:1px solid var(--border-solid); border-radius:10px; padding:16px; margin-bottom:18px;">
+          <h4 style="margin:0 0 6px 0; font-size:0.9rem; color:var(--violet);">Reset a user's PIN / security question</h4>
+          <p style="font-size:0.78rem; color:var(--muted); margin:0 0 10px;">Users cannot reset these themselves. Pick the user, press Reset, and they will be asked to set a new PIN / question the next time they open their Security tab. You never see the old values.</p>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+            <select id="adminSecResetSelect" class="field" style="margin:0; max-width:340px;"><option value="">Select user...</option></select>
+            <button type="button" class="btn" id="btnAdminSecReset" style="width:auto; padding:8px 18px;">Reset PIN &amp; question</button>
+            <span id="adminSecResetNotice" style="font-size:0.8rem;"></span>
           </div>
         </div>
 
@@ -1652,19 +1662,40 @@
     }
   };
 
+  function showAdminErrors(list){
+    let box = document.getElementById('adminErrorBanner');
+    if(!box){
+      box = document.createElement('div');
+      box.id = 'adminErrorBanner';
+      box.style.cssText = 'display:none; background:rgba(248,113,113,0.1); border:1px solid rgba(248,113,113,0.35); color:var(--danger); border-radius:8px; padding:10px 12px; margin-bottom:16px; font-size:0.8rem; white-space:pre-wrap; font-family:JetBrains Mono,monospace;';
+      const grid = document.querySelector('#adminArea .react-stat-grid');
+      if(grid) grid.parentNode.insertBefore(box, grid);
+    }
+    if(list && list.length){
+      box.style.display = 'block';
+      box.textContent = 'Admin console could not load some data (this is the real database error):\n' + list.join('\n');
+    } else {
+      box.style.display = 'none';
+    }
+  }
+
   async function loadAdminDashboard(isMainAdmin){
     const thActions = document.getElementById('thActions');
     if(thActions) thActions.style.display = isMainAdmin ? 'table-cell' : 'none';
 
     // 1. Users list & Roles
     let users = [];
+    const adminErrors = [];
     try {
-      const { data: profs, error: pErr } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
-      if(profs) users = profs;
-      if(pErr) console.warn("Admin profiles load warning:", pErr);
+      // no server-side ORDER BY (a missing column would make the whole query fail); sort here instead
+      const { data: profs, error: pErr } = await supabase.from("profiles").select("*");
+      if(pErr){ console.error("Admin profiles load error:", pErr); adminErrors.push("profiles: " + pErr.message); }
+      if(profs) users = profs.slice().sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
     } catch(e) {
-      console.warn("Profiles fetch error:", e);
+      console.error("Profiles fetch error:", e);
+      adminErrors.push("profiles: " + (e.message || e));
     }
+    showAdminErrors(adminErrors);
 
     document.getElementById('statMembers').textContent = users.length;
 
@@ -1691,6 +1722,10 @@
     const tbody = document.getElementById('adminUsersTbody');
     sel.innerHTML = '<option value="">Select target user...</option>';
     tbody.innerHTML = '';
+    const secSel = document.getElementById('adminSecResetSelect');
+    const secCard = document.getElementById('adminSecResetCard');
+    if(secCard) secCard.style.display = isMainAdmin ? 'block' : 'none';
+    if(secSel) secSel.innerHTML = '<option value="">Select user...</option>';
 
     if(users){
       users.forEach(u => {
@@ -1715,8 +1750,18 @@
         }
 
         const sec = secMap[u.id];
+        if(isMainAdmin && secSel && !isTargetMainAdmin){
+          const o = document.createElement('option');
+          o.value = u.id;
+          o.dataset.uname = u.username || '';
+          const st = (sec && (sec.has_pin || sec.has_question))
+            ? [sec.has_pin ? 'PIN' : null, sec.has_question ? 'Question' : null].filter(Boolean).join(' + ')
+            : 'nothing set';
+          o.textContent = `${u.full_name} (@${u.username}) — ${st}`;
+          secSel.appendChild(o);
+        }
         let secHtml = '<span style="color:var(--muted); font-size:0.75rem;">–</span>';
-        if(sec && (sec.has_pin || sec.has_question)){
+        if(isMainAdmin && sec && (sec.has_pin || sec.has_question)){
           const parts = [];
           if(sec.has_pin) parts.push('PIN');
           if(sec.has_question) parts.push('Question');
@@ -1747,11 +1792,22 @@
 
     // Total logged actions (real count, not just the page of 25)
     try{
-      const { count: totalCount } = await supabase.from("audit_logs").select("*", { count: "exact", head: true });
+      const { count: totalCount, error: cErr } = await supabase.from("audit_logs").select("*", { count: "exact", head: true });
+      if(cErr) throw cErr;
       document.getElementById('statActions').textContent = (totalCount ?? 0).toLocaleString();
-    }catch(e){ document.getElementById('statActions').textContent = '–'; }
+    }catch(e){
+      document.getElementById('statActions').textContent = '–';
+      adminErrors.push("audit_logs count: " + (e.message || e));
+    }
 
-    const { data: logs } = await supabase.from("audit_logs").select("*").order("created_at", { ascending: false }).limit(25);
+    let { data: logs, error: logErr } = await supabase.from("audit_logs").select("*").order("created_at", { ascending: false }).limit(25);
+    if(logErr){
+      // retry without ORDER BY in case created_at is named differently
+      const retry = await supabase.from("audit_logs").select("*").limit(25);
+      if(!retry.error){ logs = retry.data; logErr = null; }
+    }
+    if(logErr){ console.error("audit_logs error:", logErr); adminErrors.push("audit_logs: " + logErr.message); }
+    showAdminErrors(adminErrors);
 
     const logBody = document.getElementById('adminThreatsTbody');
     const overviewBody = document.getElementById('adminOverviewTbody');
@@ -1885,11 +1941,23 @@
       if(error) throw error;
       logAudit("ADMIN_RESET_USER_SECURITY", { target: username }, sessionUser?.email);
       alert(`Security reset for @${username}.`);
-      loadAdminDashboard(isAdminGlobal);
+      loadAdminDashboard(true);
     } catch(err){
       alert("Could not reset security: " + err.message);
     }
   };
+
+  document.getElementById('btnAdminSecReset')?.addEventListener('click', () => {
+    const sel = document.getElementById('adminSecResetSelect');
+    const opt = sel && sel.options[sel.selectedIndex];
+    const notice = document.getElementById('adminSecResetNotice');
+    if(!sel || !sel.value){
+      if(notice){ notice.textContent = 'Select a user first.'; notice.style.color = 'var(--danger)'; }
+      return;
+    }
+    if(notice) notice.textContent = '';
+    window.adminResetUserSecurity(sel.value, (opt && opt.dataset.uname) || 'user');
+  });
 
   // Global helper for Main Admin to assign/revoke admin roles
   window.changeUserRole = async function(targetUserId, newRole){
@@ -2268,6 +2336,7 @@
   /* =========================================================
      EXTRA LOGIN SECURITY — PIN & Security Question (user settings)
      ========================================================= */
+  let secHasPin = false, secHasQ = false;
   async function loadSecuritySettings(){
     const box = document.getElementById('securityStatusBox');
     if(!box || !supabase) return;
@@ -2276,6 +2345,13 @@
       if(error) throw error;
       const hasPin = !!data?.has_pin;
       const hasQ = !!data?.has_question;
+      secHasPin = hasPin; secHasQ = hasQ;
+      // Once set, only the main admin can reset it: lock the controls
+      const lock = (ids, locked) => ids.forEach(id => { const el = document.getElementById(id); if(el){ el.disabled = locked; el.style.display = locked ? 'none' : ''; } });
+      lock(['btnRemovePin','btnSavePin','newPinField','newPinConfirmField'], hasPin);
+      lock(['btnRemoveQuestion','btnSaveQuestion','newSecurityQuestion','newSecurityAnswer'], hasQ);
+      document.getElementById('btnRemovePin') && (document.getElementById('btnRemovePin').style.display = 'none');
+      document.getElementById('btnRemoveQuestion') && (document.getElementById('btnRemoveQuestion').style.display = 'none');
       box.innerHTML = `
         <span style="color:${hasPin?'var(--good)':'var(--muted)'};">PIN: ${hasPin ? 'Set ✓' : 'Not set'}</span>
         &nbsp;•&nbsp;
@@ -2291,6 +2367,7 @@
     const pin = document.getElementById('newPinInput').value.trim();
     const confirmPin = document.getElementById('newPinConfirmInput').value.trim();
     notice.textContent = '';
+    if(secHasPin){ notice.innerHTML = '<span style="color:var(--danger);">PIN already set. Only the admin can reset it.</span>'; return; }
     if(!/^[0-9]{6,8}$/.test(pin)){
       notice.innerHTML = '<span style="color:var(--danger);">PIN must be 6 to 8 digits.</span>';
       return;
@@ -2331,6 +2408,7 @@
     const question = document.getElementById('newSecurityQuestion').value.trim();
     const answer = document.getElementById('newSecurityAnswer').value.trim();
     notice.textContent = '';
+    if(secHasQ){ notice.innerHTML = '<span style="color:var(--danger);">Question already set. Only the admin can reset it.</span>'; return; }
     if(question.length < 5){
       notice.innerHTML = '<span style="color:var(--danger);">Question must be at least 5 characters.</span>';
       return;
@@ -2989,6 +3067,8 @@
 
   /* --- COMMUNITY CHAT (public room, anonymous per-message names) --- */
   let communitySuspended = false;
+  // live table uses user_id (older versions used sender_id) - accept either when reading
+  const msgOwner = (m) => (m.user_id || m.sender_id || null);
   let adminUserIds = new Set(); // refreshed each time Community loads — hides the suspend action on any admin's message
 
   async function refreshAdminIdSet(){
@@ -3055,11 +3135,11 @@
       const shouldScroll = (!isPoll || box.scrollTop + box.clientHeight >= box.scrollHeight - 50);
 
       box.innerHTML = msgs.map(m => {
-        const isMine = (m.sender_id === sessionUser.id);
+        const isMine = (msgOwner(m) === sessionUser.id);
         // Admin can delete any message for moderation; everyone else only their own.
         // This button never reveals *why* it's visible — it looks identical either way.
         const canDelete = isMine || isAdminGlobal;
-        const canSuspend = isAdminGlobal && !isMine && !adminUserIds.has(m.sender_id);
+        const canSuspend = isAdminGlobal && !isMine && !adminUserIds.has(msgOwner(m));
 
         return `
           <div style="display:flex; flex-direction:column; align-items:${isMine?'flex-end':'flex-start'};">
@@ -3072,7 +3152,7 @@
             </div>
             <div style="display:flex; gap:10px; margin-top:3px;">
               ${canDelete ? `<span style="font-size:0.68rem; color:var(--muted); cursor:pointer;" onclick="window.deleteCommunityMessage('${m.id}')">Delete</span>` : ''}
-              ${canSuspend ? `<span style="font-size:0.68rem; color:var(--danger); cursor:pointer;" onclick="window.suspendCommunityUser('${m.sender_id}')">Suspend user</span>` : ''}
+              ${canSuspend ? `<span style="font-size:0.68rem; color:var(--danger); cursor:pointer;" onclick="window.suspendCommunityUser('${msgOwner(m)}')">Suspend user</span>` : ''}
               ${(!isMine) ? `<span style="font-size:0.68rem; color:var(--muted); cursor:pointer;" onclick="window.reportCommunityMessage('${m.id}')">Report</span>` : ''}
             </div>
           </div>
@@ -3109,8 +3189,8 @@
     input.value = "";
 
     try{
-      const { error } = await supabase.from('community_messages').insert({
-        sender_id: sessionUser.id,
+      let { error } = await supabase.from('community_messages').insert({
+        user_id: sessionUser.id,
         display_name: displayName,
         message: txt
       });
